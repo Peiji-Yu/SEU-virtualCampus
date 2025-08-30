@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Select;
 public interface UserMapper {
     /**
      * 根据用户名和密码查询用户
-     * @param username 用户名
+     * @param id 一卡通号
      * @param password 加密后的密码
      * @return 用户对象，如果不存在则返回null
      */
