@@ -1,3 +1,6 @@
+# Compiled class file
+*.class
+
 ### IntelliJ IDEA ###
 out/
 !**/src/main/**/out/
