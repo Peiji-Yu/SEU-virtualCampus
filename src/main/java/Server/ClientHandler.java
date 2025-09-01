@@ -1,8 +1,8 @@
 package Server;
 
-import Server.model.Request;
-import Server.model.Response;
+import Server.model.*;
 import Server.service.UserService;
+import Server.service.StudentService;
 import com.google.gson.Gson;
 
 import java.io.DataInputStream;
@@ -10,6 +10,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 客户端处理器
@@ -19,6 +22,7 @@ public class ClientHandler implements Runnable {
     private final Socket clientSocket;
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
+    private final StudentService studentService = new StudentService();
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -51,7 +55,66 @@ public class ClientHandler implements Runnable {
                     case "login":
                         response = userService.login(request.getData());
                         break;
-                    // 可以添加其他请求类型的处理
+
+                    case "getSelf":
+                        Integer cardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        Student student = studentService.getSelf(cardNumber);
+                        response = (student != null) ?
+                                Response.success("查询成功", student) :
+                                Response.error("未找到学生信息");
+                        break;
+
+                    case "searchStudents":
+                        Map<String, Object> searchData = request.getData();
+                        String searchType = (String) searchData.get("searchType");
+                        String searchValue = (String) searchData.get("searchValue");
+                        Boolean fuzzy = (Boolean) searchData.get("fuzzy"); // 新增参数，可选
+
+                        // 验证必要参数
+                        if (searchType == null || searchValue == null) {
+                            response = Response.error("搜索参数不完整");
+                            break;
+                        }
+
+                        try {
+                            List<Student> students = studentService.searchStudents(searchType, searchValue, fuzzy);
+                            response = Response.success("搜索完成", students);
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error(e.getMessage());
+                        } catch (Exception e) {
+                            response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+
+                    case "updateStudent":
+                        // 从请求数据中创建Student对象
+                        Map<String, Object> studentData = (Map<String, Object>) request.getData().get("student");
+                        Student studentToUpdate = createStudentFromMap(studentData);
+
+                        boolean updateResult = studentService.updateStudent(studentToUpdate);
+                        response = updateResult ?
+                                Response.success("更新成功") :
+                                Response.error("更新失败");
+                        break;
+
+                    case "addStudent":
+                        Map<String, Object> newStudentData = (Map<String, Object>) request.getData().get("student");
+                        Student newStudent = createStudentFromMap(newStudentData);
+
+                        boolean addResult = studentService.addStudent(newStudent);
+                        response = addResult ?
+                                Response.success("添加成功", newStudent.getCardNumber()) :
+                                Response.error("添加失败");
+                        break;
+
+                    case "deleteStudent":
+                        Integer deleteCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        boolean deleteResult = studentService.deleteStudent(deleteCardNumber);
+                        response = deleteResult ?
+                                Response.success("删除成功") :
+                                Response.error("删除失败");
+                        break;
+
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
                         break;
@@ -88,5 +151,25 @@ public class ClientHandler implements Runnable {
         out.flush();
 
         System.out.println("发送响应: " + jsonResponse);
+    }
+
+    // 添加辅助方法，用于从Map创建Student对象
+    private Student createStudentFromMap(Map<String, Object> data) {
+        Student student = new Student();
+
+        if (data.containsKey("identity")) student.setIdentity((String) data.get("identity"));
+        if (data.containsKey("cardNumber")) student.setCardNumber(((Double) data.get("cardNumber")).intValue());
+        if (data.containsKey("studentNumber")) student.setStudentNumber((String) data.get("studentNumber"));
+        if (data.containsKey("major")) student.setMajor((String) data.get("major"));
+        if (data.containsKey("school")) student.setSchool((String) data.get("school"));
+        if (data.containsKey("status")) student.setStatus(StudentStatus.valueOf((String) data.get("status")));
+        if (data.containsKey("enrollment")) student.setEnrollment(new Date((Long) data.get("enrollment")));
+        if (data.containsKey("birth")) student.setBirth(new Date((Long) data.get("birth")));
+        if (data.containsKey("birthPlace")) student.setBirthPlace((String) data.get("birthPlace"));
+        if (data.containsKey("politicalStat")) student.setPoliticalStat(PoliticalStatus.valueOf((String) data.get("politicalStat")));
+        if (data.containsKey("gender")) student.setGender(Gender.valueOf((String) data.get("gender")));
+        if (data.containsKey("name")) student.setName((String) data.get("name"));
+
+        return student;
     }
 }
