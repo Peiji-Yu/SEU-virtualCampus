@@ -15,6 +15,6 @@ public interface UserMapper {
      * @param password 加密后的密码
      * @return 用户对象，如果不存在则返回null
      */
-    @Select("SELECT * FROM user WHERE cardNumber = #{cardNumber} AND password = #{password}")
+    @Select("SELECT * FROM user WHERE card_number = #{cardNumber} AND password = #{password}")
     User findByCardNumberAndPassword(@Param("cardNumber") int cardNumber, @Param("password") String password);
 }
