@@ -10,6 +10,14 @@ import java.util.List;
 
 public class StudentService {
 
+//    /**
+//     * 验证管理员身份
+//     */
+//    private boolean isAdmin(Integer cardNumber) {
+//        // 规定cardNumber小于1000的是管理员
+//        return cardNumber != null && cardNumber < 1000;
+//    }
+
     /**
      * 学生查看自己的信息
      */

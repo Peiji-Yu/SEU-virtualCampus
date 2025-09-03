@@ -16,12 +16,12 @@ public class UserService {
 
     /**
      * 处理用户登录
-     * @param data 包含id和password的Map对象
+     * @param data 包含cardNumber和password的Map对象
      * @return 登录响应结果
      */
     public Response login(Map<String, Object> data) {
         // 获取用户名和密码
-        int id = ((Double) data.get("cardNumber")).intValue();
+        int cardNumber = ((Double) data.get("cardNumber")).intValue();
         String password = (String) data.get("password"); // 假设密码已经加密
 
         // 获取SqlSession
@@ -30,7 +30,7 @@ public class UserService {
             UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
 
             // 查询用户
-            User user = userMapper.findByUsernameAndPassword(id, password);
+            User user = userMapper.findByCardNumberAndPassword(cardNumber, password);
 
             if (user != null) {
                 // 登录成功，返回用户信息（不包含密码）

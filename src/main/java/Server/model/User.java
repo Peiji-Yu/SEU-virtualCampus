@@ -5,24 +5,24 @@ package Server.model;
  * 对应数据库中的user表
  */
 public class User {
-    private Long id;
+    private Integer cardNumber;
     private String password; // 加密后的密码
 
     // 构造方法
     public User() {}
 
-    public User(Long id, String password) {
-        this.id = id;
+    public User(Integer cardNumber, String password) {
+        this.cardNumber = cardNumber;
         this.password = password;
     }
 
     // Getter和Setter方法
-    public Long getId() {
-        return id;
+    public Integer getCardNumber() {
+        return cardNumber;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setCardNumber(Integer id) {
+        this.cardNumber = cardNumber;
     }
 
     public String getPassword() {
@@ -36,7 +36,7 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "id=" + id +
+                "cardNumber=" + cardNumber +
                 ", password='" + password + '\'' +
                 '}';
     }

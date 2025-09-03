@@ -1,8 +1,8 @@
 package Server.model;
 
 public enum PoliticalStatus {
-    PARTY_MEMBER("党员"),
-    LEAGUE_MEMBER("团员"),
+    PARTY_MEMBER("中共党员"),
+    LEAGUE_MEMBER("共青团员"),
     MASSES("群众"),
     OTHER("其他");
 
