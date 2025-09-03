@@ -1,8 +1,8 @@
 package Server.service;
 
 import Server.dao.StudentMapper;
-import Server.model.SearchType;
-import Server.model.Student;
+import Server.model.student.SearchType;
+import Server.model.student.Student;
 import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 

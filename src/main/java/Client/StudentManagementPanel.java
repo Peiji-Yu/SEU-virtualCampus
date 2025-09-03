@@ -12,10 +12,10 @@ import javafx.beans.property.SimpleStringProperty;
 
 
 import Server.model.Request;
-import Server.model.Student;
-import Server.model.Gender;
-import Server.model.StudentStatus;
-import Server.model.PoliticalStatus;
+import Server.model.student.Student;
+import Server.model.student.Gender;
+import Server.model.student.StudentStatus;
+import Server.model.student.PoliticalStatus;
 import com.google.gson.Gson;
 
 import java.io.*;

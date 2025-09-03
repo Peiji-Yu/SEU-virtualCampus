@@ -1,4 +1,4 @@
-package Server.model;
+package Server.model.login;
 
 /**
  * 用户实体类

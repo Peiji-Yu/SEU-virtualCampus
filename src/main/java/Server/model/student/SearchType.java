@@ -1,4 +1,4 @@
-package Server.model;
+package Server.model.student;
 
 public enum SearchType {
     BY_NAME("byName", true),      // 默认使用模糊搜索

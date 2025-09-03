@@ -1,4 +1,4 @@
-package Server.model;
+package Server.model.student;
 
 public enum StudentStatus {
     ENROLLED("在籍"),

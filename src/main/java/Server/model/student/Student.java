@@ -1,4 +1,4 @@
-package Server.model;
+package Server.model.student;
 
 import java.util.Date;
 

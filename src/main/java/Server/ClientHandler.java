@@ -1,6 +1,10 @@
 package Server;
 
 import Server.model.*;
+import Server.model.student.Gender;
+import Server.model.student.PoliticalStatus;
+import Server.model.student.Student;
+import Server.model.student.StudentStatus;
 import Server.service.UserService;
 import Server.service.StudentService;
 import com.google.gson.Gson;

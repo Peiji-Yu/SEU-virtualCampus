@@ -1,7 +1,7 @@
 package Server.dao;
 
-import Server.model.SearchType;
-import Server.model.Student;
+import Server.model.student.SearchType;
+import Server.model.student.Student;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

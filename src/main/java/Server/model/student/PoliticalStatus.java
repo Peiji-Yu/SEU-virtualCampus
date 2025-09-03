@@ -1,4 +1,4 @@
-package Server.model;
+package Server.model.student;
 
 public enum PoliticalStatus {
     PARTY_MEMBER("中共党员"),

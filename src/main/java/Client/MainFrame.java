@@ -1,14 +1,11 @@
 package Client;
 
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import Server.model.User;
-import Server.model.Student;
 import com.google.gson.Gson;
 
 public class MainFrame {

@@ -2,7 +2,7 @@ package Server.service;
 
 import Server.dao.UserMapper;
 import Server.model.Response;
-import Server.model.User;
+import Server.model.login.User;
 import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
