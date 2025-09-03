@@ -52,10 +52,12 @@ public class ClientHandler implements Runnable {
                 // 5. 根据请求类型处理业务逻辑
                 Response response;
                 switch (request.getType()) {
+                    // 用户登录
                     case "login":
                         response = userService.login(request.getData());
                         break;
 
+                    // （学生）查询自己的学籍信息
                     case "getSelf":
                         Integer cardNumber = ((Double) request.getData().get("cardNumber")).intValue();
                         Student student = studentService.getSelf(cardNumber);
@@ -64,6 +66,31 @@ public class ClientHandler implements Runnable {
                                 Response.error("未找到学生信息");
                         break;
 
+                    // 忘记密码
+                    case "forgetPwd":
+                        Map<String, Object> forgetData = request.getData();
+
+                        // 获取一卡通号和身份证号
+                        Integer card_number = ((Double) forgetData.get("cardNumber")).intValue();
+                        String identity = (String) forgetData.get("id");
+
+                        // 调用忘记密码验证
+                        response = userService.forgetPassword(card_number, identity);
+                        break;
+
+                    // 重置密码
+                    case "resetPwd":
+                        Map<String, Object> resetData = request.getData();
+
+                        // 获取一卡通号和密码
+                        Integer CardNumber = ((Double) resetData.get("cardNumber")).intValue();
+                        String password = (String) resetData.get("password");
+
+                        // 调用重置密码验证
+                        response = userService.resetPassword(CardNumber, password);
+                        break;
+
+                    // 搜索学生学籍信息
                     case "searchStudents":
                         Map<String, Object> searchData = request.getData();
                         String searchType = (String) searchData.get("searchType");
@@ -86,6 +113,7 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
+                    // 更新学生学籍信息
                     case "updateStudent":
                         // 从请求数据中创建Student对象
                         Map<String, Object> studentData = (Map<String, Object>) request.getData().get("student");
@@ -97,6 +125,7 @@ public class ClientHandler implements Runnable {
                                 Response.error("更新失败");
                         break;
 
+                    // 添加学生学籍信息
                     case "addStudent":
                         Map<String, Object> newStudentData = (Map<String, Object>) request.getData().get("student");
                         Student newStudent = createStudentFromMap(newStudentData);
@@ -107,6 +136,7 @@ public class ClientHandler implements Runnable {
                                 Response.error("添加失败");
                         break;
 
+                    // 删除学生学籍信息
                     case "deleteStudent":
                         Integer deleteCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
                         boolean deleteResult = studentService.deleteStudent(deleteCardNumber);

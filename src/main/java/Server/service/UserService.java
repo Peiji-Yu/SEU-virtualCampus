@@ -45,4 +45,55 @@ public class UserService {
             return Response.error(500, "服务器内部错误: " + e.getMessage());
         }
     }
+
+    /**
+     * 忘记密码验证
+     * @param cardNumber 一卡通号
+     * @param identity 身份证号
+     * @return 验证结果响应
+     */
+    public Response forgetPassword(Integer cardNumber, String identity) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+
+            // 查询用户
+            User user = userMapper.findByCardNumberAndIdentity(cardNumber, identity);
+
+            if (user != null) {
+                // 验证成功，返回成功响应（后续可以添加密码重置逻辑）
+                return Response.success("身份验证成功");
+            } else {
+                // 验证失败
+                return Response.error("一卡通号与身份证号不匹配");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error(500, "服务器内部错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 重置用户密码
+     * @param cardNumber 一卡通号
+     * @param newPassword 新密码
+     * @return 重置结果
+     */
+    public Response resetPassword(Integer cardNumber, String newPassword) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+
+            // 更新密码
+            int result = userMapper.updatePassword(cardNumber, newPassword);
+            sqlSession.commit();
+
+            if (result > 0) {
+                return Response.success("密码重置成功");
+            } else {
+                return Response.error("密码重置失败，用户不存在");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error(500, "密码重置过程中发生错误: " + e.getMessage());
+        }
+    }
 }
