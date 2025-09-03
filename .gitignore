@@ -30,3 +30,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/target/classes/application.properties
+/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+/target/classes/mybatis-config.xml
