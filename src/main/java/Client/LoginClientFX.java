@@ -214,9 +214,13 @@ public class LoginClientFX extends Application {
             if (response.contains("\"code\":200")) {
                 statusLabel.setStyle("-fx-text-fill: green;");
                 statusLabel.setText("登录成功!");
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "登录成功，欢迎使用虚拟校园系统!");
-                alert.setHeaderText("成功");
-                alert.showAndWait();
+                // 打开主界面
+                String cardNumber = cardNumberField.getText().trim();
+                Platform.runLater(() -> {
+                    Stage currentStage = (Stage) loginButton.getScene().getWindow();
+                    currentStage.close();
+                    new MainFrame(cardNumber).show();
+                });
             } else if (response.contains("\"code\":400")) {
                 statusLabel.setStyle("-fx-text-fill: red;");
                 statusLabel.setText("登录失败: 一卡通号或密码错误");

@@ -23,5 +23,6 @@
 
     <mappers>
         <mapper class="Server.dao.UserMapper"/>
+        <mapper class="Server.dao.StudentMapper"/>
     </mappers>
 </configuration>

@@ -18,3 +18,4 @@ public interface UserMapper {
     @Select("SELECT * FROM user WHERE card_number = #{cardNumber} AND password = #{password}")
     User findByCardNumberAndPassword(@Param("cardNumber") int cardNumber, @Param("password") String password);
 }
+

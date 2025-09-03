@@ -74,7 +74,7 @@ public class ForgetPasswordFX extends Application {
                 Map<String, Object> data = new HashMap<>();
                 data.put("cardNumber", Integer.parseInt(cardNum));
                 data.put("id", idNum);
-                Request request = new Request("getSelf", data);
+                Request request = new Request("forgetPwd", data);
                 String response = sendRequestToServer(request);
                 Platform.runLater(() -> handleForgetPwdResponse(response));
             } catch (Exception ex) {
@@ -115,17 +115,21 @@ public class ForgetPasswordFX extends Application {
         try {
             Map resp = gson.fromJson(response, Map.class);
             Object codeObj = resp.get("code");
-            Object msgObj = resp.get("message");
+            int code = codeObj != null ? ((Double)codeObj).intValue() : -1;
             String cardNum = cardField.getText().trim();
-            if (codeObj != null && ((Double)codeObj).intValue() == 200 && "success".equals(msgObj)) {
+            if (code == 200) {
                 showAlert(Alert.AlertType.INFORMATION, "成功", "身份验证成功，请设置新密码。");
                 // 关闭当前窗口，打开新密码界面
                 Stage stage = (Stage) submitButton.getScene().getWindow();
                 stage.close();
                 NewPasswordFX newPwdFX = new NewPasswordFX(cardNum);
                 newPwdFX.start(new Stage());
+            } else if (code == 400) {
+                showAlert(Alert.AlertType.ERROR, "失败", "身份验证失败！");
+            } else if (code == 500) {
+                showAlert(Alert.AlertType.ERROR, "服务器错误", "服务器内部错误，请稍后再试！");
             } else {
-                showAlert(Alert.AlertType.ERROR, "失败", "身份验证失败！\n" + response);
+                showAlert(Alert.AlertType.ERROR, "未知响应", "服务器响应: " + response);
             }
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "解析错误", "服务器响应解析失败！\n" + response);
