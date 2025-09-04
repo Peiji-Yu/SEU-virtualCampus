@@ -21,6 +21,12 @@ public enum SearchType {
         return fuzzyDefault;
     }
 
+    // 添加 toString 方法，返回字符串值而不是枚举名称
+    @Override
+    public String toString() {
+        return value;
+    }
+
     public static SearchType fromValue(String value) {
         for (SearchType type : SearchType.values()) {
             if (type.value.equals(value)) {

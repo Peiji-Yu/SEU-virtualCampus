@@ -14,14 +14,14 @@ public interface StudentMapper {
     // 根据一卡通号/学号/姓名搜索学生信息
     @Select("<script>" +
             "SELECT * FROM student WHERE 1=1" +
-            "<if test='searchType == \"byName\"'>" +
+            "<if test='searchType.toString() == \"byName\"'>" +
             "   <choose>" +
             "       <when test='fuzzy == true'> AND name LIKE CONCAT('%', #{searchValue}, '%')</when>" +
             "       <otherwise> AND name = #{searchValue}</otherwise>" +
             "   </choose>" +
             "</if>" +
-            "<if test='searchType == \"byStudentNumber\"'> AND student_number = #{searchValue}</if>" +
-            "<if test='searchType == \"byCardNumber\"'> AND card_number = #{searchValue}</if>" +
+            "<if test='searchType.toString() == \"byStudentNumber\"'> AND student_number = #{searchValue}</if>" +
+            "<if test='searchType.toString() == \"byCardNumber\"'> AND card_number = #{searchValue}</if>" +
             "</script>")
     List<Student> searchStudents(@Param("searchType") SearchType searchType,
                                  @Param("searchValue") String searchValue,
