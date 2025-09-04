@@ -197,8 +197,8 @@ public class ClientHandler implements Runnable {
         if (data.containsKey("major")) student.setMajor((String) data.get("major"));
         if (data.containsKey("school")) student.setSchool((String) data.get("school"));
         if (data.containsKey("status")) student.setStatus(StudentStatus.valueOf((String) data.get("status")));
-        if (data.containsKey("enrollment")) student.setEnrollment(new Date((Long) data.get("enrollment")));
-        if (data.containsKey("birth")) student.setBirth(new Date((Long) data.get("birth")));
+        if (data.containsKey("enrollment")) student.setEnrollment(new Date(((Double) data.get("enrollment")).longValue()));
+        if (data.containsKey("birth")) student.setBirth(new Date(((Double) data.get("birth")).longValue()));
         if (data.containsKey("birthPlace")) student.setBirthPlace((String) data.get("birthPlace"));
         if (data.containsKey("politicalStat")) student.setPoliticalStat(PoliticalStatus.valueOf((String) data.get("politicalStat")));
         if (data.containsKey("gender")) student.setGender(Gender.valueOf((String) data.get("gender")));

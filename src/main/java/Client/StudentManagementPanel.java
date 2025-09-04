@@ -22,6 +22,8 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -208,8 +210,42 @@ public class StudentManagementPanel extends VBox {
             }
         }
 
-        // 处理日期类型 - 这里假设服务器返回的是时间戳或日期字符串
-        // 具体实现可能需要根据服务器实际返回格式调整
+        // 处理日期类型 - 服务器可能返回时间戳(数字)或日期字符串
+        if (data.get("birth") != null) {
+            try {
+                Object birthData = data.get("birth");
+                if (birthData instanceof Number) {
+                    // 如果是时间戳
+                    long timestamp = ((Number) birthData).longValue();
+                    student.setBirth(new Date(timestamp));
+                } else if (birthData instanceof String) {
+                    // 如果是日期字符串，尝试解析
+                    String dateStr = (String) birthData;
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                    student.setBirth(format.parse(dateStr));
+                }
+            } catch (Exception e) {
+                System.err.println("解析出生日期失败: " + e.getMessage());
+            }
+        }
+
+        if (data.get("enrollment") != null) {
+            try {
+                Object enrollmentData = data.get("enrollment");
+                if (enrollmentData instanceof Number) {
+                    // 如果是时间戳
+                    long timestamp = ((Number) enrollmentData).longValue();
+                    student.setEnrollment(new Date(timestamp));
+                } else if (enrollmentData instanceof String) {
+                    // 如果是日期字符串，尝试解析
+                    String dateStr = (String) enrollmentData;
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                    student.setEnrollment(format.parse(dateStr));
+                }
+            } catch (Exception e) {
+                System.err.println("解析入学日期失败: " + e.getMessage());
+            }
+        }
 
         return student;
     }
@@ -643,9 +679,17 @@ public class StudentManagementPanel extends VBox {
 
         TextField nameField = new TextField(student != null ? student.getName() : "");
         nameField.setPromptText("姓名");
+        // 修改时姓名不可编辑
+        if (student != null) {
+            nameField.setDisable(true);
+        }
 
         TextField identityField = new TextField(student != null ? student.getIdentity() : "");
         identityField.setPromptText("身份证号");
+        // 修改时身份证号不可编辑
+        if (student != null) {
+            identityField.setDisable(true);
+        }
 
         TextField studentNumberField = new TextField(student != null ? student.getStudentNumber() : "");
         studentNumberField.setPromptText("学号");
@@ -663,6 +707,8 @@ public class StudentManagementPanel extends VBox {
         genderCombo.getItems().addAll(Gender.values());
         if (student != null && student.getGender() != null) {
             genderCombo.setValue(student.getGender());
+            // 修改时性别不可编辑
+            genderCombo.setDisable(true);
         }
 
         ComboBox<StudentStatus> statusCombo = new ComboBox<>();
@@ -677,6 +723,21 @@ public class StudentManagementPanel extends VBox {
             politicalCombo.setValue(student.getPoliticalStat());
         }
 
+        // 日期选择器
+        DatePicker birthDatePicker = new DatePicker();
+        birthDatePicker.setPromptText("出生日期");
+        if (student != null && student.getBirth() != null) {
+            birthDatePicker.setValue(student.getBirth().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+            // 修改时出生日期不可编辑
+            birthDatePicker.setDisable(true);
+        }
+
+        DatePicker enrollmentDatePicker = new DatePicker();
+        enrollmentDatePicker.setPromptText("入学时间");
+        if (student != null && student.getEnrollment() != null) {
+            enrollmentDatePicker.setValue(student.getEnrollment().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+        }
+
         // 按钮
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
@@ -689,25 +750,116 @@ public class StudentManagementPanel extends VBox {
 
         saveBtn.setOnAction(e -> {
             try {
+                // 验证必填字段
+                if (nameField.getText().trim().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "姓名不能为空");
+                    return;
+                }
+                if (student == null && identityField.getText().trim().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "身份证号不能为空");
+                    return;
+                }
+                if (studentNumberField.getText().trim().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "学号不能为空");
+                    return;
+                }
+
+                // 验证字段长度和格式限制
+                String name = nameField.getText().trim();
+                if (name.length() > 50) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "姓名长度不能超过50个字符，当前长度：" + name.length());
+                    return;
+                }
+
+                String identity = identityField.getText().trim();
+                if (student == null && identity.length() != 18) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "身份证号必须为18位，当前长度：" + identity.length());
+                    return;
+                }
+
+                String studentNumber = studentNumberField.getText().trim();
+                if (studentNumber.length() > 8) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "学号长度不能超过8个字符，当前长度：" + studentNumber.length());
+                    return;
+                }
+
+                String major = majorField.getText().trim();
+                if (major.length() > 100) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "专业名称长度不能超过100个字符，当前长度：" + major.length());
+                    return;
+                }
+
+                String school = schoolField.getText().trim();
+                if (school.length() > 100) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "学院名称长度不能超过100个字符，当前长度：" + school.length());
+                    return;
+                }
+
+                String birthPlace = birthPlaceField.getText().trim();
+                if (birthPlace.length() > 100) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "籍贯长度不能超过100个字符，当前长度：" + birthPlace.length());
+                    return;
+                }
+
+                // 验证身份证号格式（仅在添加新学生时）
+                if (student == null && !isValidIdentityNumber(identity)) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "身份证号格式不正确，应为18位数字或最后一位为X");
+                    return;
+                }
+
+                // 验证学号格式（只能包含字母和数字）
+                if (!isValidStudentNumber(studentNumber)) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "学号只能包含字母和数字");
+                    return;
+                }
+
+                if (student == null && genderCombo.getValue() == null) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "请选择性别");
+                    return;
+                }
+                if (statusCombo.getValue() == null) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "请选择学籍状态");
+                    return;
+                }
+                if (politicalCombo.getValue() == null) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "请选择政治面貌");
+                    return;
+                }
+                if (student == null && birthDatePicker.getValue() == null) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "请选择出生日期");
+                    return;
+                }
+                if (enrollmentDatePicker.getValue() == null) {
+                    showAlert(Alert.AlertType.WARNING, "输入错误", "请选择入学时间");
+                    return;
+                }
+
                 Student newStudent = new Student();
 
                 if (student == null) {
                     // 添加新学生 - 不设置一卡通号，让服务器自动生成
                     // newStudent.setCardNumber() 不调用，让服务器端自动生成
+                    newStudent.setIdentity(identity);
+                    newStudent.setGender(genderCombo.getValue());
+                    newStudent.setBirth(Date.from(birthDatePicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant()));
                 } else {
-                    // 修改现有学生
+                    // 修改现有学生 - 保持不可修改字段的原值
                     newStudent.setCardNumber(student.getCardNumber());
+                    newStudent.setIdentity(student.getIdentity()); // 保持原身份证号
+                    newStudent.setGender(student.getGender()); // 保持原性别
+                    newStudent.setBirth(student.getBirth()); // 保持原出生日期
                 }
 
-                newStudent.setName(nameField.getText().trim());
-                newStudent.setIdentity(identityField.getText().trim());
-                newStudent.setStudentNumber(studentNumberField.getText().trim());
-                newStudent.setMajor(majorField.getText().trim());
-                newStudent.setSchool(schoolField.getText().trim());
-                newStudent.setBirthPlace(birthPlaceField.getText().trim());
-                newStudent.setGender(genderCombo.getValue());
+                newStudent.setName(name);
+                newStudent.setStudentNumber(studentNumber);
+                newStudent.setMajor(major);
+                newStudent.setSchool(school);
+                newStudent.setBirthPlace(birthPlace);
                 newStudent.setStatus(statusCombo.getValue());
                 newStudent.setPoliticalStat(politicalCombo.getValue());
+
+                // 设置入学时间
+                newStudent.setEnrollment(Date.from(enrollmentDatePicker.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant()));
 
                 boolean success;
                 if (student == null) {
@@ -745,6 +897,8 @@ public class StudentManagementPanel extends VBox {
                 new Label("性别:"), genderCombo,
                 new Label("学籍状态:"), statusCombo,
                 new Label("政治面貌:"), politicalCombo,
+                new Label("出生日期:"), birthDatePicker,
+                new Label("入学时间:"), enrollmentDatePicker,
                 buttonBox
         );
 
@@ -994,5 +1148,37 @@ public class StudentManagementPanel extends VBox {
         button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
                 "-fx-background-color: " + DANGER_COLOR + "; -fx-text-fill: white; " +
                 "-fx-effect: dropshadow(gaussian, rgba(220,53,69,0.3), 8, 0, 0, 2);"));
+    }
+
+    // 验证身份证号格式
+    private boolean isValidIdentityNumber(String identity) {
+        if (identity == null || identity.length() != 18) {
+            return false;
+        }
+
+        // 前17位必须是数字
+        for (int i = 0; i < 17; i++) {
+            if (!Character.isDigit(identity.charAt(i))) {
+                return false;
+            }
+        }
+
+        // 最后一位可以是数字或X
+        char lastChar = identity.charAt(17);
+        return Character.isDigit(lastChar) || lastChar == 'X' || lastChar == 'x';
+    }
+
+    // 验证学号格式（只能包含字母和数字）
+    private boolean isValidStudentNumber(String studentNumber) {
+        if (studentNumber == null || studentNumber.isEmpty()) {
+            return false;
+        }
+
+        for (char c : studentNumber.toCharArray()) {
+            if (!Character.isLetterOrDigit(c)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
