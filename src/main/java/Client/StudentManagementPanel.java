@@ -33,6 +33,22 @@ public class StudentManagementPanel extends VBox {
     private static final int SERVER_PORT = 8888;
     private final Gson gson = new Gson();
 
+    // 统一的样式常量 - 与MainFrame保持一致
+    private static final String PRIMARY_COLOR = "#4e8cff";
+    private static final String PRIMARY_HOVER_COLOR = "#3d7bff";
+    private static final String SUCCESS_COLOR = "#28a745";
+    private static final String SUCCESS_HOVER_COLOR = "#218838";
+    private static final String WARNING_COLOR = "#ffc107";
+    private static final String WARNING_HOVER_COLOR = "#e0a800";
+    private static final String DANGER_COLOR = "#dc3545";
+    private static final String DANGER_HOVER_COLOR = "#c82333";
+    private static final String SECONDARY_COLOR = "#6c757d";
+    private static final String SECONDARY_HOVER_COLOR = "#5a6268";
+    private static final String BACKGROUND_COLOR = "#f8fbff";
+    private static final String CARD_BACKGROUND = "#ffffff";
+    private static final String TEXT_COLOR = "#2a4d7b";
+    private static final String SECONDARY_TEXT_COLOR = "#666666";
+
     public StudentManagementPanel(String cardNumber, String userType) {
         this.cardNumber = cardNumber;
         this.userType = userType;
@@ -118,7 +134,7 @@ public class StudentManagementPanel extends VBox {
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = gson.fromJson(response, Map.class);
             if (responseMap.get("code") != null &&
-                ((Double)responseMap.get("code")).intValue() == 200) {
+                    ((Double)responseMap.get("code")).intValue() == 200) {
 
                 // 将数据转换为Student对象
                 @SuppressWarnings("unchecked")
@@ -273,7 +289,7 @@ public class StudentManagementPanel extends VBox {
         // 添加刷新按钮
         Button refreshBtn = new Button("刷新信息");
         refreshBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #4e8cff; -fx-text-fill: white; " +
-                          "-fx-background-radius: 6; -fx-padding: 8 16 8 16; -fx-margin: 10 0 0 0;");
+                "-fx-background-radius: 6; -fx-padding: 8 16 8 16; -fx-margin: 10 0 0 0;");
         refreshBtn.setOnAction(e -> {
             getChildren().clear();
             initStudentView();
@@ -301,15 +317,16 @@ public class StudentManagementPanel extends VBox {
     // 初始化管理员视图
     private void initAdminView() {
         Label title = new Label("学籍管理");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
         getChildren().add(title);
 
         // 搜索区域
         HBox searchBox = createSearchBox();
         getChildren().add(searchBox);
 
-        // 学生信息表格
+        // 学生信息表格 - 使表格能够垂直拉伸
         TableView<Student> studentTable = createStudentTable();
+        VBox.setVgrow(studentTable, Priority.ALWAYS); // 关键：让表格占据剩余空间
         getChildren().add(studentTable);
 
         // 操作按钮区域
@@ -322,35 +339,68 @@ public class StudentManagementPanel extends VBox {
 
     // 创建搜索区域
     private HBox createSearchBox() {
-        HBox searchBox = new HBox(10);
-        searchBox.setPadding(new Insets(10, 0, 10, 0));
+        HBox searchBox = new HBox(12);
+        searchBox.setPadding(new Insets(15));
         searchBox.setAlignment(Pos.CENTER_LEFT);
+        searchBox.setStyle("-fx-background-color: " + CARD_BACKGROUND + "; -fx-background-radius: 12; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);");
 
         Label searchLabel = new Label("搜索条件:");
-        searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px;");
 
         ComboBox<String> searchTypeCombo = new ComboBox<>();
         searchTypeCombo.getItems().addAll("按姓名", "按学号", "按一卡通号");
         searchTypeCombo.setValue("按姓名");
         searchTypeCombo.setPrefWidth(120);
+        searchTypeCombo.setPrefHeight(40);
+        searchTypeCombo.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; " +
+                "-fx-border-color: #e0e6ed; -fx-border-width: 1;");
 
         TextField searchField = new TextField();
         searchField.setPromptText("请输入搜索内容");
-        searchField.setPrefWidth(200);
+        searchField.setPrefHeight(40);
+        searchField.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; " +
+                "-fx-border-color: #e0e6ed; -fx-border-width: 1; -fx-font-size: 14px;");
+        // 让搜索框能够水平拉伸
+        HBox.setHgrow(searchField, Priority.ALWAYS);
 
         CheckBox fuzzyCheckBox = new CheckBox("模糊搜索");
         fuzzyCheckBox.setSelected(true);
+        fuzzyCheckBox.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px;");
+
+        // 创建右侧按钮区域
+        HBox buttonArea = new HBox(8);
+        buttonArea.setAlignment(Pos.CENTER_RIGHT);
 
         Button searchBtn = new Button("搜索");
-        searchBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-background-radius: 6;");
+        setPrimaryButtonStyle(searchBtn);
 
         Button clearBtn = new Button("清空");
-        clearBtn.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333; -fx-background-radius: 6;");
+        setSecondaryButtonStyle(clearBtn);
+
+        buttonArea.getChildren().addAll(searchBtn, clearBtn);
+
+        // 添加搜索类型变化监听器，控制模糊搜索勾选框的显示
+        searchTypeCombo.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if ("按姓名".equals(newValue)) {
+                // 显示模糊搜索勾选框
+                if (!searchBox.getChildren().contains(fuzzyCheckBox)) {
+                    // 在按钮区域之前插入模糊搜索勾选框
+                    int buttonAreaIndex = searchBox.getChildren().indexOf(buttonArea);
+                    searchBox.getChildren().add(buttonAreaIndex, fuzzyCheckBox);
+                }
+                fuzzyCheckBox.setSelected(true); // 默认启用模糊搜索
+            } else {
+                // 隐藏模糊搜索勾选框
+                searchBox.getChildren().remove(fuzzyCheckBox);
+            }
+        });
 
         searchBtn.setOnAction(e -> {
             String searchType = getSearchTypeValue(searchTypeCombo.getValue());
             String searchValue = searchField.getText().trim();
-            boolean fuzzy = fuzzyCheckBox.isSelected();
+            // 只有在按姓名搜索且勾选框可见时才使用模糊搜索
+            boolean fuzzy = "按姓名".equals(searchTypeCombo.getValue()) && fuzzyCheckBox.isSelected();
 
             if (searchValue.isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "输入提示", "请输入搜索内容");
@@ -358,7 +408,7 @@ public class StudentManagementPanel extends VBox {
             }
 
             searchStudents(searchType, searchValue, fuzzy,
-                          (TableView<Student>) getChildren().get(2)); // 获取表格
+                    (TableView<Student>) getChildren().get(2)); // 获取表格
         });
 
         clearBtn.setOnAction(e -> {
@@ -366,76 +416,109 @@ public class StudentManagementPanel extends VBox {
             loadAllStudents((TableView<Student>) getChildren().get(2));
         });
 
-        searchBox.getChildren().addAll(searchLabel, searchTypeCombo, searchField,
-                                     fuzzyCheckBox, searchBtn, clearBtn);
+        // 初始添加组件，搜索框可拉伸，按钮在右侧
+        searchBox.getChildren().addAll(searchLabel, searchTypeCombo, searchField, fuzzyCheckBox, buttonArea);
         return searchBox;
     }
 
     // 创建学生信息表格
     private TableView<Student> createStudentTable() {
         TableView<Student> table = new TableView<>();
-        table.setPrefHeight(300);
+        table.setPrefHeight(400); // 增加表格高度
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // 启用列宽自适应
 
         // 创建表格列
         TableColumn<Student, String> cardCol = new TableColumn<>("一卡通号");
         cardCol.setCellValueFactory(data ->
-            new SimpleStringProperty(String.valueOf(data.getValue().getCardNumber())));
-        cardCol.setPrefWidth(100);
+                new SimpleStringProperty(String.valueOf(data.getValue().getCardNumber())));
+        cardCol.setMinWidth(90);
+        cardCol.setPrefWidth(110);
 
         TableColumn<Student, String> nameCol = new TableColumn<>("姓名");
         nameCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getName()));
+                new SimpleStringProperty(data.getValue().getName()));
+        nameCol.setMinWidth(60);
         nameCol.setPrefWidth(80);
 
         TableColumn<Student, String> studentNumCol = new TableColumn<>("学号");
         studentNumCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getStudentNumber()));
-        studentNumCol.setPrefWidth(120);
+                new SimpleStringProperty(data.getValue().getStudentNumber()));
+        studentNumCol.setMinWidth(100);
+        studentNumCol.setPrefWidth(130);
 
         TableColumn<Student, String> majorCol = new TableColumn<>("专业");
         majorCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getMajor()));
-        majorCol.setPrefWidth(150);
+                new SimpleStringProperty(data.getValue().getMajor()));
+        majorCol.setMinWidth(120);
+        majorCol.setPrefWidth(180);
 
         TableColumn<Student, String> schoolCol = new TableColumn<>("学院");
         schoolCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getSchool()));
-        schoolCol.setPrefWidth(120);
+                new SimpleStringProperty(data.getValue().getSchool()));
+        schoolCol.setMinWidth(100);
+        schoolCol.setPrefWidth(140);
 
         TableColumn<Student, String> statusCol = new TableColumn<>("学籍状态");
         statusCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getStatus() != null ?
-                                   data.getValue().getStatus().getDescription() : "未设置"));
-        statusCol.setPrefWidth(80);
+                new SimpleStringProperty(data.getValue().getStatus() != null ?
+                        data.getValue().getStatus().getDescription() : "未设置"));
+        statusCol.setMinWidth(70);
+        statusCol.setPrefWidth(90);
 
         TableColumn<Student, String> genderCol = new TableColumn<>("性别");
         genderCol.setCellValueFactory(data ->
-            new SimpleStringProperty(data.getValue().getGender() != null ?
-                                   data.getValue().getGender().getDescription() : "未设置"));
-        genderCol.setPrefWidth(60);
+                new SimpleStringProperty(data.getValue().getGender() != null ?
+                        data.getValue().getGender().getDescription() : "未设置"));
+        genderCol.setMinWidth(50);
+        genderCol.setPrefWidth(70);
 
         table.getColumns().addAll(cardCol, nameCol, studentNumCol, majorCol,
-                                 schoolCol, statusCol, genderCol);
+                schoolCol, statusCol, genderCol);
         return table;
     }
 
     // 创建操作按钮区域
     private HBox createButtonBox(TableView<Student> table) {
-        HBox buttonBox = new HBox(10);
-        buttonBox.setPadding(new Insets(10, 0, 0, 0));
-        buttonBox.setAlignment(Pos.CENTER_LEFT);
+        HBox buttonBox = new HBox(20);
+        buttonBox.setPadding(new Insets(15, 0, 0, 0));
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setFillHeight(false);
 
         Button addBtn = new Button("添加学生");
-        addBtn.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 16;");
+        setPrimaryButtonStyle(addBtn);  // 统一使用主色调
+        addBtn.setPrefWidth(130);
+        addBtn.setPrefHeight(45);
 
         Button editBtn = new Button("修改选中");
-        editBtn.setStyle("-fx-background-color: #ffc107; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 16;");
+        setPrimaryButtonStyle(editBtn);  // 统一使用主色调
+        editBtn.setPrefWidth(130);
+        editBtn.setPrefHeight(45);
 
         Button deleteBtn = new Button("删除选中");
-        deleteBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 16;");
+        setPrimaryButtonStyle(deleteBtn);  // 统一使用主色调
+        deleteBtn.setPrefWidth(130);
+        deleteBtn.setPrefHeight(45);
 
         Button refreshBtn = new Button("刷新");
-        refreshBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 16;");
+        setPrimaryButtonStyle(refreshBtn);  // 统一使用主色调
+        refreshBtn.setPrefWidth(130);
+        refreshBtn.setPrefHeight(45);
+
+        // 使用Region作为弹性空间，让按钮在水平方向上均匀分布
+        Region leftSpacer = new Region();
+        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
+
+        Region spacer1 = new Region();
+        HBox.setHgrow(spacer1, Priority.ALWAYS);
+
+        Region spacer2 = new Region();
+        HBox.setHgrow(spacer2, Priority.ALWAYS);
+
+        Region spacer3 = new Region();
+        HBox.setHgrow(spacer3, Priority.ALWAYS);
+
+        Region rightSpacer = new Region();
+        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
 
         // 按钮事件处理
         addBtn.setOnAction(e -> showStudentEditDialog(null, table));
@@ -460,7 +543,8 @@ public class StudentManagementPanel extends VBox {
 
         refreshBtn.setOnAction(e -> loadAllStudents(table));
 
-        buttonBox.getChildren().addAll(addBtn, editBtn, deleteBtn, refreshBtn);
+        // 添加按钮和弹性空间，实现均匀分布
+        buttonBox.getChildren().addAll(leftSpacer, addBtn, spacer1, editBtn, spacer2, deleteBtn, spacer3, refreshBtn, rightSpacer);
         return buttonBox;
     }
 
@@ -475,7 +559,7 @@ public class StudentManagementPanel extends VBox {
                 });
             } catch (Exception e) {
                 Platform.runLater(() ->
-                    showAlert(Alert.AlertType.ERROR, "搜索失败", "搜索学生信息失败: " + e.getMessage()));
+                        showAlert(Alert.AlertType.ERROR, "搜索失败", "搜索学生信息失败: " + e.getMessage()));
             }
         }).start();
     }
@@ -515,13 +599,13 @@ public class StudentManagementPanel extends VBox {
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = gson.fromJson(response, Map.class);
             if (responseMap.get("code") != null &&
-                ((Double)responseMap.get("code")).intValue() == 200) {
+                    ((Double)responseMap.get("code")).intValue() == 200) {
 
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> studentsData = (List<Map<String, Object>>) responseMap.get("data");
                 return studentsData.stream()
-                    .map(this::convertMapToStudent)
-                    .collect(java.util.stream.Collectors.toList());
+                        .map(this::convertMapToStudent)
+                        .collect(java.util.stream.Collectors.toList());
             } else {
                 throw new Exception("服务器返回错误: " + responseMap.get("message"));
             }
@@ -540,7 +624,7 @@ public class StudentManagementPanel extends VBox {
 
     // 加载所有学生（使用空搜索条件）
     private void loadAllStudents(TableView<Student> table) {
-        searchStudents("BY_NAME", "", true, table);
+        searchStudents("byName", "", true, table);
     }
 
     // 显示学生编辑对话框
@@ -634,12 +718,12 @@ public class StudentManagementPanel extends VBox {
 
                 if (success) {
                     showAlert(Alert.AlertType.INFORMATION, "成功",
-                             student == null ? "学生添加成功" : "学生信息更新成功");
+                            student == null ? "学生添加成功" : "学生信息更新成功");
                     dialog.close();
                     loadAllStudents(table); // 刷新表格
                 } else {
                     showAlert(Alert.AlertType.ERROR, "失败",
-                             student == null ? "学生添加失败" : "学生信息更新失败");
+                            student == null ? "学生添加失败" : "学生信息更新失败");
                 }
             } catch (Exception ex) {
                 showAlert(Alert.AlertType.ERROR, "操作失败", ex.getMessage());
@@ -651,17 +735,17 @@ public class StudentManagementPanel extends VBox {
         buttonBox.getChildren().addAll(saveBtn, cancelBtn);
 
         content.getChildren().addAll(
-            new Label("一卡通号:"), cardNumberField,
-            new Label("姓名:"), nameField,
-            new Label("身份证号:"), identityField,
-            new Label("学号:"), studentNumberField,
-            new Label("专业:"), majorField,
-            new Label("学院:"), schoolField,
-            new Label("籍贯:"), birthPlaceField,
-            new Label("性别:"), genderCombo,
-            new Label("学籍状态:"), statusCombo,
-            new Label("政治面貌:"), politicalCombo,
-            buttonBox
+                new Label("一卡通号:"), cardNumberField,
+                new Label("姓名:"), nameField,
+                new Label("身份证号:"), identityField,
+                new Label("学号:"), studentNumberField,
+                new Label("专业:"), majorField,
+                new Label("学院:"), schoolField,
+                new Label("籍贯:"), birthPlaceField,
+                new Label("性别:"), genderCombo,
+                new Label("学籍状态:"), statusCombo,
+                new Label("政治面貌:"), politicalCombo,
+                buttonBox
         );
 
         Scene scene = new Scene(new ScrollPane(content), 400, 600);
@@ -712,7 +796,7 @@ public class StudentManagementPanel extends VBox {
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = gson.fromJson(response, Map.class);
             return responseMap.get("code") != null &&
-                   ((Double)responseMap.get("code")).intValue() == 200;
+                    ((Double)responseMap.get("code")).intValue() == 200;
         } finally {
             if (dis != null) {
                 try { dis.close(); } catch (IOException ignored) {}
@@ -748,7 +832,7 @@ public class StudentManagementPanel extends VBox {
                         });
                     } catch (Exception e) {
                         Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "删除失败", "删除学生失败: " + e.getMessage()));
+                                showAlert(Alert.AlertType.ERROR, "删除失败", "删除学生失败: " + e.getMessage()));
                     }
                 }).start();
             }
@@ -788,7 +872,7 @@ public class StudentManagementPanel extends VBox {
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = gson.fromJson(response, Map.class);
             return responseMap.get("code") != null &&
-                   ((Double)responseMap.get("code")).intValue() == 200;
+                    ((Double)responseMap.get("code")).intValue() == 200;
         } finally {
             if (dis != null) {
                 try { dis.close(); } catch (IOException ignored) {}
@@ -823,10 +907,10 @@ public class StudentManagementPanel extends VBox {
     // 获取搜索类型值
     private String getSearchTypeValue(String displayName) {
         switch (displayName) {
-            case "按姓名": return "BY_NAME";
-            case "按学号": return "BY_STUDENT_NUMBER";
-            case "按一卡通号": return "BY_CARD_NUMBER";
-            default: return "BY_NAME";
+            case "按姓名": return "byName";
+            case "按学号": return "byStudentNumber";
+            case "按一卡通号": return "byCardNumber";
+            default: return "byName";
         }
     }
 
@@ -837,5 +921,78 @@ public class StudentManagementPanel extends VBox {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    // 统一的按钮样式方法
+    private void setPrimaryButtonStyle(Button button) {
+        button.setPrefHeight(40);
+        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + PRIMARY_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
+
+        button.setOnMouseEntered(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + PRIMARY_HOVER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(61,123,255,0.4), 10, 0, 0, 3);"));
+
+        button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + PRIMARY_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);"));
+    }
+
+    private void setSecondaryButtonStyle(Button button) {
+        button.setPrefHeight(40);
+        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SECONDARY_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(108,117,125,0.3), 8, 0, 0, 2);");
+
+        button.setOnMouseEntered(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SECONDARY_HOVER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(90,98,104,0.4), 10, 0, 0, 3);"));
+
+        button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SECONDARY_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(108,117,125,0.3), 8, 0, 0, 2);"));
+    }
+
+    private void setSuccessButtonStyle(Button button) {
+        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SUCCESS_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(40,167,69,0.3), 8, 0, 0, 2);");
+
+        button.setOnMouseEntered(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SUCCESS_HOVER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(33,136,56,0.4), 10, 0, 0, 3);"));
+
+        button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + SUCCESS_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(40,167,69,0.3), 8, 0, 0, 2);"));
+    }
+
+    private void setWarningButtonStyle(Button button) {
+        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + WARNING_COLOR + "; -fx-text-fill: #333; " +
+                "-fx-effect: dropshadow(gaussian, rgba(255,193,7,0.3), 8, 0, 0, 2);");
+
+        button.setOnMouseEntered(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + WARNING_HOVER_COLOR + "; -fx-text-fill: #333; " +
+                "-fx-effect: dropshadow(gaussian, rgba(224,168,0,0.4), 10, 0, 0, 3);"));
+
+        button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + WARNING_COLOR + "; -fx-text-fill: #333; " +
+                "-fx-effect: dropshadow(gaussian, rgba(255,193,7,0.3), 8, 0, 0, 2);"));
+    }
+
+    private void setDangerButtonStyle(Button button) {
+        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + DANGER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(220,53,69,0.3), 8, 0, 0, 2);");
+
+        button.setOnMouseEntered(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + DANGER_HOVER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(200,35,51,0.4), 10, 0, 0, 3);"));
+
+        button.setOnMouseExited(e -> button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+                "-fx-background-color: " + DANGER_COLOR + "; -fx-text-fill: white; " +
+                "-fx-effect: dropshadow(gaussian, rgba(220,53,69,0.3), 8, 0, 0, 2);"));
     }
 }
