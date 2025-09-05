@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/src/main/java/Client/LogoutHandler.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/src/main/java/Client/LogoutHandler.java" />
+              <option name="originalContent" value="package Client;&#10;&#10;/**&#10; * 包装类：实际实现已迁移至 Client.login.LogoutHandler。&#10; * 仅为兼容旧引用保留，后续可移除。 &#10; * 使用请改为引用 Client.login.LogoutHandler。 &#10; * @author Msgo-srAm&#10; */&#10;@Deprecated&#10;public class LogoutHandler extends Client.login.LogoutHandler {&#10;}&#10;" />
+              <option name="updatedContent" value="package Client;&#10;&#10;// 已移除：原退出处理类迁移至 Client.login.LogoutHandler。&#10;// 请使用 Client.login.LogoutHandler。此文件为过渡占位，可后续物理删除。" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

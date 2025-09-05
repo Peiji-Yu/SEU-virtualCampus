@@ -1,6 +1,8 @@
-package Client;
+package Client.login;
 
+import Client.ClientNetworkHelper;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -10,28 +12,30 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import Server.model.Request;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 找回密码第二步：重置新密码窗口 (已迁移至 login 子包)。
+ * 流程：
+ * 1. ForgetPasswordFX 校验成功后传入 cardNumber。
+ * 2. 用户输入新密码 -> 后台线程发送 resetPwd 请求。
+ * 3. 根据服务器返回 code 提示并可关闭窗口。
+ * 设计：仅做非空校验；网络调用放入后台线程；UI 更新通过 Platform.runLater。
+ * 可扩展：密码复杂度校验、显示/隐藏密码、重复输入确认、节流防刷。
+ * 作者：@Msgo-srAm
+ */
 public class NewPasswordFX extends Application {
-    private String cardNumber;
-    private Gson gson = new Gson();
-    private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 8888;
+    private final String cardNumber;
+    private final Gson gson = new Gson();
+    private static final Type MAP_TYPE = new TypeToken<Map<String,Object>>(){}.getType();
     private TextField passwordField;
     private Button okButton;
-    private Button cancelButton;
     private Label statusLabel;
 
-    public NewPasswordFX() {}
-    public NewPasswordFX(String cardNumber) {
-        this.cardNumber = cardNumber;
-    }
+    public NewPasswordFX(String cardNumber) {this.cardNumber = cardNumber;}
+    public NewPasswordFX() {this.cardNumber = null;}
 
     @Override
     public void start(Stage stage) {
@@ -41,24 +45,20 @@ public class NewPasswordFX extends Application {
         grid.setVgap(14);
         grid.setPadding(new Insets(20, 40, 10, 40));
         grid.setAlignment(Pos.CENTER);
-
         Label pwdLabel = new Label("新密码:");
         passwordField = new PasswordField();
         passwordField.setPromptText("请输入新密码");
         okButton = new Button("确定");
-        cancelButton = new Button("取消");
+        Button cancelButton = new Button("取消");
         statusLabel = new Label("");
         statusLabel.setStyle("-fx-text-fill: #3570c7; -fx-font-size: 13px;");
-
         grid.add(pwdLabel, 0, 0);
         grid.add(passwordField, 1, 0);
         grid.add(okButton, 0, 1);
         grid.add(cancelButton, 1, 1);
         grid.add(statusLabel, 1, 2);
-
         okButton.setOnAction(e -> onResetPwd(stage));
         cancelButton.setOnAction(e -> stage.close());
-
         Scene scene = new Scene(grid, 350, 150);
         stage.setScene(scene);
         stage.setResizable(false);
@@ -73,53 +73,30 @@ public class NewPasswordFX extends Application {
         }
         okButton.setDisable(true);
         statusLabel.setText("正在请求服务器...");
-        new Thread(() -> {
-            try {
-                Map<String, Object> data = new HashMap<>();
-                data.put("password", newPwd);
-                data.put("cardNumber", Integer.parseInt(cardNumber));
-                Request request = new Request("resetPwd", data);
-                String response = sendRequestToServer(request);
-                Platform.runLater(() -> handleResetPwdResponse(response, stage));
-            } catch (Exception ex) {
-                Platform.runLater(() -> {
-                    okButton.setDisable(false);
-                    showAlert(Alert.AlertType.ERROR, "错误", "请求失败: " + ex.getMessage());
-                });
-            }
-        }).start();
+        new Thread(() -> doResetPwdRequest(newPwd, stage)).start();
     }
 
-    private String sendRequestToServer(Request request) throws IOException {
-        Socket socket = null;
-        DataInputStream dis = null;
-        DataOutputStream dos = null;
+    private void doResetPwdRequest(String newPwd, Stage stage) {
         try {
-            socket = new Socket(SERVER_HOST, SERVER_PORT);
-            dis = new DataInputStream(socket.getInputStream());
-            dos = new DataOutputStream(socket.getOutputStream());
-            String jsonRequest = gson.toJson(request);
-            byte[] jsonData = jsonRequest.getBytes(StandardCharsets.UTF_8);
-            dos.writeInt(jsonData.length);
-            dos.write(jsonData);
-            dos.flush();
-            int responseLength = dis.readInt();
-            byte[] responseData = new byte[responseLength];
-            dis.readFully(responseData);
-            return new String(responseData, StandardCharsets.UTF_8);
-        } finally {
-            try { if (dis != null) dis.close(); } catch (IOException e) {}
-            try { if (dos != null) dos.close(); } catch (IOException e) {}
-            try { if (socket != null) socket.close(); } catch (IOException e) {}
+            Map<String,Object> data = new HashMap<>();
+            data.put("password", newPwd);
+            if (cardNumber != null) {data.put("cardNumber", Integer.parseInt(cardNumber));}
+            String resp = ClientNetworkHelper.send(new Request("resetPwd", data));
+            Platform.runLater(() -> handleResetPwdResponse(resp, stage));
+        } catch (Exception ex) {
+            Platform.runLater(() -> {
+                okButton.setDisable(false);
+                showAlert(Alert.AlertType.ERROR, "错误", "请求失败: " + ex.getMessage());
+            });
         }
     }
 
     private void handleResetPwdResponse(String response, Stage stage) {
         okButton.setDisable(false);
         try {
-            Map resp = gson.fromJson(response, Map.class);
-            Object codeObj = resp.get("code");
-            Object msgObj = resp.get("message");
+            Map<String,Object> respMap = gson.fromJson(response, MAP_TYPE);
+            Object codeObj = respMap==null?null:respMap.get("code");
+            Object msgObj = respMap==null?null:respMap.get("message");
             int code = (codeObj instanceof Number) ? ((Number) codeObj).intValue() : -1;
             String msg = msgObj == null ? "" : String.valueOf(msgObj);
             if (code == 200) {
@@ -143,3 +120,4 @@ public class NewPasswordFX extends Application {
         alert.showAndWait();
     }
 }
+
