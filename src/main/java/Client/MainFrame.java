@@ -33,10 +33,9 @@ public class MainFrame {
     public void show() {
         stage = new Stage();
         stage.setTitle("智慧校园主界面");
-
-        // 设置窗口最小尺寸，确保表格能完整显示
-        stage.setMinWidth(1000);
-        stage.setMinHeight(700);
+        // 调整窗口尺寸以适应更多列
+        stage.setMinWidth(1550);
+        stage.setMinHeight(900);
 
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -69,8 +68,11 @@ public class MainFrame {
         });
 
         // 右侧面板初始为学籍管理
-        StudentManagementPanel stuPanel = new StudentManagementPanel(cardNumber, userType);
-        root.setCenter(stuPanel);
+        if ("student".equals(userType)) {
+            root.setCenter(new StudentSelfPanel(cardNumber));
+        } else if ("admin".equals(userType)) {
+            root.setCenter(new StudentAdminPanel());
+        }
 
         // 权限控制
         if ("student".equals(userType) || "admin".equals(userType)) {
@@ -94,8 +96,11 @@ public class MainFrame {
                 setSelectedButtonStyle(stuManageBtn);
                 currentSelectedButton = stuManageBtn;
 
-                // 切换到学籍管理面板
-                root.setCenter(new StudentManagementPanel(cardNumber, userType));
+                if ("student".equals(userType)) {
+                    root.setCenter(new StudentSelfPanel(cardNumber));
+                } else if ("admin".equals(userType)) {
+                    root.setCenter(new StudentAdminPanel());
+                }
             });
         } else {
             // 教师用户显示暂无功能的提示
@@ -122,8 +127,8 @@ public class MainFrame {
 
         root.setLeft(leftBar);
 
-        // 增加初始窗口尺寸以更好地显示表格
-        Scene scene = new Scene(root, 1100, 750);
+        // 增加初始窗口尺寸（宽度更大）
+        Scene scene = new Scene(root, 1500, 780);
         stage.setScene(scene);
         stage.show();
     }

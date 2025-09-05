@@ -120,11 +120,17 @@ public class NewPasswordFX extends Application {
             Map resp = gson.fromJson(response, Map.class);
             Object codeObj = resp.get("code");
             Object msgObj = resp.get("message");
-            if (codeObj != null && ((Double)codeObj).intValue() == 200 && "success".equals(msgObj)) {
-                showAlert(Alert.AlertType.INFORMATION, "成功", "密码重置成功！");
+            int code = (codeObj instanceof Number) ? ((Number) codeObj).intValue() : -1;
+            String msg = msgObj == null ? "" : String.valueOf(msgObj);
+            if (code == 200) {
+                showAlert(Alert.AlertType.INFORMATION, "成功", (msg.isEmpty()? "密码重置成功" : msg));
                 stage.close();
+            } else if (code == 400) {
+                showAlert(Alert.AlertType.ERROR, "失败", (msg.isEmpty()? "请求失败" : msg));
+            } else if (code == 500) {
+                showAlert(Alert.AlertType.ERROR, "服务器错误", (msg.isEmpty()? "服务器内部错误" : msg));
             } else {
-                showAlert(Alert.AlertType.ERROR, "失败", "密码重置失败！\n" + response);
+                showAlert(Alert.AlertType.ERROR, "未知响应", "未识别的返回: code=" + code + "\n原始: " + response);
             }
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "解析错误", "服务器响应解析失败！\n" + response);
@@ -137,4 +143,3 @@ public class NewPasswordFX extends Application {
         alert.showAndWait();
     }
 }
-
