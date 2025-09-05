@@ -18,3 +18,4 @@ CREATE TABLE student (
     gender ENUM('MALE', 'FEMALE') NOT NULL,-- 性别
     name VARCHAR(50) NOT NULL             -- 姓名
 );
+33

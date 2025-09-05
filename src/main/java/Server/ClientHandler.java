@@ -8,9 +8,13 @@ import Server.model.student.Student;
 import Server.model.student.StudentStatus;
 import Server.service.UserService;
 import Server.service.StudentService;
+<<<<<<< HEAD
 import Server.service.FinanceService;
 import Server.service.StoreService;
 import Server.dao.StoreMapper;
+=======
+import Server.service.BookService;
+>>>>>>> 1c4bf21 (图书馆管理系统后端)
 import com.google.gson.Gson;
 
 import java.io.DataInputStream;
@@ -19,6 +23,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import Server.service.BookService;
 
 /**
  * 客户端处理器
@@ -29,9 +35,13 @@ public class ClientHandler implements Runnable {
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
+<<<<<<< HEAD
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
 
+=======
+    private final BookService bookService = new BookService();
+>>>>>>> 1c4bf21 (图书馆管理系统后端)
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
@@ -152,6 +162,7 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除成功") :
                                 Response.error("删除失败");
                         break;
+<<<<<<< HEAD
 
                     case "getFinanceCard":
                         Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
@@ -363,6 +374,8 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
+=======
+>>>>>>> 1c4bf21 (图书馆管理系统后端)
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
                         break;
