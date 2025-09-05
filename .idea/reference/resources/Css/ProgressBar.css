@@ -1,0 +1,17 @@
+.progress-bar {
+    -fx-indeterminate-bar-animation-time: 2.0;
+    -fx-indeterminate-bar-flip: false;
+    -fx-indeterminate-bar-length: 60px;
+    -fx-max-height: 2px;
+    -fx-min-width: 150px;
+}
+
+.progress-bar .track {
+    -fx-background-color: #D1D1D1;
+    -fx-background-radius: 0px;
+}
+
+.progress-bar .bar {
+    -fx-background-insets: 0px;
+    -fx-background-color: #2890C8;
+}
