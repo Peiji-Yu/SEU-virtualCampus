@@ -11,6 +11,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
+/**
+ * 用户名/通用文本输入组件。
+ * @author Msgo-srAm
+ */
 public class UsernameInput extends AnchorPane {
     protected Label placeHolder; protected Rectangle background; protected Label icon; protected Rectangle rectangle; protected Pane pane; protected TextField textField; boolean first = true; protected boolean isChanging;
     public UsernameInput(String placeholder, boolean numeric){ this(placeholder, createField(numeric)); }

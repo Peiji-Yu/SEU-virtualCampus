@@ -1,6 +1,6 @@
 package Client;
 
-import Client.login.LogoutHandler;
+import Client.login.component.LogoutHandler;
 import Client.studentmgmt.admin.StudentAdminPanel;
 import Client.studentmgmt.student.StudentSelfPanel;
 import javafx.geometry.Insets;

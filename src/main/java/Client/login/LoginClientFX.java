@@ -1,11 +1,8 @@
 package Client.login;
 
-import Client.ClientNetworkHelper;
 import Client.MainFrame;
-import Server.model.Request;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -23,34 +20,32 @@ import javafx.util.Duration;
 
 import Client.login.component.*;
 import Client.login.util.*;
+import Client.util.AsyncFX;
+import Client.login.net.RequestSender;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.Map;
 
-/** 登录界面（固定尺寸与显式参数布局版本） */
+/** 登录界面（固定尺寸与显式参数布局版本）
+ *  @author Msgo-srAm
+ */
 public class LoginClientFX extends Application {
     // ================= 可调参数（仅修改这些常量即可微调布局） =================
     private static final double ROOT_WIDTH = 375;
     private static final double ROOT_HEIGHT = 575;
 
-    private static final double LOGO_SIZE = 64;          // Logo 宽高
-    private static final double LOGO_TOP = 60;           // Logo 顶部 Y
+    private static final double LOGO_SIZE = 64;
+    private static final double LOGO_TOP = 60;
 
-    private static final double WELCOME_TOP = 176;       // 欢迎文字顶部 Y
-    private static final double WELCOME_EXTRA_TRANSLATE = 0; // 需要轻微垂直微调可改此值
+    private static final double WELCOME_TOP = 176;
+    private static final double WELCOME_EXTRA_TRANSLATE = 0;
 
-    private static final double FORM_TOP = 306;          // 表单区域顶部 Y
-    private static final double SUBTITLE_OFFSET = 38;    // 副标题相对主标题向下偏移
+    private static final double FORM_TOP = 306;
+    private static final double SUBTITLE_OFFSET = 38;
 
     // 进度条位置（加载动画显示时）
     private static final double PROGRESS_TOP = 291;
     private static final double PROGRESS_LEFT = 112;
-
-    // 登录动画：Logo 下移距离
-    private static final double LOGIN_ANIM_LOGO_TRANSLATE_Y = 105;
-    private static final Duration LOGIN_ANIM_DURATION = Duration.seconds(0.6);
-    private static final Duration LOGIN_ANIM_DELAY = Duration.seconds(0.2);
 
     // ========================================================================
 
@@ -67,23 +62,19 @@ public class LoginClientFX extends Application {
     private AnchorPane formContainer;
     private ImageView logo;
     private Label welcomeLabel;
-    private Label subtitleLabel; // 新增副标题
-    private javafx.scene.layout.StackPane dialogLayer; // 叠层容器
-    // 身份认证模式控件
-    private VBox block;
+    private Label subtitleLabel;
     private javafx.scene.layout.HBox authButtonsRow;
     private FilledButton nextButton;
     private FilledButton cancelButton;
     private boolean inAuthMode = false;
-    private boolean inNewPasswordMode = false; // 新增：新密码设置模式标志
-    private String currentCardNumber; // 新增：保存当前一卡通号
-    private boolean authRequestInProgress = false; // 新增：防止重复请求
-    private boolean passwordResetInProgress = false; // 新增：防止密码重置重复请求
-    private Rectangle focusReq; // 新增：用于统一移除焦点
+    private boolean inNewPasswordMode = false;
+    private String currentCardNumber;
+    private boolean authRequestInProgress = false;
+    private boolean passwordResetInProgress = false;
+    private Rectangle focusReq;
 
-    // 新增按钮宽度常量用于计算
-    private static final double LOGIN_BUTTON_WIDTH = 250; // 与 LoginButton 一致
-    private static final double AUTH_BUTTON_GAP = 10;     // Next/Cancel 间隙
+    private static final double LOGIN_BUTTON_WIDTH = 250;
+    private static final double AUTH_BUTTON_GAP = 10;
 
     @Override
     public void start(Stage stage) {
@@ -135,7 +126,8 @@ public class LoginClientFX extends Application {
         VBox inputArea = new VBox(inputGroup, forgetLabel); inputArea.setSpacing(5);
         loginButton = new LoginButton();
         statusLabel = new Label(" "); statusLabel.setFont(Resources.ROBOTO_LIGHT); statusLabel.setTextFill(Resources.DISABLED);
-        block = new VBox(inputArea, loginButton, statusLabel); block.setSpacing(16);
+        // 将 block 改为局部变量（仅用于组装布局），不保留为字段
+        VBox block = new VBox(inputArea, loginButton, statusLabel); block.setSpacing(16);
         // 创建身份认证模式按钮区（默认隐藏，插入到 loginButton 的位置）
         authButtonsRow = buildAuthButtonsRow();
         authButtonsRow.setVisible(false); authButtonsRow.setManaged(false);
@@ -145,21 +137,9 @@ public class LoginClientFX extends Application {
         AnchorPane.setLeftAnchor(formBox, 63.0);
         root.getChildren().add(formContainer);
 
-        // 创建叠层容器（用于嵌入找回密码/重置密码面板）
-        dialogLayer = new javafx.scene.layout.StackPane();
-        dialogLayer.setStyle("-fx-background-color: rgba(0,0,0,0.28);");
-        dialogLayer.setOpacity(0);
-        dialogLayer.setVisible(false);
-        dialogLayer.setPickOnBounds(true);
-        AnchorPane.setTopAnchor(dialogLayer, 0.0);
-        AnchorPane.setRightAnchor(dialogLayer, 0.0);
-        AnchorPane.setBottomAnchor(dialogLayer, 0.0);
-        AnchorPane.setLeftAnchor(dialogLayer, 0.0);
-        root.getChildren().add(dialogLayer);
-
         progressBar = new ProgressBar();
         var css = getClass().getResource("/Css/ProgressBar.css");
-        if (css != null) progressBar.getStylesheets().add(css.toExternalForm());
+        if (css != null) { progressBar.getStylesheets().add(css.toExternalForm()); }
         progressBar.setOpacity(0);
 
         // 将透明矩形作为字段，便于在任意阶段请求焦点以“失焦”输入框
@@ -209,7 +189,7 @@ public class LoginClientFX extends Application {
         }
         if (formContainer != null) {
             formContainer.setLayoutY(FORM_TOP);
-            formContainer.setLayoutX(0); // 内部已设置左右留白 63
+            formContainer.setLayoutX(0);
         }
     }
 
@@ -223,10 +203,10 @@ public class LoginClientFX extends Application {
     }
 
     // 统一移除当前焦点，避免文本框处于选中/焦点态
-    private void blurFocus(){ Platform.runLater(() -> { if (focusReq != null) focusReq.requestFocus(); }); }
+    private void blurFocus(){ Platform.runLater(() -> { if (focusReq != null) { focusReq.requestFocus(); } }); }
 
     private void enterAuthMode(){
-        if(inAuthMode) return;
+        if(inAuthMode) { return; }
         inAuthMode = true;
         welcomeLabel.setText("Authentication");
         // 使用系统字体以确保中文可见
@@ -242,8 +222,8 @@ public class LoginClientFX extends Application {
         // 计算按钮宽度，保证与其上的文本框左右对齐
         double fieldWidth = passwordInput.getBackgroundShape().getWidth();
         double each = (fieldWidth - AUTH_BUTTON_GAP) / 2.0;
-        if (cancelButton != null) cancelButton.setWidth(each);
-        if (nextButton != null) nextButton.setWidth(each);
+        if (cancelButton != null) { cancelButton.setButtonWidth(each); }
+        if (nextButton != null) { nextButton.setButtonWidth(each); }
         if (authButtonsRow != null) { authButtonsRow.setMinWidth(fieldWidth); authButtonsRow.setMaxWidth(fieldWidth); }
         // 切换按钮行
         loginButton.setVisible(false); loginButton.setManaged(false);
@@ -259,9 +239,9 @@ public class LoginClientFX extends Application {
     }
 
     private void exitAuthMode(){
-        if(!inAuthMode) return;
+        if(!inAuthMode) { return; }
         inAuthMode = false;
-        authRequestInProgress = false; // 重置请求状态
+        authRequestInProgress = false;
         // 恢复 Roboto 字体
         welcomeLabel.setText("welcome,");
         welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
@@ -307,20 +287,18 @@ public class LoginClientFX extends Application {
     private void setAuthBusy(boolean busy){
         cardInput.setDisable(busy);
         passwordInput.setDisable(busy);
-        if(nextButton!=null) nextButton.setBusy(busy);
-        if(cancelButton!=null) cancelButton.setBusy(busy);
+        if(nextButton!=null) { nextButton.setBusy(busy); }
+        if(cancelButton!=null) { cancelButton.setBusy(busy); }
     }
 
     private void doAuthRequest(String cardNum, String idNum){
         try{
-            Map<String,Object> data = new HashMap<>();
-            data.put("cardNumber", Integer.parseInt(cardNum));
-            data.put("id", idNum);
-            String resp = ClientNetworkHelper.send(new Request("forgetPwd", data));
+            String resp = RequestSender.forgetPwd(cardNum, idNum);
             Platform.runLater(() -> handleAuthResponse(resp, cardNum));
         } catch (Exception ex){
             Platform.runLater(() -> {
-                authRequestInProgress = false; // 重置请求状态
+                // 重置请求状态
+                authRequestInProgress = false;
                 setAuthBusy(false);
                 // 判断异常类型，提供更准确的错误提示
                 String errorMsg;
@@ -339,7 +317,8 @@ public class LoginClientFX extends Application {
     }
 
     private void handleAuthResponse(String response, String cardNum){
-        authRequestInProgress = false; // 重置请求状态
+        // 重置请求状态
+        authRequestInProgress = false;
         setAuthBusy(false);
         try{
             Map<String,Object> map = gson.fromJson(response, MAP_TYPE);
@@ -360,9 +339,9 @@ public class LoginClientFX extends Application {
 
     // 进入新密码设置模式
     private void enterNewPasswordMode(String cardNumber) {
-        if(inNewPasswordMode) return;
+        if(inNewPasswordMode) { return; }
         inNewPasswordMode = true;
-        inAuthMode = false; // 退出身份认证模式
+        inAuthMode = false;
         currentCardNumber = cardNumber;
 
         welcomeLabel.setText("New Password");
@@ -382,8 +361,8 @@ public class LoginClientFX extends Application {
         forgetLabel.setManaged(false);
 
         // 修改按钮文本为保存和取消
-        if (nextButton != null) nextButton.setText("Save");
-        if (cancelButton != null) cancelButton.setText("Cancel");
+        if (nextButton != null) { nextButton.setText("Save"); }
+        if (cancelButton != null) { cancelButton.setText("Cancel"); }
 
         // 设置按钮事件
         if (nextButton != null) {
@@ -403,9 +382,9 @@ public class LoginClientFX extends Application {
 
     // 退出新密码设置模式，返回登录界面
     private void exitNewPasswordMode() {
-        if(!inNewPasswordMode) return;
+        if(!inNewPasswordMode) { return; }
         inNewPasswordMode = false;
-        passwordResetInProgress = false; // 重置密码重置请求状态
+        passwordResetInProgress = false;
         currentCardNumber = null;
 
         welcomeLabel.setText("welcome,");
@@ -460,20 +439,18 @@ public class LoginClientFX extends Application {
 
     private void setNewPasswordBusy(boolean busy) {
         passwordInput.setDisable(busy);
-        if(nextButton != null) nextButton.setBusy(busy);
-        if(cancelButton != null) cancelButton.setBusy(busy);
+        if(nextButton != null) { nextButton.setBusy(busy); }
+        if(cancelButton != null) { cancelButton.setBusy(busy); }
     }
 
     private void doPasswordResetRequest(String cardNumber, String newPassword) {
         try {
-            Map<String,Object> data = new HashMap<>();
-            data.put("cardNumber", Integer.parseInt(cardNumber));
-            data.put("password", newPassword);
-            String resp = ClientNetworkHelper.send(new Request("resetPwd", data));
+            String resp = RequestSender.resetPwd(cardNumber, newPassword);
             Platform.runLater(() -> handlePasswordResetResponse(resp));
         } catch (Exception ex) {
             Platform.runLater(() -> {
-                passwordResetInProgress = false; // 重置请求状态
+                // 重置请求状态
+                passwordResetInProgress = false;
                 setNewPasswordBusy(false);
                 showErrorDialog("重置密码失败: " + ex.getMessage());
             });
@@ -481,23 +458,15 @@ public class LoginClientFX extends Application {
     }
 
     private void handlePasswordResetResponse(String response) {
-        passwordResetInProgress = false; // 重置请求状态
+        // 重置请求状态
+        passwordResetInProgress = false;
         setNewPasswordBusy(false);
         try {
             Map<String,Object> map = gson.fromJson(response, MAP_TYPE);
             int code = map!=null && map.get("code") instanceof Number ? ((Number)map.get("code")).intValue() : -1;
             if(code == 200) {
                 // 延迟2秒后返回登录界面
-                Platform.runLater(() -> {
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(2000);
-                            Platform.runLater(this::exitNewPasswordMode);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }).start();
-                });
+                AsyncFX.runLaterDelay(2000, this::exitNewPasswordMode);
             } else if(code == 400) {
                 showErrorDialog("密码重置失败！");
             } else if(code == 500) {
@@ -510,39 +479,6 @@ public class LoginClientFX extends Application {
         }
     }
 
-    // 以下方法已废弃，不再使用模态对话框
-    /*
-    private void showModal(javafx.scene.layout.Region content) {
-        dialogLayer.getChildren().setAll(content);
-        javafx.scene.layout.StackPane.setAlignment(content, javafx.geometry.Pos.CENTER);
-        dialogLayer.setVisible(true);
-        FadeAnimation.fadeIn(Duration.seconds(0.18), dialogLayer, Duration.ZERO);
-    }
-
-    // 隐藏叠层面板
-    private void hideModal() {
-        FadeAnimation.fadeOut(Duration.seconds(0.18), dialogLayer);
-        dialogLayer.setVisible(false);
-        dialogLayer.getChildren().clear();
-    }
-
-    // 打开找回密码（嵌入式）
-    private void openForget() {
-        ForgetPasswordPane pane = new ForgetPasswordPane();
-        pane.setOnCancel(this::hideModal);
-        pane.setOnSuccess(this::openNewPassword);
-        showModal(pane);
-    }
-
-    // 切换到设置新密码（嵌入式）
-    private void openNewPassword(String cardNumber) {
-        NewPasswordPane pane = new NewPasswordPane(cardNumber);
-        pane.setOnCancel(this::hideModal);
-        pane.setOnSuccess(() -> hideModal());
-        showModal(pane);
-    }
-    */
-
     private void showLoadingAnimation() {
         FadeAnimation.fadeOut(Duration.seconds(0.18), formContainer);
         if (!root.getChildren().contains(progressBar)) {
@@ -551,13 +487,11 @@ public class LoginClientFX extends Application {
             AnchorPane.setTopAnchor(progressBar, PROGRESS_TOP);
         }
         FadeAnimation.fadeIn(Duration.seconds(0.20), progressBar, Duration.seconds(0.15));
-        // Logo动画已移除
     }
 
     private void hideLoadingAnimation() {
         FadeAnimation.fadeOut(Duration.seconds(0.20), progressBar);
         FadeAnimation.fadeIn(Duration.seconds(0.22), formContainer, Duration.seconds(0.05));
-        // Logo恢复动画已移除
     }
 
     private void performLogin() {
@@ -579,15 +513,10 @@ public class LoginClientFX extends Application {
 
     private void doLoginRequest(String cardNumber, String password) {
         try {
-            Map<String,Object> data = new HashMap<>();
-            data.put("cardNumber", Integer.parseInt(cardNumber));
-            data.put("password", password);
-            Request req = new Request("login", data);
-            String resp = ClientNetworkHelper.send(req);
+            String resp = RequestSender.login(cardNumber, password);
             Platform.runLater(() -> handleServerResponse(resp, cardNumber));
         } catch (Exception ex) {
             Platform.runLater(() -> {
-                // 判断异常类型，提供更准确的错误提示
                 String errorMsg;
                 if (ex.getMessage().contains("Connection refused") ||
                     ex.getMessage().contains("ConnectException") ||
@@ -598,20 +527,11 @@ public class LoginClientFX extends Application {
                 } else {
                     errorMsg = "网络连接失败";
                 }
-
-                // 2.05秒后显示警告弹窗并恢复状态
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(2050); // 2.05秒
-                        Platform.runLater(() -> {
-                            showErrorDialog(errorMsg);
-                            setBusy(false);
-                            hideLoadingAnimation();
-                        });
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+                AsyncFX.runLaterDelay(2050, () -> {
+                    showErrorDialog(errorMsg);
+                    setBusy(false);
+                    hideLoadingAnimation();
+                });
             });
         }
     }
@@ -624,68 +544,36 @@ public class LoginClientFX extends Application {
             if (code == 200) {
                 Platform.runLater(() -> { ((Stage) loginButton.getScene().getWindow()).close(); new MainFrame(cardNumber).show(); });
             } else if (code == 400) {
-                // 2.05秒后显示警告弹窗并恢复状态
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(2050); // 2.05秒
-                        Platform.runLater(() -> {
-                            showErrorDialog("一卡通号或密码错误");
-                            setBusy(false);
-                            hideLoadingAnimation();
-                        });
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+                AsyncFX.runLaterDelay(2050, () -> {
+                    showErrorDialog("一卡通号或密码错误");
+                    setBusy(false);
+                    hideLoadingAnimation();
+                });
                 return;
             } else {
-                // 2.05秒后显示警告弹窗并恢复状态
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(2050); // 2.05秒
-                        Platform.runLater(() -> {
-                            showErrorDialog("服务器错误");
-                            setBusy(false);
-                            hideLoadingAnimation();
-                        });
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+                AsyncFX.runLaterDelay(2050, () -> {
+                    showErrorDialog("服务器错误");
+                    setBusy(false);
+                    hideLoadingAnimation();
+                });
                 return;
             }
         } catch (Exception e) {
             if (response.contains("\"code\":200")) {
                 Platform.runLater(() -> { ((Stage) loginButton.getScene().getWindow()).close(); new MainFrame(cardNumber).show(); });
             } else if (response.contains("\"code\":400")) {
-                // 2.05秒后显示警告弹窗并恢复状态
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(2050); // 2.05秒
-                        Platform.runLater(() -> {
-                            showErrorDialog("一卡通号或密码错误");
-                            setBusy(false);
-                            hideLoadingAnimation();
-                        });
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+                AsyncFX.runLaterDelay(2050, () -> {
+                    showErrorDialog("一卡通号或密码错误");
+                    setBusy(false);
+                    hideLoadingAnimation();
+                });
                 return;
             } else {
-                // 2.05秒后显示警告弹窗并恢复状态
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(2050); // 2.05秒
-                        Platform.runLater(() -> {
-                            showErrorDialog("服务器错误");
-                            setBusy(false);
-                            hideLoadingAnimation();
-                        });
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+                AsyncFX.runLaterDelay(2050, () -> {
+                    showErrorDialog("服务器错误");
+                    setBusy(false);
+                    hideLoadingAnimation();
+                });
                 return;
             }
         }
@@ -702,7 +590,12 @@ public class LoginClientFX extends Application {
     }
 
     private ImageView loadImage(String path) {
-        try { Image img = new Image(getClass().getResource(path).toExternalForm()); return new ImageView(img); } catch (Exception e) { return null; }
+        try {
+            var url = getClass().getResource(path);
+            if (url == null) { return null; }
+            Image img = new Image(url.toExternalForm());
+            return new ImageView(img);
+        } catch (Exception e) { return null; }
     }
 
     public static void main(String[] args) { launch(args); }

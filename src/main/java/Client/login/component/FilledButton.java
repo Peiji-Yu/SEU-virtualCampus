@@ -11,7 +11,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-/** 可配置文案/宽度/颜色的实心按钮，与 LoginButton 同风格 */
+/** 可配置文案/宽度/颜色的实心按钮，与 LoginButton 同风格
+ *  @author Msgo-srAm
+ */
 public class FilledButton extends Pane {
     private final Rectangle background; private final Label label;
     private final Color normal; private final Color hover; private final Color textColor;
@@ -36,6 +38,6 @@ public class FilledButton extends Pane {
         this.setOnMouseClicked(e -> r.run());
     }
     public void setText(String t){ label.setText(t); }
-    public void setWidth(double w){ background.setWidth(w); ((BorderPane)getChildren().get(1)).setMinWidth(w); }
+    public void setButtonWidth(double w){ background.setWidth(w); ((BorderPane)getChildren().get(1)).setMinWidth(w); }
     public void setBusy(boolean busy){ setDisable(busy); setOpacity(busy?0.85:1.0); }
 }

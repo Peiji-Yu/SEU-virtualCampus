@@ -1,5 +1,6 @@
-package Client.login;
+package Client.login.component;
 
+import Client.login.LoginClientFX;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
@@ -15,7 +16,7 @@ import java.util.Optional;
  * 作者：@Msgo-srAm
  */
 public class LogoutHandler {
-    public static boolean handleLogout(Stage currentStage) {
+    public static void handleLogout(Stage currentStage) {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("退出确认");
         confirmAlert.setHeaderText("退出登录");
@@ -25,24 +26,21 @@ public class LogoutHandler {
         confirmAlert.getButtonTypes().setAll(confirmButton, cancelButton);
         Optional<ButtonType> result = confirmAlert.showAndWait();
         if (result.isPresent() && result.get() == confirmButton) {
-            return performLogout(currentStage);
+            performLogout(currentStage);
         }
-        return false;
     }
-    private static boolean performLogout(Stage currentStage) {
+    private static void performLogout(Stage currentStage) {
         try {
             if (currentStage != null) {currentStage.close();}
             LoginClientFX loginClient = new LoginClientFX();
             Stage loginStage = new Stage();
             loginClient.start(loginStage);
-            return true;
         } catch (Exception e) {
             Alert errorAlert = new Alert(Alert.AlertType.ERROR);
             errorAlert.setTitle("退出失败");
             errorAlert.setHeaderText("退出登录时发生错误");
             errorAlert.setContentText("无法返回登录界面，请重新启动应用程序。\n错误信息：" + e.getMessage());
             errorAlert.showAndWait();
-            return false;
         }
     }
 }
