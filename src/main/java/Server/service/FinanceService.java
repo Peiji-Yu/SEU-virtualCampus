@@ -7,14 +7,12 @@ import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 一卡通服务类
  * 处理一卡通相关的业务逻辑
  */
 public class FinanceService {
-
     /**
      * 查询一卡通余额
      */
@@ -22,27 +20,6 @@ public class FinanceService {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
             return financeMapper.findFinanceCardByCardNumber(cardNumber);
-        }
-    }
-
-    /**
-     * 创建一卡通账户
-     */
-    public boolean createFinanceCard(Integer cardNumber) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
-
-            // 检查是否已存在
-            FinanceCard existingCard = financeMapper.findFinanceCardByCardNumber(cardNumber);
-            if (existingCard != null) {
-                return true; // 已存在，视为创建成功
-            }
-
-            // 创建新账户
-            FinanceCard newCard = new FinanceCard(cardNumber, 0, "正常");
-            int result = financeMapper.insertFinanceCard(newCard);
-            sqlSession.commit();
-            return result > 0;
         }
     }
 
@@ -56,13 +33,6 @@ public class FinanceService {
 
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
-
-            // 检查账户是否存在
-            FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
-            if (card == null) {
-                // 如果账户不存在，先创建
-                createFinanceCard(cardNumber);
-            }
 
             // 更新余额
             int updateResult = financeMapper.updateFinanceCardBalance(cardNumber, amount);

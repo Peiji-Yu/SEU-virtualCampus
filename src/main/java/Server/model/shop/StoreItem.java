@@ -14,17 +14,19 @@ public class StoreItem {
     private Integer stock;       // 商品库存数量
     private Integer salesVolume; // 商品销量
     private String description;  // 商品信息描述
+    private String category;     // 商品类别
     private String barcode;      // 商品条形码
 
     // 构造方法
     public StoreItem() {}
 
-    public StoreItem(String itemName, Integer price, Integer stock, String description) {
+    public StoreItem(String itemName, Integer price, Integer stock, String description, String category) {
         this.uuid = UUID.randomUUID();
         this.itemName = itemName;
         this.price = price;
         this.stock = stock;
         this.description = description;
+        this.category = category;
         this.salesVolume = 0;
     }
 
@@ -85,6 +87,10 @@ public class StoreItem {
         this.description = description;
     }
 
+    public String getCategory() { return category; }
+
+    public void setCategory(String category) { this.category = category; }
+
     public String getBarcode() {
         return barcode;
     }
@@ -103,6 +109,7 @@ public class StoreItem {
                 ", stock=" + stock +
                 ", salesVolume=" + salesVolume +
                 ", description='" + description + '\'' +
+                ", category='" + category + '\'' +
                 ", barcode='" + barcode + '\'' +
                 '}';
     }

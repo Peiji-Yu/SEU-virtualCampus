@@ -1,8 +1,10 @@
 package Server.service;
 
 import Server.dao.UserMapper;
+import Server.dao.FinanceMapper;
 import Server.model.Response;
 import Server.model.login.User;
+import Server.model.shop.FinanceCard;
 import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
@@ -13,6 +15,26 @@ import java.util.Map;
  * 处理用户相关的业务逻辑
  */
 public class UserService {
+    /**
+     * 创建一卡通账户
+     */
+    public static boolean createFinanceCard(Integer cardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            // 检查是否已存在
+            FinanceCard existingCard = financeMapper.findFinanceCardByCardNumber(cardNumber);
+            if (existingCard != null) {
+                return true; // 已存在，视为创建成功
+            }
+
+            // 创建新账户
+            FinanceCard newCard = new FinanceCard(cardNumber, 0, "正常");
+            int result = financeMapper.insertFinanceCard(newCard);
+            sqlSession.commit();
+            return result > 0;
+        }
+    }
 
     /**
      * 处理用户登录
@@ -28,11 +50,19 @@ public class UserService {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             // 获取Mapper
             UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
 
             // 查询用户
             User user = userMapper.findByCardNumberAndPassword(cardNumber, password);
 
             if (user != null) {
+                // 检查一卡通账户是否存在
+                FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+                if (card == null) {
+                    // 如果账户不存在，先创建
+                    createFinanceCard(cardNumber);
+                }
+
                 // 登录成功，返回用户信息（不包含密码）
                 user.setPassword(null); // 清除密码
                 return Response.success("登录成功", user);

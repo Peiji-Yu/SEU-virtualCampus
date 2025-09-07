@@ -65,11 +65,21 @@ public interface StoreMapper {
     @Update("UPDATE store_item SET sales_volume = sales_volume + #{amount} WHERE uuid = #{itemUuid}")
     int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
 
-    // 订单相关操作
+    /**
+     * 按类别搜索商品
+     */
+    @Select("SELECT * FROM store_item WHERE category = #{category}")
+    List<StoreItem> findItemsByCategory(@Param("category") String category);
 
-    // 在StoreMapper.java中添加以下方法
+    /**
+     * 按类别和关键词搜索商品
+     */
+    @Select("SELECT * FROM store_item WHERE category = #{category} AND " +
+            "(item_name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))")
+    List<StoreItem> searchItemsByCategoryAndKeyword(@Param("category") String category,
+                                                    @Param("keyword") String keyword);
 
-// 订单相关操作（支持多种商品）
+    // 订单相关操作（支持多种商品）
 
     /**
      * 插入订单主信息
@@ -92,7 +102,7 @@ public interface StoreMapper {
     @Results({
             @Result(property = "uuid", column = "uuid"),
             @Result(property = "items", column = "uuid",
-                    many = @Many(select = "com.example.smartcampus.dao.StoreMapper.findOrderItemsByOrderId"))
+                    many = @Many(select = "Server.dao.StoreMapper.findOrderItemsByOrderId"))
     })
     StoreOrder findOrderById(@Param("uuid") UUID uuid);
 
@@ -116,6 +126,18 @@ public interface StoreMapper {
 
     @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
     int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
+
+    /**
+     * 查询用户的所有订单
+     */
+    @Select("SELECT * FROM store_transaction WHERE card_number = #{cardNumber} ORDER BY time DESC")
+    List<StoreOrder> findOrdersByUser(@Param("cardNumber") Integer cardNumber);
+
+    /**
+     * 查询所有订单
+     */
+    @Select("SELECT * FROM store_transaction ORDER BY time DESC")
+    List<StoreOrder> findAllOrders();
 
     // 销售统计相关操作
 

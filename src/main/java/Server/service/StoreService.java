@@ -8,7 +8,6 @@ import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -80,6 +79,28 @@ public class StoreService {
             int result = storeMapper.deleteItem(uuid);
             sqlSession.commit();
             return result > 0;
+        }
+    }
+
+    // 在StoreService.java中添加以下方法
+
+    /**
+     * 按类别获取商品
+     */
+    public List<StoreItem> getItemsByCategory(String category) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.findItemsByCategory(category);
+        }
+    }
+
+    /**
+     * 按类别和关键词搜索商品
+     */
+    public List<StoreItem> searchItemsByCategoryAndKeyword(String category, String keyword) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.searchItemsByCategoryAndKeyword(category, keyword);
         }
     }
 
@@ -173,11 +194,83 @@ public class StoreService {
         }
     }
 
+    /**
+     * 取消订单
+     */
+    public boolean cancelOrder(UUID orderUuid) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+
+            // 获取订单信息
+            StoreOrder order = storeMapper.findOrderById(orderUuid);
+            if (order == null) {
+                throw new RuntimeException("订单不存在");
+            }
+
+            if ("已支付".equals(order.getStatus())) {
+                throw new RuntimeException("已支付的订单不能取消");
+            }
+
+            // 恢复商品库存
+            for (StoreOrderItem item : order.getItems()) {
+                int stockUpdateResult = storeMapper.updateItemStock(item.getItemUuid(), -item.getAmount());
+                if (stockUpdateResult == 0) {
+                    throw new RuntimeException("更新商品库存失败");
+                }
+            }
+
+            // 删除订单
+            int result = storeMapper.deleteOrder(orderUuid);
+            sqlSession.commit();
+            return result > 0;
+        }
+    }
+
+    /**
+     * 获取用户订单
+     */
+    public List<StoreOrder> getUserOrders(Integer cardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.findOrdersByUser(cardNumber);
+        }
+    }
+
+    /**
+     * 获取所有订单（管理员功能）
+     */
+    public List<StoreOrder> getAllOrders() {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.findAllOrders();
+        }
+    }
+
     // 添加获取完整订单信息的方法
     public StoreOrder getOrderById(UUID orderUuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
             return storeMapper.findOrderById(orderUuid);
+        }
+    }
+
+    /**
+     * 获取销售统计（管理员功能）
+     */
+    public List<StoreMapper.SalesStats> getSalesStatistics() {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.getSalesStatistics();
+        }
+    }
+
+    /**
+     * 获取今日销售总额（管理员功能）
+     */
+    public Integer getTodaySalesRevenue() {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.getTodaySalesRevenue();
         }
     }
 }
