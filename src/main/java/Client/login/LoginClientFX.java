@@ -68,6 +68,22 @@ public class LoginClientFX extends Application {
     private ImageView logo;
     private Label welcomeLabel;
     private Label subtitleLabel; // 新增副标题
+    private javafx.scene.layout.StackPane dialogLayer; // 叠层容器
+    // 身份认证模式控件
+    private VBox block;
+    private javafx.scene.layout.HBox authButtonsRow;
+    private FilledButton nextButton;
+    private FilledButton cancelButton;
+    private boolean inAuthMode = false;
+    private boolean inNewPasswordMode = false; // 新增：新密码设置模式标志
+    private String currentCardNumber; // 新增：保存当前一卡通号
+    private boolean authRequestInProgress = false; // 新增：防止重复请求
+    private boolean passwordResetInProgress = false; // 新增：防止密码重置重复请求
+    private Rectangle focusReq; // 新增：用于统一移除焦点
+
+    // 新增按钮宽度常量用于计算
+    private static final double LOGIN_BUTTON_WIDTH = 250; // 与 LoginButton 一致
+    private static final double AUTH_BUTTON_GAP = 10;     // Next/Cancel 间隙
 
     @Override
     public void start(Stage stage) {
@@ -84,13 +100,15 @@ public class LoginClientFX extends Application {
 
         ImageView bg = loadImage("/Image/BGI.png");
         if (bg != null) {
-            bg.setFitWidth(ROOT_WIDTH); bg.setFitHeight(ROOT_HEIGHT); bg.setOpacity(0.17);
+            bg.setFitWidth(ROOT_WIDTH); bg.setFitHeight(ROOT_HEIGHT); bg.setOpacity(0.8);
             root.getChildren().add(0, bg);
         }
 
         logo = loadImage("/Image/Logo.png");
         if (logo != null) {
-            logo.setFitWidth(LOGO_SIZE); logo.setFitHeight(LOGO_SIZE); logo.setPreserveRatio(true);
+            logo.setFitWidth(LOGO_SIZE);
+            logo.setFitHeight(LOGO_SIZE);
+            logo.setPreserveRatio(true);
             root.getChildren().add(logo);
         }
 
@@ -113,22 +131,40 @@ public class LoginClientFX extends Application {
         forgetLabel.setFont(Resources.ROBOTO_LIGHT); forgetLabel.setTextFill(Resources.DISABLED);
         forgetLabel.setOnMouseEntered(e -> new ColorTransition(forgetLabel, Duration.seconds(0.2), Resources.SECONDARY).play());
         forgetLabel.setOnMouseExited(e -> new ColorTransition(forgetLabel, Duration.seconds(0.2), Resources.DISABLED).play());
-        forgetLabel.setOnMouseClicked(e -> openForget());
+        // 移除旧的模态对话框调用，这里不绑定任何事件，在bindEvents中统一绑定
         VBox inputArea = new VBox(inputGroup, forgetLabel); inputArea.setSpacing(5);
         loginButton = new LoginButton();
         statusLabel = new Label(" "); statusLabel.setFont(Resources.ROBOTO_LIGHT); statusLabel.setTextFill(Resources.DISABLED);
-        VBox block = new VBox(inputArea, loginButton, statusLabel); block.setSpacing(16);
+        block = new VBox(inputArea, loginButton, statusLabel); block.setSpacing(16);
+        // 创建身份认证模式按钮区（默认隐藏，插入到 loginButton 的位置）
+        authButtonsRow = buildAuthButtonsRow();
+        authButtonsRow.setVisible(false); authButtonsRow.setManaged(false);
+        block.getChildren().add(1, authButtonsRow);
         formBox.getChildren().add(block);
         formContainer.getChildren().add(formBox);
         AnchorPane.setLeftAnchor(formBox, 63.0);
         root.getChildren().add(formContainer);
+
+        // 创建叠层容器（用于嵌入找回密码/重置密码面板）
+        dialogLayer = new javafx.scene.layout.StackPane();
+        dialogLayer.setStyle("-fx-background-color: rgba(0,0,0,0.28);");
+        dialogLayer.setOpacity(0);
+        dialogLayer.setVisible(false);
+        dialogLayer.setPickOnBounds(true);
+        AnchorPane.setTopAnchor(dialogLayer, 0.0);
+        AnchorPane.setRightAnchor(dialogLayer, 0.0);
+        AnchorPane.setBottomAnchor(dialogLayer, 0.0);
+        AnchorPane.setLeftAnchor(dialogLayer, 0.0);
+        root.getChildren().add(dialogLayer);
 
         progressBar = new ProgressBar();
         var css = getClass().getResource("/Css/ProgressBar.css");
         if (css != null) progressBar.getStylesheets().add(css.toExternalForm());
         progressBar.setOpacity(0);
 
-        Rectangle focusReq = new Rectangle(ROOT_WIDTH, ROOT_HEIGHT, Color.TRANSPARENT);
+        // 将透明矩形作为字段，便于在任意阶段请求焦点以“失焦”输入框
+        focusReq = new Rectangle(ROOT_WIDTH, ROOT_HEIGHT, Color.TRANSPARENT);
+        focusReq.setFocusTraversable(true);
         focusReq.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> focusReq.requestFocus());
         root.getChildren().add(0, focusReq);
 
@@ -139,6 +175,19 @@ public class LoginClientFX extends Application {
 
         // 固定布局一次（延迟确保文本宽度可得）
         Platform.runLater(this::applyFixedLayout);
+    }
+
+    private javafx.scene.layout.HBox buildAuthButtonsRow(){
+        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox();
+        row.setSpacing(AUTH_BUTTON_GAP);
+        row.setMinWidth(LOGIN_BUTTON_WIDTH);
+        double w = (LOGIN_BUTTON_WIDTH - AUTH_BUTTON_GAP) / 2.0;
+        cancelButton = new FilledButton("Cancel", w, Resources.DISABLED, Resources.DISABLED, Resources.WHITE);
+        nextButton = new FilledButton("Next", w, Resources.PRIMARY, Resources.SECONDARY, Resources.WHITE);
+        cancelButton.setOnAction(this::exitAuthMode);
+        nextButton.setOnAction(this::performAuth);
+        row.getChildren().addAll(cancelButton, nextButton);
+        return row;
     }
 
     /** 固定布局：使用显式常量 */
@@ -169,7 +218,330 @@ public class LoginClientFX extends Application {
         loginButton.setOnLogin(loginAction);
         cardInput.setOnAction(loginAction);
         passwordInput.setOnAction(loginAction);
+        // 直接绑定到内联身份认证模式
+        forgetLabel.setOnMouseClicked(e -> enterAuthMode());
     }
+
+    // 统一移除当前焦点，避免文本框处于选中/焦点态
+    private void blurFocus(){ Platform.runLater(() -> { if (focusReq != null) focusReq.requestFocus(); }); }
+
+    private void enterAuthMode(){
+        if(inAuthMode) return;
+        inAuthMode = true;
+        welcomeLabel.setText("Authentication");
+        // 使用系统字体以确保中文可见
+        welcomeLabel.setFont(javafx.scene.text.Font.font(32));
+        subtitleLabel.setVisible(false);
+        // 清空输入并切换占位
+        cardInput.clear();
+        passwordInput.clear();
+        passwordInput.getPlaceHolder().setText("ID Number");
+        // 隐藏 Forget Password 按钮
+        forgetLabel.setVisible(false);
+        forgetLabel.setManaged(false);
+        // 计算按钮宽度，保证与其上的文本框左右对齐
+        double fieldWidth = passwordInput.getBackgroundShape().getWidth();
+        double each = (fieldWidth - AUTH_BUTTON_GAP) / 2.0;
+        if (cancelButton != null) cancelButton.setWidth(each);
+        if (nextButton != null) nextButton.setWidth(each);
+        if (authButtonsRow != null) { authButtonsRow.setMinWidth(fieldWidth); authButtonsRow.setMaxWidth(fieldWidth); }
+        // 切换按钮行
+        loginButton.setVisible(false); loginButton.setManaged(false);
+        authButtonsRow.setVisible(true); authButtonsRow.setManaged(true);
+        statusLabel.setText(" "); statusLabel.setTextFill(Resources.DISABLED);
+        // 回车触发 Next
+        cardInput.setOnAction(this::performAuth);
+        passwordInput.setOnAction(this::performAuth);
+        // 重新居中标题
+        Platform.runLater(this::applyFixedLayout);
+        // 进入认证环节后移除任何输入框焦点/选中态
+        blurFocus();
+    }
+
+    private void exitAuthMode(){
+        if(!inAuthMode) return;
+        inAuthMode = false;
+        authRequestInProgress = false; // 重置请求状态
+        // 恢复 Roboto 字体
+        welcomeLabel.setText("welcome,");
+        welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
+        subtitleLabel.setVisible(true);
+        // 清空输入并恢复占位
+        cardInput.clear();
+        passwordInput.clear();
+        passwordInput.getPlaceHolder().setText("Password");
+        // 显示 Forget Password 按钮
+        forgetLabel.setVisible(true);
+        forgetLabel.setManaged(true);
+        authButtonsRow.setVisible(false); authButtonsRow.setManaged(false);
+        loginButton.setVisible(true); loginButton.setManaged(true);
+        statusLabel.setText(" "); statusLabel.setTextFill(Resources.DISABLED);
+        // 回车触发 Login
+        cardInput.setOnAction(this::performLogin);
+        passwordInput.setOnAction(this::performLogin);
+        // 重新居中标题
+        Platform.runLater(this::applyFixedLayout);
+        // 离开认证环节后移除焦点
+        blurFocus();
+    }
+
+    // 身份认证"Next"动作
+    private void performAuth(){
+        // 防止重复请求
+        if (authRequestInProgress) {
+            return;
+        }
+
+        String cardNum = cardInput.getText()==null? "" : cardInput.getText().trim();
+        String idNum = passwordInput.getPassword()==null? "" : passwordInput.getPassword().trim();
+        if(cardNum.isEmpty() || idNum.isEmpty()) {
+            showErrorDialog("一卡通号和身份证号不能为空");
+            return;
+        }
+
+        authRequestInProgress = true;
+        setAuthBusy(true);
+        new Thread(() -> doAuthRequest(cardNum, idNum)).start();
+    }
+
+    private void setAuthBusy(boolean busy){
+        cardInput.setDisable(busy);
+        passwordInput.setDisable(busy);
+        if(nextButton!=null) nextButton.setBusy(busy);
+        if(cancelButton!=null) cancelButton.setBusy(busy);
+    }
+
+    private void doAuthRequest(String cardNum, String idNum){
+        try{
+            Map<String,Object> data = new HashMap<>();
+            data.put("cardNumber", Integer.parseInt(cardNum));
+            data.put("id", idNum);
+            String resp = ClientNetworkHelper.send(new Request("forgetPwd", data));
+            Platform.runLater(() -> handleAuthResponse(resp, cardNum));
+        } catch (Exception ex){
+            Platform.runLater(() -> {
+                authRequestInProgress = false; // 重置请求状态
+                setAuthBusy(false);
+                // 判断异常类型，提供更准确的错误提示
+                String errorMsg;
+                if (ex.getMessage().contains("Connection refused") ||
+                    ex.getMessage().contains("ConnectException") ||
+                    ex.getMessage().contains("UnknownHostException") ||
+                    ex instanceof java.net.ConnectException ||
+                    ex instanceof java.net.UnknownHostException) {
+                    errorMsg = "无法连接到服务器";
+                } else {
+                    errorMsg = "网络连接失败";
+                }
+                showErrorDialog(errorMsg);
+            });
+        }
+    }
+
+    private void handleAuthResponse(String response, String cardNum){
+        authRequestInProgress = false; // 重置请求状态
+        setAuthBusy(false);
+        try{
+            Map<String,Object> map = gson.fromJson(response, MAP_TYPE);
+            int code = map!=null && map.get("code") instanceof Number ? ((Number)map.get("code")).intValue() : -1;
+            if(code == 200){
+                enterNewPasswordMode(cardNum);
+            } else if(code == 400){
+                showErrorDialog("身份验证失败！一卡通号或身份证号不正确");
+            } else if(code == 500){
+                showErrorDialog("服务器内部错误，请稍后再试");
+            } else {
+                showErrorDialog("验证失败，请检查输入信息");
+            }
+        } catch(Exception e){
+            showErrorDialog("服务器响应异常，请稍后重试");
+        }
+    }
+
+    // 进入新密码设置模式
+    private void enterNewPasswordMode(String cardNumber) {
+        if(inNewPasswordMode) return;
+        inNewPasswordMode = true;
+        inAuthMode = false; // 退出身份认证模式
+        currentCardNumber = cardNumber;
+
+        welcomeLabel.setText("New Password");
+        welcomeLabel.setFont(javafx.scene.text.Font.font(32));
+        subtitleLabel.setVisible(false);
+
+        // 隐藏一卡通号输入框
+        cardInput.setVisible(false);
+        cardInput.setManaged(false);
+
+        // 清空密码输入框并改为新密码输入
+        passwordInput.clear();
+        passwordInput.getPlaceHolder().setText("Password");
+
+        // 继续隐藏 Forget Password 按钮
+        forgetLabel.setVisible(false);
+        forgetLabel.setManaged(false);
+
+        // 修改按钮文本为保存和取消
+        if (nextButton != null) nextButton.setText("Save");
+        if (cancelButton != null) cancelButton.setText("Cancel");
+
+        // 设置按钮事件
+        if (nextButton != null) {
+            nextButton.setOnAction(this::performPasswordReset);
+        }
+        if (cancelButton != null) {
+            cancelButton.setOnAction(this::exitNewPasswordMode);
+        }
+
+        // 回车触发保存
+        passwordInput.setOnAction(this::performPasswordReset);
+
+        Platform.runLater(this::applyFixedLayout);
+        // 进入新密码环节后移除焦点
+        blurFocus();
+    }
+
+    // 退出新密码设置模式，返回登录界面
+    private void exitNewPasswordMode() {
+        if(!inNewPasswordMode) return;
+        inNewPasswordMode = false;
+        passwordResetInProgress = false; // 重置密码重置请求状态
+        currentCardNumber = null;
+
+        welcomeLabel.setText("welcome,");
+        welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
+        subtitleLabel.setVisible(true);
+
+        // 显示一卡通号输入框
+        cardInput.setVisible(true);
+        cardInput.setManaged(true);
+        cardInput.clear();
+
+        // 清空密码输入框并恢复占位符
+        passwordInput.clear();
+        passwordInput.getPlaceHolder().setText("Password");
+
+        // 显示 Forget Password 按钮
+        forgetLabel.setVisible(true);
+        forgetLabel.setManaged(true);
+
+        // 恢复登录按钮
+        authButtonsRow.setVisible(false);
+        authButtonsRow.setManaged(false);
+        loginButton.setVisible(true);
+        loginButton.setManaged(true);
+        statusLabel.setText(" "); statusLabel.setTextFill(Resources.DISABLED);
+        // 回车触发 Login
+        cardInput.setOnAction(this::performLogin);
+        passwordInput.setOnAction(this::performLogin);
+        // 重新居中标题
+        Platform.runLater(this::applyFixedLayout);
+        // 离开新密码环节后移除焦点
+        blurFocus();
+    }
+
+    // 执行密码重置
+    private void performPasswordReset() {
+        // 防止重复请求
+        if (passwordResetInProgress) {
+            return;
+        }
+
+        String newPassword = passwordInput.getPassword();
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            showErrorDialog("新密码不能为空");
+            return;
+        }
+
+        passwordResetInProgress = true;
+        setNewPasswordBusy(true);
+        new Thread(() -> doPasswordResetRequest(currentCardNumber, newPassword.trim())).start();
+    }
+
+    private void setNewPasswordBusy(boolean busy) {
+        passwordInput.setDisable(busy);
+        if(nextButton != null) nextButton.setBusy(busy);
+        if(cancelButton != null) cancelButton.setBusy(busy);
+    }
+
+    private void doPasswordResetRequest(String cardNumber, String newPassword) {
+        try {
+            Map<String,Object> data = new HashMap<>();
+            data.put("cardNumber", Integer.parseInt(cardNumber));
+            data.put("password", newPassword);
+            String resp = ClientNetworkHelper.send(new Request("resetPwd", data));
+            Platform.runLater(() -> handlePasswordResetResponse(resp));
+        } catch (Exception ex) {
+            Platform.runLater(() -> {
+                passwordResetInProgress = false; // 重置请求状态
+                setNewPasswordBusy(false);
+                showErrorDialog("重置密码失败: " + ex.getMessage());
+            });
+        }
+    }
+
+    private void handlePasswordResetResponse(String response) {
+        passwordResetInProgress = false; // 重置请求状态
+        setNewPasswordBusy(false);
+        try {
+            Map<String,Object> map = gson.fromJson(response, MAP_TYPE);
+            int code = map!=null && map.get("code") instanceof Number ? ((Number)map.get("code")).intValue() : -1;
+            if(code == 200) {
+                // 延迟2秒后返回登录界面
+                Platform.runLater(() -> {
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(2000);
+                            Platform.runLater(this::exitNewPasswordMode);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }).start();
+                });
+            } else if(code == 400) {
+                showErrorDialog("密码重置失败！");
+            } else if(code == 500) {
+                showErrorDialog("服务器内部错误，请稍后再试！");
+            } else {
+                showErrorDialog("服务器响应: " + response);
+            }
+        } catch(Exception e) {
+            showErrorDialog("服务器响应解析失败！\n" + response);
+        }
+    }
+
+    // 以下方法已废弃，不再使用模态对话框
+    /*
+    private void showModal(javafx.scene.layout.Region content) {
+        dialogLayer.getChildren().setAll(content);
+        javafx.scene.layout.StackPane.setAlignment(content, javafx.geometry.Pos.CENTER);
+        dialogLayer.setVisible(true);
+        FadeAnimation.fadeIn(Duration.seconds(0.18), dialogLayer, Duration.ZERO);
+    }
+
+    // 隐藏叠层面板
+    private void hideModal() {
+        FadeAnimation.fadeOut(Duration.seconds(0.18), dialogLayer);
+        dialogLayer.setVisible(false);
+        dialogLayer.getChildren().clear();
+    }
+
+    // 打开找回密码（嵌入式）
+    private void openForget() {
+        ForgetPasswordPane pane = new ForgetPasswordPane();
+        pane.setOnCancel(this::hideModal);
+        pane.setOnSuccess(this::openNewPassword);
+        showModal(pane);
+    }
+
+    // 切换到设置新密码（嵌入式）
+    private void openNewPassword(String cardNumber) {
+        NewPasswordPane pane = new NewPasswordPane(cardNumber);
+        pane.setOnCancel(this::hideModal);
+        pane.setOnSuccess(() -> hideModal());
+        showModal(pane);
+    }
+    */
 
     private void showLoadingAnimation() {
         FadeAnimation.fadeOut(Duration.seconds(0.18), formContainer);
@@ -179,25 +551,23 @@ public class LoginClientFX extends Application {
             AnchorPane.setTopAnchor(progressBar, PROGRESS_TOP);
         }
         FadeAnimation.fadeIn(Duration.seconds(0.20), progressBar, Duration.seconds(0.15));
-        if (logo != null) {
-            TranslateTransition tt = new TranslateTransition(LOGIN_ANIM_DURATION, logo);
-            tt.setByY(LOGIN_ANIM_LOGO_TRANSLATE_Y);
-            tt.setDelay(LOGIN_ANIM_DELAY);
-            tt.play();
-        }
+        // Logo动画已移除
     }
 
     private void hideLoadingAnimation() {
         FadeAnimation.fadeOut(Duration.seconds(0.20), progressBar);
         FadeAnimation.fadeIn(Duration.seconds(0.22), formContainer, Duration.seconds(0.05));
+        // Logo恢复动画已移除
     }
 
     private void performLogin() {
         String cardNumber = cardInput.getText().trim();
         String password = passwordInput.getPassword();
-        if (cardNumber.isEmpty() || password.isEmpty()) { setStatus("一卡通号和密码不能为空", true); return; }
+        if (cardNumber.isEmpty() || password.isEmpty()) {
+            showErrorDialog("一卡通号和密码不能为空");
+            return;
+        }
         setBusy(true);
-        setStatus("正在连接服务器...", false);
         showLoadingAnimation();
         new Thread(() -> doLoginRequest(cardNumber, password)).start();
     }
@@ -216,7 +586,33 @@ public class LoginClientFX extends Application {
             String resp = ClientNetworkHelper.send(req);
             Platform.runLater(() -> handleServerResponse(resp, cardNumber));
         } catch (Exception ex) {
-            Platform.runLater(() -> { setBusy(false); hideLoadingAnimation(); setStatus("登录失败: " + ex.getMessage(), true); });
+            Platform.runLater(() -> {
+                // 判断异常类型，提供更准确的错误提示
+                String errorMsg;
+                if (ex.getMessage().contains("Connection refused") ||
+                    ex.getMessage().contains("ConnectException") ||
+                    ex.getMessage().contains("UnknownHostException") ||
+                    ex instanceof java.net.ConnectException ||
+                    ex instanceof java.net.UnknownHostException) {
+                    errorMsg = "无法连接到服务器";
+                } else {
+                    errorMsg = "网络连接失败";
+                }
+
+                // 2.05秒后显示警告弹窗并恢复状态
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2050); // 2.05秒
+                        Platform.runLater(() -> {
+                            showErrorDialog(errorMsg);
+                            setBusy(false);
+                            hideLoadingAnimation();
+                        });
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            });
         }
     }
 
@@ -226,33 +622,82 @@ public class LoginClientFX extends Application {
             Object codeObj = map == null ? null : map.get("code");
             int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
             if (code == 200) {
-                setStatus("登录成功", false);
                 Platform.runLater(() -> { ((Stage) loginButton.getScene().getWindow()).close(); new MainFrame(cardNumber).show(); });
-            } else if (code == 400) { setStatus("一卡通号或密码错误", true); }
-            else if (code == 500) { setStatus("服务器内部错误", true); }
-            else { setStatus("服务器响应: " + response, true); }
+            } else if (code == 400) {
+                // 2.05秒后显示警告弹窗并恢复状态
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2050); // 2.05秒
+                        Platform.runLater(() -> {
+                            showErrorDialog("一卡通号或密码错误");
+                            setBusy(false);
+                            hideLoadingAnimation();
+                        });
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+                return;
+            } else {
+                // 2.05秒后显示警告弹窗并恢复状态
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2050); // 2.05秒
+                        Platform.runLater(() -> {
+                            showErrorDialog("服务器错误");
+                            setBusy(false);
+                            hideLoadingAnimation();
+                        });
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+                return;
+            }
         } catch (Exception e) {
             if (response.contains("\"code\":200")) {
-                setStatus("登录成功", false);
                 Platform.runLater(() -> { ((Stage) loginButton.getScene().getWindow()).close(); new MainFrame(cardNumber).show(); });
-            } else if (response.contains("\"code\":400")) { setStatus("一卡通号或密码错误", true); }
-            else { setStatus("解析响应失败: " + e.getMessage(), true); }
-        } finally {
-            setBusy(false);
-            hideLoadingAnimation();
+            } else if (response.contains("\"code\":400")) {
+                // 2.05秒后显示警告弹窗并恢复状态
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2050); // 2.05秒
+                        Platform.runLater(() -> {
+                            showErrorDialog("一卡通号或密码错误");
+                            setBusy(false);
+                            hideLoadingAnimation();
+                        });
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+                return;
+            } else {
+                // 2.05秒后显示警告弹窗并恢复状态
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2050); // 2.05秒
+                        Platform.runLater(() -> {
+                            showErrorDialog("服务器错误");
+                            setBusy(false);
+                            hideLoadingAnimation();
+                        });
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+                return;
+            }
         }
+        // 只有200成功的情况才会执行到这里
+        setBusy(false);
+        hideLoadingAnimation();
     }
-
-    private void setStatus(String msg, boolean error) {
-        statusLabel.setText(msg);
-        statusLabel.setTextFill(error ? Color.valueOf("#ff5f56") : Resources.PRIMARY);
-    }
-
-    private void openForget() { try { new ForgetPasswordFX().start(new Stage()); } catch (Exception ex) { showErrorDialog("无法打开找回密码窗口: " + ex.getMessage()); } }
 
     private void showErrorDialog(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-        alert.setHeaderText("错误");
+        alert.setTitle("登录错误");
+        alert.setHeaderText(null);
         alert.showAndWait();
     }
 

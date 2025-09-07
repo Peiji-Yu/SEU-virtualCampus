@@ -12,6 +12,14 @@
             </PendingDiffInfo>
           </value>
         </entry>
+        <entry key="$PROJECT_DIR$/test_gson.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/test_gson.java" />
+              <option name="updatedContent" value="import Server.model.Request;&#10;import com.google.gson.Gson;&#10;import java.util.HashMap;&#10;import java.util.Map;&#10;&#10;public class test_gson {&#10;    public static void main(String[] args) {&#10;        Gson gson = new Gson();&#10;        Map&lt;String,Object&gt; data = new HashMap&lt;&gt;();&#10;        data.put(&quot;cardNumber&quot;, 213232556);&#10;        data.put(&quot;id&quot;, &quot;1&quot;);&#10;        &#10;        Request request = new Request(&quot;forgetPwd&quot;, data);&#10;        String json = gson.toJson(request);&#10;        System.out.println(&quot;Serialized JSON: &quot; + json);&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
