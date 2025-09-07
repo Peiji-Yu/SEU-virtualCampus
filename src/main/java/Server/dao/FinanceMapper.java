@@ -47,6 +47,13 @@ public interface FinanceMapper {
     int insertCardTransaction(CardTransaction transaction);
 
     /**
+     * 插入退款交易记录
+     */
+    @Insert("INSERT INTO card_transaction (uuid, card_number, amount, time, type, description, reference_id) " +
+            "VALUES (#{uuid}, #{cardNumber}, #{amount}, #{time}, '退款', #{description}, #{referenceId})")
+    int insertRefundTransaction(CardTransaction transaction);
+
+    /**
      * 查询用户的交易记录
      */
     @Select("SELECT * FROM card_transaction WHERE card_number = #{cardNumber} ORDER BY time DESC")

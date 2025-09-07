@@ -8,11 +8,16 @@ import java.util.UUID;
  * 订单实体类（支持多种商品）
  */
 public class StoreOrder {
+    public static final String STATUS_PENDING = "待支付";
+    public static final String STATUS_PAID = "已支付";
+    public static final String STATUS_CANCELLED = "已取消";
+    public static final String STATUS_REFUNDED = "已退款";
+
     private UUID uuid;                   // 订单编号
     private Integer cardNumber;          // 用户一卡通号
     private Integer totalAmount;         // 订单总金额（以分为单位）
     private LocalDateTime time;          // 订单时间
-    private String status;               // 订单状态：待支付、已支付、已取消
+    private String status;               // 订单状态：待支付、已支付、已取消、已退款
     private String remark;               // 订单备注
     private List<StoreOrderItem> items;  // 订单商品列表
 
@@ -24,7 +29,7 @@ public class StoreOrder {
         this.cardNumber = cardNumber;
         this.totalAmount = totalAmount;
         this.time = LocalDateTime.now();
-        this.status = "待支付";
+        this.status = STATUS_PENDING;
         this.remark = remark;
         this.items = items;
     }

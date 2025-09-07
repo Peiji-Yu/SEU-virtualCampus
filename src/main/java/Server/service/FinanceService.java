@@ -92,6 +92,41 @@ public class FinanceService {
     }
 
     /**
+     * 退款到一卡通账户
+     */
+    public boolean refundToFinanceCard(Integer cardNumber, Integer amount, String description, String referenceId) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("退款金额必须大于0");
+        }
+
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            // 检查账户是否存在
+            FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+            if (card == null) {
+                throw new RuntimeException("一卡通账户不存在");
+            }
+
+            // 更新余额（增加退款金额）
+            int updateResult = financeMapper.updateFinanceCardBalance(cardNumber, amount);
+
+            // 记录退款交易
+            if (updateResult > 0) {
+                CardTransaction transaction = new CardTransaction(
+                        cardNumber, amount, "退款",
+                        description != null ? description : "订单退款",
+                        referenceId
+                );
+                financeMapper.insertRefundTransaction(transaction);
+            }
+
+            sqlSession.commit();
+            return updateResult > 0;
+        }
+    }
+
+    /**
      * 查询交易记录
      */
     public List<CardTransaction> getTransactions(Integer cardNumber, String type) {

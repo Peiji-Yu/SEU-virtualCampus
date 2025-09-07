@@ -10,6 +10,9 @@ import org.apache.ibatis.session.SqlSession;
 import java.util.List;
 import java.util.UUID;
 
+import static Server.model.shop.StoreOrder.STATUS_PAID;
+import static Server.model.shop.StoreOrder.STATUS_PENDING;
+
 /**
  * 商店服务类
  * 处理商店相关的业务逻辑
@@ -165,7 +168,7 @@ public class StoreService {
                 throw new RuntimeException("订单不存在");
             }
 
-            if (!"待支付".equals(order.getStatus())) {
+            if (order.getStatus() != STATUS_PENDING) {
                 throw new RuntimeException("订单状态不正确: " + order.getStatus());
             }
 
@@ -207,7 +210,7 @@ public class StoreService {
                 throw new RuntimeException("订单不存在");
             }
 
-            if ("已支付".equals(order.getStatus())) {
+            if (order.getStatus() == STATUS_PAID) {
                 throw new RuntimeException("已支付的订单不能取消");
             }
 
@@ -223,6 +226,49 @@ public class StoreService {
             int result = storeMapper.deleteOrder(orderUuid);
             sqlSession.commit();
             return result > 0;
+        }
+    }
+
+    /**
+     * 退款操作
+     */
+    public boolean refundOrder(UUID orderUuid, String refundReason) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            FinanceService financeService = new FinanceService();
+
+            // 获取订单信息
+            StoreOrder order = storeMapper.findOrderById(orderUuid);
+            if (order == null) {
+                throw new RuntimeException("订单不存在");
+            }
+
+            if (!StoreOrder.STATUS_PAID.equals(order.getStatus())) {
+                throw new RuntimeException("只有已支付的订单才能退款");
+            }
+
+            // 将退款金额退回用户一卡通账户
+            boolean refundResult = financeService.refundToFinanceCard(
+                    order.getCardNumber(),
+                    order.getTotalAmount(),
+                    "订单退款: " + (refundReason != null ? refundReason : ""),
+                    orderUuid.toString()
+            );
+
+            if (refundResult) {
+                // 更新订单状态为已退款
+                int updateResult = storeMapper.refundOrder(orderUuid);
+
+                // 减少商品销量
+                for (StoreOrderItem item : order.getItems()) {
+                    storeMapper.decreaseItemSales(item.getItemUuid(), item.getAmount());
+                }
+
+                sqlSession.commit();
+                return updateResult > 0;
+            } else {
+                throw new RuntimeException("退款失败");
+            }
         }
     }
 

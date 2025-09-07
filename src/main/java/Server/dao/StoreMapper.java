@@ -128,6 +128,18 @@ public interface StoreMapper {
     int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
 
     /**
+     * 退款操作：更新订单状态为已退款
+     */
+    @Update("UPDATE store_order SET status = '已退款' WHERE uuid = #{orderUuid} AND status = '已支付'")
+    int refundOrder(@Param("orderUuid") UUID orderUuid);
+
+    /**
+     * 减少商品销量（退款时调用）
+     */
+    @Update("UPDATE store_item SET sales_volume = sales_volume - #{amount} WHERE uuid = #{itemUuid}")
+    int decreaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
+
+    /**
      * 查询用户的所有订单
      */
     @Select("SELECT * FROM store_transaction WHERE card_number = #{cardNumber} ORDER BY time DESC")
