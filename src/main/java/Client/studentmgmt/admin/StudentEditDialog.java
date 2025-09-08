@@ -1,6 +1,7 @@
 package Client.studentmgmt.admin;
 
 import Client.studentmgmt.service.StudentClientService;
+import Client.util.UIUtil;
 import Server.model.student.Student;
 import Server.model.student.Gender;
 import Server.model.student.StudentStatus;
@@ -35,6 +36,7 @@ public final class StudentEditDialog {
     public static void open(Student existing, Runnable onSuccess, StudentClientService service) {
         if (service == null) {alert(Alert.AlertType.ERROR, "服务错误", "无法提交数据");return;}
         Stage dialog = new Stage();dialog.initModality(Modality.APPLICATION_MODAL);
+        UIUtil.applyLogoToStage(dialog);
         dialog.setTitle(existing == null ? "添加学生" : "修改学生信息");
         TextField cardField = new TextField(existing == null ? "" : String.valueOf(existing.getCardNumber()));cardField.setDisable(true);
         TextField stuNumField = new TextField(existing == null ? "" : existing.getStudentNumber());
@@ -94,6 +96,10 @@ public final class StudentEditDialog {
     }
     private static java.util.Date toUtcDate(java.time.LocalDate ld){if(ld==null){return null;} return java.util.Date.from(ld.atStartOfDay(ZoneOffset.UTC).toInstant());}
     private static void addRow(GridPane g,int row,Label l1,Control c1,Label l2,Control c2){g.add(l1,0,row);g.add(c1,1,row);g.add(l2,2,row);g.add(c2,3,row);GridPane.setHgrow(c1, Priority.ALWAYS);GridPane.setHgrow(c2, Priority.ALWAYS);c1.setMaxWidth(Double.MAX_VALUE);c2.setMaxWidth(Double.MAX_VALUE);}
-    private static void alert(Alert.AlertType type,String title,String msg){Alert a=new Alert(type,msg,ButtonType.OK);a.setHeaderText(title);a.showAndWait();}
+    private static void alert(Alert.AlertType type,String title,String msg){
+        Alert a=new Alert(type,msg,ButtonType.OK);
+        a.setHeaderText(title);
+        UIUtil.applyLogoToAlert(a);
+        a.showAndWait();
+    }
 }
-

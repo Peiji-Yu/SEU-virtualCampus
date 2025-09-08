@@ -1,5 +1,6 @@
 package Client.studentmgmt.admin;
 
+import Client.util.UIUtil;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -83,7 +84,7 @@ public class StudentSearchBar extends HBox {
     private void showAlert(String title,String msg){
         Alert alert=new Alert(Alert.AlertType.WARNING,msg,ButtonType.OK);
         alert.setHeaderText(title);
+        UIUtil.applyLogoToAlert(alert);
         alert.showAndWait();
     }
 }
-

@@ -39,4 +39,25 @@ public class UsernameInput extends AnchorPane {
         // 触发占位符回落（幂等，若已在初始位置则无动作）
         Client.login.util.InputAnimation.reverse(this, javafx.util.Duration.seconds(0.15));
     }
+    // 新增：请求将焦点聚焦到内部文本框
+    public void requestInnerFocus(){
+        textField.requestFocus();
+    }
+    // 新增：设置文本并在非空时上移占位符
+    public void setText(String text){
+        boolean nonEmpty = text != null && !text.isEmpty();
+        isChanging = true;
+        textField.setText(text == null ? "" : text);
+        if (nonEmpty) {
+            Client.login.util.InputAnimation.forward(this, javafx.util.Duration.seconds(0.12));
+        } else {
+            Client.login.util.InputAnimation.reverse(this, javafx.util.Duration.seconds(0.12));
+        }
+        isChanging = false;
+    }
+    // 新增：只读/可编辑切换（不改变整体禁用样式）
+    public void setEditable(boolean editable){
+        textField.setEditable(editable);
+        textField.setFocusTraversable(editable);
+    }
 }

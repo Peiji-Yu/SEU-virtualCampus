@@ -22,6 +22,8 @@ import Client.login.component.*;
 import Client.login.util.*;
 import Client.util.AsyncFX;
 import Client.login.net.RequestSender;
+import javafx.stage.Modality; // 添加缺失导入
+import Client.util.UIUtil;
 
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -66,6 +68,10 @@ public class LoginClientFX extends Application {
     private javafx.scene.layout.HBox authButtonsRow;
     private FilledButton nextButton;
     private FilledButton cancelButton;
+    // 外部找回密码模式支持
+    private boolean externalRecoveryMode = false;
+    private Stage externalStageRef;
+    private String externalCardNumber; // 新增：外部传入的一卡通号
     private boolean inAuthMode = false;
     private boolean inNewPasswordMode = false;
     private String currentCardNumber;
@@ -79,6 +85,13 @@ public class LoginClientFX extends Application {
     @Override
     public void start(Stage stage) {
         stage.initStyle(StageStyle.TRANSPARENT);
+        UIUtil.applyLogoToStage(stage);
+        // 外部模式下改为模态窗口（保留透明样式）
+        if (externalRecoveryMode && externalStageRef != null) {
+            // 修复：应将 owner 设为 externalStageRef 本身，而不是其 owner
+            stage.initOwner(externalStageRef);
+            stage.initModality(Modality.APPLICATION_MODAL);
+        }
         root = new AnchorPane();
         root.setStyle("-fx-background-radius:10px;-fx-background-color:#ffffff; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.18),25,0,0,4);");
         Scene scene = new Scene(root, ROOT_WIDTH, ROOT_HEIGHT);
@@ -155,6 +168,10 @@ public class LoginClientFX extends Application {
 
         // 固定布局一次（延迟确保文本宽度可得）
         Platform.runLater(this::applyFixedLayout);
+        // 外部找回模式：默认进入认证流程
+        if (externalRecoveryMode) {
+            Platform.runLater(this::enterAuthMode);
+        }
     }
 
     private javafx.scene.layout.HBox buildAuthButtonsRow(){
@@ -164,7 +181,15 @@ public class LoginClientFX extends Application {
         double w = (LOGIN_BUTTON_WIDTH - AUTH_BUTTON_GAP) / 2.0;
         cancelButton = new FilledButton("Cancel", w, Resources.DISABLED, Resources.DISABLED, Resources.WHITE);
         nextButton = new FilledButton("Next", w, Resources.PRIMARY, Resources.SECONDARY, Resources.WHITE);
-        cancelButton.setOnAction(this::exitAuthMode);
+        // 在外部模式下，Cancel 关闭窗口；否则返回登录态
+        if (externalRecoveryMode) {
+            cancelButton.setOnAction(() -> {
+                Stage s = (Stage) root.getScene().getWindow();
+                s.close();
+            });
+        } else {
+            cancelButton.setOnAction(this::exitAuthMode);
+        }
         nextButton.setOnAction(this::performAuth);
         row.getChildren().addAll(cancelButton, nextButton);
         return row;
@@ -212,8 +237,14 @@ public class LoginClientFX extends Application {
         // 使用系统字体以确保中文可见
         welcomeLabel.setFont(javafx.scene.text.Font.font(32));
         subtitleLabel.setVisible(false);
-        // 清空输入并切换占位
-        cardInput.clear();
+        // 清空/预填输入并切换占位
+        if (externalRecoveryMode && externalCardNumber != null && !externalCardNumber.isEmpty()) {
+            cardInput.setText(externalCardNumber);
+            cardInput.setEditable(false);
+        } else {
+            cardInput.clear();
+            cardInput.setEditable(true);
+        }
         passwordInput.clear();
         passwordInput.getPlaceHolder().setText("ID Number");
         // 隐藏 Forget Password 按钮
@@ -369,7 +400,14 @@ public class LoginClientFX extends Application {
             nextButton.setOnAction(this::performPasswordReset);
         }
         if (cancelButton != null) {
-            cancelButton.setOnAction(this::exitNewPasswordMode);
+            if (externalRecoveryMode) {
+                cancelButton.setOnAction(() -> {
+                    Stage s = (Stage) root.getScene().getWindow();
+                    s.close();
+                });
+            } else {
+                cancelButton.setOnAction(this::exitNewPasswordMode);
+            }
         }
 
         // 回车触发保存
@@ -465,8 +503,15 @@ public class LoginClientFX extends Application {
             Map<String,Object> map = gson.fromJson(response, MAP_TYPE);
             int code = map!=null && map.get("code") instanceof Number ? ((Number)map.get("code")).intValue() : -1;
             if(code == 200) {
-                // 延迟2秒后返回登录界面
-                AsyncFX.runLaterDelay(2000, this::exitNewPasswordMode);
+                // 成功：外部找回模式下，2秒后自动关闭窗口；否则返回登录界面
+                if (externalRecoveryMode) {
+                    AsyncFX.runLaterDelay(2000, () -> {
+                        Stage s = (Stage) root.getScene().getWindow();
+                        if (s != null) { s.close(); }
+                    });
+                } else {
+                    AsyncFX.runLaterDelay(2000, this::exitNewPasswordMode);
+                }
             } else if(code == 400) {
                 showErrorDialog("密码重置失败！");
             } else if(code == 500) {
@@ -586,6 +631,7 @@ public class LoginClientFX extends Application {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
         alert.setTitle("登录错误");
         alert.setHeaderText(null);
+        UIUtil.applyLogoToAlert(alert);
         alert.showAndWait();
     }
 
@@ -597,6 +643,21 @@ public class LoginClientFX extends Application {
             return new ImageView(img);
         } catch (Exception e) { return null; }
     }
+
+    // 对外暴露：以找回密码模式打开新窗口（含一卡通号）
+    public void openAsRecovery(Stage owner, String cardNumber) {
+        this.externalRecoveryMode = true;
+        this.externalStageRef = owner;
+        this.externalCardNumber = cardNumber;
+        Stage stage = new Stage();
+        try {
+            start(stage);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    // 兼容旧签名
+    public void openAsRecovery(Stage owner) { openAsRecovery(owner, null); }
 
     public static void main(String[] args) { launch(args); }
 }
