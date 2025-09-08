@@ -1,12 +1,16 @@
 package Server;
 
 import Server.model.*;
+import Server.model.shop.*;
 import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
 import Server.service.UserService;
 import Server.service.StudentService;
+import Server.service.FinanceService;
+import Server.service.StoreService;
+import Server.dao.StoreMapper;
 import com.google.gson.Gson;
 
 import java.io.DataInputStream;
@@ -14,9 +18,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 客户端处理器
@@ -27,6 +29,8 @@ public class ClientHandler implements Runnable {
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
+    private final StoreService storeService = new StoreService();
+    private final FinanceService financeService = new FinanceService();
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -149,6 +153,216 @@ public class ClientHandler implements Runnable {
                                 Response.error("删除失败");
                         break;
 
+                    case "getFinanceCard":
+                        Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
+                        FinanceCard financeCard = financeService.getFinanceCard(cardNumber1);
+                        response = Response.success("获取一卡通信息成功", financeCard);
+                        break;
+
+                    case "rechargeFinanceCard":
+                        Integer rechargeCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        Integer amount = ((Double) request.getData().get("amount")).intValue();
+                        String description = (String) request.getData().get("description");
+
+                        try {
+                            boolean rechargeResult = financeService.rechargeFinanceCard(rechargeCardNumber, amount, description);
+                            response = rechargeResult ?
+                                    Response.success("充值成功") :
+                                    Response.error("充值失败");
+                        } catch (Exception e) {
+                            response = Response.error("充值失败: " + e.getMessage());
+                        }
+                        break;
+
+                    case "getTransactions":
+                        Integer transactionCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        String transactionType = (String) request.getData().get("type");
+
+                        List<CardTransaction> transactions = financeService.getTransactions(transactionCardNumber, transactionType);
+                        response = Response.success("获取交易记录成功", transactions);
+                        break;
+
+                    case "getAllItems":
+                        List<StoreItem> items = storeService.getAllItems();
+                        response = Response.success("获取商品列表成功", items);
+                        break;
+
+                    case "searchItems":
+                        String keyword = (String) request.getData().get("keyword");
+                        List<StoreItem> searchResults = storeService.searchItems(keyword);
+                        response = Response.success("搜索完成", searchResults);
+                        break;
+
+                    case "getItemById":
+                        String itemIdStr = (String) request.getData().get("itemId");
+                        try {
+                            UUID itemId = UUID.fromString(itemIdStr);
+                            StoreItem item = storeService.getItemById(itemId);
+                            if (item != null) {
+                                response = Response.success("获取商品成功", item);
+                            } else {
+                                response = Response.error("商品不存在");
+                            }
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("商品ID格式不正确");
+                        }
+                        break;
+
+                    case "addItem":
+                        // 管理员功能：添加商品
+                        Map<String, Object> itemData = (Map<String, Object>) request.getData().get("item");
+                        StoreItem newItem = createStoreItemFromMap(itemData);
+                        boolean addItemResult = storeService.addItem(newItem);
+                        response = addItemResult ? Response.success("添加商品成功") : Response.error("添加商品失败");
+                        break;
+
+                    case "updateItem":
+                        // 管理员功能：更新商品
+                        Map<String, Object> updateItemData = (Map<String, Object>) request.getData().get("item");
+                        StoreItem updateItem = createStoreItemFromMap(updateItemData);
+                        boolean updateItemResult = storeService.updateItem(updateItem);
+                        response = updateItemResult ? Response.success("更新商品成功") : Response.error("更新商品失败");
+                        break;
+
+                    case "deleteItem":
+                        // 管理员功能：删除商品
+                        String deleteItemIdStr = (String) request.getData().get("itemId");
+                        try {
+                            UUID deleteItemId = UUID.fromString(deleteItemIdStr);
+                            boolean deleteItemResult = storeService.deleteItem(deleteItemId);
+                            response = deleteItemResult ? Response.success("删除商品成功") : Response.error("删除商品失败");
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("商品ID格式不正确");
+                        }
+                        break;
+
+                    case "createOrder":
+                        Map<String, Object> orderData = request.getData();
+                        Integer orderCardNumber = ((Double) orderData.get("cardNumber")).intValue();
+                        String orderRemark = (String) orderData.get("remark");
+
+                        // 解析订单商品项
+                        List<Map<String, Object>> itemsData = (List<Map<String, Object>>) orderData.get("items");
+                        List<StoreOrderItem> orderItems = new ArrayList<>();
+                        Integer totalAmount = 0;
+
+                        for (Map<String, Object> itemData1 : itemsData) {
+                            String itemIdStr1 = (String) itemData1.get("itemId");
+                            Integer itemAmount = ((Double) itemData1.get("amount")).intValue();
+
+                            try {
+                                UUID itemId = UUID.fromString(itemIdStr1);
+
+                                // 获取商品信息以获取价格
+                                StoreItem item = storeService.getItemById(itemId);
+                                if (item == null) {
+                                    response = Response.error("商品不存在: " + itemIdStr1);
+                                    break;
+                                }
+
+                                StoreOrderItem orderItem = new StoreOrderItem(null, itemId, item.getPrice(), itemAmount);
+                                orderItems.add(orderItem);
+                                totalAmount += item.getPrice() * itemAmount;
+
+                            } catch (IllegalArgumentException e) {
+                                response = Response.error("商品ID格式不正确: " + itemIdStr1);
+                                break;
+                            }
+                        }
+
+                        try {
+                            StoreOrder order = new StoreOrder(orderCardNumber, totalAmount, orderRemark, orderItems);
+                            StoreOrder createdOrder = storeService.createOrder(order);
+                            response = Response.success("创建订单成功", createdOrder);
+                        } catch (Exception e) {
+                            response = Response.error("创建订单失败: " + e.getMessage());
+                        }
+                        break;
+
+                    case "payOrder":
+                        String payOrderIdStr = (String) request.getData().get("orderId");
+                        try {
+                            UUID orderId = UUID.fromString(payOrderIdStr);
+                            boolean payResult = storeService.payOrder(orderId);
+                            response = payResult ? Response.success("支付成功") : Response.error("支付失败");
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("订单ID格式不正确");
+                        } catch (Exception e) {
+                            response = Response.error("支付失败: " + e.getMessage());
+                        }
+                        break;
+
+                    case "cancelOrder":
+                        String cancelOrderIdStr = (String) request.getData().get("orderId");
+                        try {
+                            UUID orderId = UUID.fromString(cancelOrderIdStr);
+                            boolean cancelResult = storeService.cancelOrder(orderId);
+                            response = cancelResult ? Response.success("取消订单成功") : Response.error("取消订单失败");
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("订单ID格式不正确");
+                        } catch (Exception e) {
+                            response = Response.error("取消订单失败: " + e.getMessage());
+                        }
+                        break;
+
+                    case "getUserOrders":
+                        Integer userCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        List<StoreOrder> userOrders = storeService.getUserOrders(userCardNumber);
+                        response = Response.success("获取用户订单成功", userOrders);
+                        break;
+
+                    case "getAllOrders":
+                        // 管理员功能：获取所有订单
+                        List<StoreOrder> allOrders = storeService.getAllOrders();
+                        response = Response.success("获取所有订单成功", allOrders);
+                        break;
+
+                    case "getOrder":
+                        String getOrderIdStr = (String) request.getData().get("orderId");
+                        try {
+                            UUID orderId = UUID.fromString(getOrderIdStr);
+                            StoreOrder order = storeService.getOrderById(orderId);
+                            if (order != null) {
+                                response = Response.success("获取订单成功", order);
+                            } else {
+                                response = Response.error("订单不存在");
+                            }
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("订单ID格式不正确");
+                        }
+                        break;
+
+                    case "getSalesStats":
+                        // 管理员功能：获取销售统计
+                        List<StoreMapper.SalesStats> salesStats = storeService.getSalesStatistics();
+                        response = Response.success("获取销售统计成功", salesStats);
+                        break;
+
+                    case "getTodaySales":
+                        // 管理员功能：获取今日销售总额
+                        Integer todaySales = storeService.getTodaySalesRevenue();
+                        response = Response.success("获取今日销售总额成功", todaySales);
+                        break;
+
+                    case "refundOrder":
+                        // 管理员功能：订单退款
+                        Map<String, Object> refundData = request.getData();
+                        String refundOrderIdStr = (String) refundData.get("orderId");
+                        String refundReason = (String) refundData.get("reason");
+
+                        try {
+                            UUID orderId = UUID.fromString(refundOrderIdStr);
+                            boolean refundResult = storeService.refundOrder(orderId, refundReason);
+                            response = refundResult ?
+                                    Response.success("退款成功") :
+                                    Response.error("退款失败");
+                        } catch (IllegalArgumentException e) {
+                            response = Response.error("订单ID格式不正确");
+                        } catch (Exception e) {
+                            response = Response.error("退款失败: " + e.getMessage());
+                        }
+                        break;
+
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
                         break;
@@ -205,5 +419,26 @@ public class ClientHandler implements Runnable {
         if (data.containsKey("name")) student.setName((String) data.get("name"));
 
         return student;
+    }
+
+    // 添加辅助方法，用于从Map创建StoreItem对象
+    private StoreItem createStoreItemFromMap(Map<String, Object> data) {
+        StoreItem item = new StoreItem();
+
+        if (data.containsKey("uuid")) {
+            item.setUuid(UUID.fromString((String) data.get("uuid")));
+        } else {
+            item.setUuid(UUID.randomUUID());
+        }
+
+        if (data.containsKey("itemName")) item.setItemName((String) data.get("itemName"));
+        if (data.containsKey("price")) item.setPrice(((Double) data.get("price")).intValue());
+        if (data.containsKey("pictureLink")) item.setPictureLink((String) data.get("pictureLink"));
+        if (data.containsKey("stock")) item.setStock(((Double) data.get("stock")).intValue());
+        if (data.containsKey("salesVolume")) item.setSalesVolume(((Double) data.get("salesVolume")).intValue());
+        if (data.containsKey("description")) item.setDescription((String) data.get("description"));
+        if (data.containsKey("barcode")) item.setBarcode((String) data.get("barcode"));
+
+        return item;
     }
 }

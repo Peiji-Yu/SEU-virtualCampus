@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/vcampus.iml" filepath="$PROJECT_DIR$/vcampus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/virtualCampus.iml" filepath="$PROJECT_DIR$/virtualCampus.iml" />
     </modules>
   </component>
 </project>

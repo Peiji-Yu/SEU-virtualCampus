@@ -24,5 +24,7 @@
     <mappers>
         <mapper class="Server.dao.UserMapper"/>
         <mapper class="Server.dao.StudentMapper"/>
+        <mapper class="Server.dao.FinanceMapper"/>
+        <mapper class="Server.dao.StoreMapper"/>
     </mappers>
 </configuration>
