@@ -56,12 +56,12 @@ public class UserService {
             User user = userMapper.findByCardNumberAndPassword(cardNumber, password);
 
             if (user != null) {
-                // 检查一卡通账户是否存在
-                FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
-                if (card == null) {
-                    // 如果账户不存在，先创建
-                    createFinanceCard(cardNumber);
-                }
+//                // 检查一卡通账户是否存在
+//                FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+//                if (card == null) {
+//                    // 如果账户不存在，先创建
+//                    createFinanceCard(cardNumber);
+//                }
 
                 // 登录成功，返回用户信息（不包含密码）
                 user.setPassword(null); // 清除密码
