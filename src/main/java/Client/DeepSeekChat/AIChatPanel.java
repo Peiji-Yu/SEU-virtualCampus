@@ -67,8 +67,7 @@ public class AIChatPanel extends BorderPane {
         HBox header = createHeader();
         setTop(header);
 
-        createChatArea();
-        setCenter(scrollPane);
+        createChatArea(); // 内部已 setCenter(wrapper)
 
         HBox inputArea = createInputArea();
         setBottom(inputArea);
@@ -108,12 +107,26 @@ public class AIChatPanel extends BorderPane {
         chatContainer.getStyleClass().add("chat-container");
         chatContainer.setPadding(new Insets(20));
         chatContainer.setSpacing(15);
+        chatContainer.setFillWidth(true);
         addWelcomeMessage();
 
         scrollPane.setContent(chatContainer);
         scrollPane.getStyleClass().add("scroll-pane");
         scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true); // 允许高度自适应填充
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        // 使用 StackPane 作为白色背景面板填满 center
+        StackPane wrapper = new StackPane(scrollPane);
+        wrapper.setStyle("-fx-background-color: white;");
+        StackPane.setMargin(scrollPane, Insets.EMPTY);
+        // 绑定最小高度以保证空内容时也撑开
+        wrapper.heightProperty().addListener((o,ov,nv)->{
+            if (chatContainer.getHeight() < nv.doubleValue()) {
+                chatContainer.setMinHeight(nv.doubleValue());
+            }
+        });
+        setCenter(wrapper);
 
         chatContainer.heightProperty().addListener((o,ov,nv)-> scrollPane.setVvalue(1.0));
     }
@@ -266,9 +279,4 @@ public class AIChatPanel extends BorderPane {
         task.setOnFailed(e -> addAiMessage("任务失败: " + task.getException().getMessage()));
         Thread th = new Thread(task, "ai-chat-api"); th.setDaemon(true); th.start();
     }
-
-    // 提供外部设置 API Key 的方法（可后续添加到 UI）
-    public void setApiKey(String apiKey){ this.apiKey = apiKey; }
-    public void setApiUrl(String apiUrl){ this.apiUrl = apiUrl; }
 }
-

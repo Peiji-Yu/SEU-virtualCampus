@@ -166,7 +166,7 @@ public class FinancePanel extends BorderPane {
         box.setPadding(new Insets(4, 4, 10, 4));
 
         table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // 自适应
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         TableColumn<Transaction, String> idCol = new TableColumn<>("交易ID");
         idCol.setCellValueFactory(c -> c.getValue().transactionIdProperty());
@@ -176,9 +176,9 @@ public class FinancePanel extends BorderPane {
         typeCol.setCellValueFactory(c -> c.getValue().typeProperty());
         typeCol.setPrefWidth(60);
 
-        TableColumn<Transaction, String> amountCol = new TableColumn<>("金额(分)"); // 保留原单位显示，如需转元可再改
+        TableColumn<Transaction, String> amountCol = new TableColumn<>("金额(元)");
         amountCol.setCellValueFactory(c -> c.getValue().amountProperty());
-        amountCol.setPrefWidth(70);
+        amountCol.setPrefWidth(90);
 
         TableColumn<Transaction, String> descCol = new TableColumn<>("描述");
         descCol.setCellValueFactory(c -> c.getValue().descriptionProperty());
@@ -187,11 +187,8 @@ public class FinancePanel extends BorderPane {
         timeCol.setCellValueFactory(c -> c.getValue().timeProperty());
         timeCol.setPrefWidth(150);
 
-        table.getColumns().addAll(idCol, typeCol, amountCol, descCol, timeCol);
-
-        // 监听 skin 创建后再设置表头样式
+        table.getColumns().setAll(idCol, typeCol, amountCol, descCol, timeCol);
         table.skinProperty().addListener((obs, o, n) -> styleTableHeader());
-        // 初始尝试一次（可能此时skin未就绪，方法内部再 runLater）
         styleTableHeader();
 
         box.getChildren().add(table);
@@ -231,11 +228,17 @@ public class FinancePanel extends BorderPane {
                 alertInfo(obj.get("message").getAsString());
                 return;
             }
-            JsonObject data = obj.getAsJsonObject("data");
-            if (data != null && data.has("balance") && !data.get("balance").isJsonNull()) {
-                int balance = data.get("balance").getAsInt();
-                updateBalanceDisplay(balance);
+            JsonElement dataEl = obj.get("data");
+            if (dataEl != null && dataEl.isJsonObject()) {
+                JsonObject data = dataEl.getAsJsonObject();
+                if (data.has("balance") && !data.get("balance").isJsonNull()) {
+                    int balance = data.get("balance").getAsInt();
+                    updateBalanceDisplay(balance);
+                } else {
+                    balanceValueLabel.setText("--");
+                }
             } else {
+                // data 为空（可能未找到卡），显示 --
                 balanceValueLabel.setText("--");
             }
         });
@@ -251,13 +254,15 @@ public class FinancePanel extends BorderPane {
                 return;
             }
             table.getItems().clear();
-            JsonArray arr = obj.getAsJsonArray("data");
-            if (arr != null) {
+            JsonElement dataEl = obj.get("data");
+            if (dataEl != null && dataEl.isJsonArray()) {
+                JsonArray arr = dataEl.getAsJsonArray();
                 for (JsonElement el : arr) {
+                    if (!el.isJsonObject()) continue;
                     JsonObject t = el.getAsJsonObject();
                     String id = valStr(t, "transactionId");
                     String tp = valStr(t, "type");
-                    long amount = t.has("amount") && !t.get("amount").isJsonNull() ? t.get("amount").getAsLong() : 0L;
+                    long amountCents = t.has("amount") && !t.get("amount").isJsonNull() ? t.get("amount").getAsLong() : 0L;
                     String desc = valStr(t, "description");
                     String timeDisplay = "";
                     if (t.has("timestamp") && !t.get("timestamp").isJsonNull()) {
@@ -265,11 +270,11 @@ public class FinancePanel extends BorderPane {
                             JsonElement tsEl = t.get("timestamp");
                             if (tsEl.isJsonPrimitive()) {
                                 String raw = tsEl.getAsString();
-                                if (raw.matches("\\d+")) { // 毫秒时间戳
+                                if (raw.matches("\\d+")) { // 毫秒
                                     long ms = Long.parseLong(raw);
                                     timeDisplay = sdf.format(new Date(ms));
-                                } else { // ISO LocalDateTime
-                                    LocalDateTime ldt = LocalDateTime.parse(raw); // 若包含纳秒亦可解析
+                                } else {
+                                    LocalDateTime ldt = LocalDateTime.parse(raw);
                                     timeDisplay = ldt.format(isoOutFmt);
                                 }
                             }
@@ -277,7 +282,10 @@ public class FinancePanel extends BorderPane {
                             timeDisplay = valStr(t, "timestamp");
                         }
                     }
-                    table.getItems().add(new Transaction(id, tp, String.valueOf(amount), desc, timeDisplay));
+                    // 金额转换为元（带符号），去除末尾多余0
+                    java.math.BigDecimal yuan = java.math.BigDecimal.valueOf(amountCents).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.DOWN).stripTrailingZeros();
+                    String amountStr = yuan.toPlainString() + "元";
+                    table.getItems().add(new Transaction(id, tp, amountStr, desc, timeDisplay));
                 }
             }
         });
