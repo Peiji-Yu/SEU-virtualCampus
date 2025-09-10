@@ -124,7 +124,8 @@ public class FinancePanel extends BorderPane {
 
         Label descLb = new Label("备注:");
         rechargeDescField = new TextField();
-        rechargeDescField.setPromptText("可选");
+        // 修改占位文本
+        rechargeDescField.setPromptText("备注(可选)");
         rechargeDescField.setPrefWidth(140);
 
         rechargeBtn = new Button("充值");
