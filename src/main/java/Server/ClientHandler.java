@@ -11,16 +11,16 @@ import Server.service.student.StudentService;
 import Server.service.shop.FinanceService;
 import Server.service.shop.StoreService;
 import Server.dao.shop.StoreMapper;
-import Server.service.book.BookService;
 import com.google.gson.Gson;
 
 import Server.model.course.Course;
-import Server.model.teachingclass.TeachingClass;
-import Server.model.student.ClassStudent;
-import Server.service.ClassStudentService;
-import Server.service.CourseService;
-import Server.service.TeachingClassService;
-import Server.service.StudentTeachingClassService;
+import Server.model.course.TeachingClass;
+import Server.model.course.ClassStudent;
+import Server.model.course.StudentTeachingClass;
+import Server.service.course.ClassStudentService;
+import Server.service.course.CourseService;
+import Server.service.course.TeachingClassService;
+import Server.service.course.StudentTeachingClassService;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -44,7 +44,6 @@ public class ClientHandler implements Runnable {
     private final StudentTeachingClassService studentTeachingClassService = new StudentTeachingClassService();
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
-    private final BookService bookService = new BookService();
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
@@ -272,15 +271,15 @@ public class ClientHandler implements Runnable {
                             List<StudentTeachingClass> studentCourses = studentTeachingClassService.findByStudentCardNumber(studentCardNumber);
                             
                             // 获取教学班详细信息
-                            List<TeachingClass> teachingClasses = new ArrayList<>();
+                            List<TeachingClass> teachingClasses1 = new ArrayList<>();
                             for (StudentTeachingClass stc : studentCourses) {
                                 TeachingClass tc = teachingClassService.findByUuid(stc.getTeachingClassUuid());
                                 if (tc != null) {
-                                    teachingClasses.add(tc);
+                                    teachingClasses1.add(tc);
                                 }
                             }
                             
-                            response = Response.success("获取已选课程成功", teachingClasses);
+                            response = Response.success("获取已选课程成功", teachingClasses1);
                         } catch (Exception e) {
                             response = Response.error("获取已选课程失败: " + e.getMessage());
                         }
@@ -297,9 +296,9 @@ public class ClientHandler implements Runnable {
                             // 获取学生详细信息
                             List<ClassStudent> students = new ArrayList<>();
                             for (StudentTeachingClass stc : classStudents) {
-                                ClassStudent student = classStudentService.findByCardNumber(stc.getStudentCardNumber());
-                                if (student != null) {
-                                    students.add(student);
+                                ClassStudent student1 = classStudentService.findByCardNumber(stc.getStudentCardNumber());
+                                if (student1 != null) {
+                                    students.add(student1);
                                 }
                             }
                             
@@ -404,8 +403,8 @@ public class ClientHandler implements Runnable {
                         }
                         
                         // 保存更新
-                        boolean updateResult = teachingClassService.updateTeachingClass(existingTeachingClass);
-                        response = updateResult ? 
+                        boolean updateResult1 = teachingClassService.updateTeachingClass(existingTeachingClass);
+                        response = updateResult1 ?
                                 Response.success("更新教学班成功") : 
                                 Response.error("更新教学班失败");
                         break;
@@ -501,6 +500,25 @@ public class ClientHandler implements Runnable {
                         } catch (IllegalArgumentException e) {
                             response = Response.error("商品ID格式不正确");
                         }
+                        break;
+
+                    // 商品类别相关功能
+                    case "getItemsByCategory":
+                        String category = (String) request.getData().get("category");
+                        List<StoreItem> categoryItems = storeService.getItemsByCategory(category);
+                        response = Response.success("获取类别商品成功", categoryItems);
+                        break;
+
+                    case "getAllCategories":
+                        List<String> categories = storeService.getAllCategories();
+                        response = Response.success("获取所有类别成功", categories);
+                        break;
+
+                    case "searchItemsByCategory":
+                        String searchCategory = (String) request.getData().get("category");
+                        String searchKeyword = (String) request.getData().get("keyword");
+                        List<StoreItem> categorySearchResults = storeService.searchItemsByCategoryAndKeyword(searchCategory, searchKeyword);
+                        response = Response.success("按类别搜索完成", categorySearchResults);
                         break;
 
                     case "createOrder":
