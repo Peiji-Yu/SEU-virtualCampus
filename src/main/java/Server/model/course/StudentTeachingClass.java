@@ -1,7 +1,7 @@
-package Server.model.teachingclass;
+package Server.model.course;
 
-import Server.model.student.ClassStudent;
-import Server.model.teachingclass.TeachingClass;
+//import Server.model.course.ClassStudent;
+//import Server.model.course.TeachingClass;
 
 public class StudentTeachingClass {
     private Integer studentCardNumber;   // 学生一卡通号

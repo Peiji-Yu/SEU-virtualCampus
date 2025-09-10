@@ -1,4 +1,4 @@
-package Server.model.student;
+package Server.model.course;
 
 import java.util.List;
 

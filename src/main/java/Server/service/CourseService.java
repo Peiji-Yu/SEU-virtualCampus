@@ -2,16 +2,14 @@ package Server.service;
 
 import Server.dao.CourseMapper;
 import Server.model.course.Course;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.stereotype.Service;
+//import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
 public class CourseService {
 
-    @Autowired
     private CourseMapper courseMapper;
 
     public Course findByCourseId(String courseId) {
@@ -32,7 +30,6 @@ public class CourseService {
         }
     }
 
-    @Transactional
     public boolean addCourse(Course course) {
         try {
             // 检查课程ID是否已存在
@@ -50,7 +47,6 @@ public class CourseService {
         }
     }
 
-    @Transactional
     public boolean updateCourse(Course course) {
         try {
             // 检查课程是否存在
@@ -68,7 +64,6 @@ public class CourseService {
         }
     }
 
-    @Transactional
     public boolean deleteCourse(String courseId) {
         try {
             // 检查课程是否存在

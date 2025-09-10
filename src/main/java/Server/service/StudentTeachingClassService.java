@@ -1,17 +1,15 @@
 package Server.service;
 
 import Server.dao.StudentTeachingClassMapper;
-import Server.model.teachingclass.StudentTeachingClass;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import Server.model.course.StudentTeachingClass;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.stereotype.Service;
+//import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
 public class StudentTeachingClassService {
 
-    @Autowired
     private StudentTeachingClassMapper studentTeachingClassMapper;
 
     public List<StudentTeachingClass> findByStudentCardNumber(Integer studentCardNumber) {
@@ -41,7 +39,6 @@ public class StudentTeachingClassService {
         }
     }
 
-    @Transactional
     public boolean addStudentTeachingClass(StudentTeachingClass studentTeachingClass) {
         try {
             int result = studentTeachingClassMapper.insertStudentTeachingClass(studentTeachingClass);
@@ -52,7 +49,6 @@ public class StudentTeachingClassService {
         }
     }
 
-    @Transactional
     public boolean deleteStudentTeachingClass(Integer studentCardNumber, String teachingClassUuid) {
         try {
             int result = studentTeachingClassMapper.deleteStudentTeachingClass(studentCardNumber, teachingClassUuid);

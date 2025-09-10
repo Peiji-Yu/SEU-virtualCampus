@@ -1,17 +1,15 @@
 package Server.service;
 
 import Server.dao.TeachingClassMapper;
-import Server.model.teachingclass.TeachingClass;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import Server.model.course.TeachingClass;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.stereotype.Service;
+//import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
 public class TeachingClassService {
 
-    @Autowired
     private TeachingClassMapper teachingClassMapper;
 
     public TeachingClass findByUuid(String uuid) {
@@ -32,7 +30,6 @@ public class TeachingClassService {
         }
     }
 
-    @Transactional
     public boolean addTeachingClass(TeachingClass teachingClass) {
         try {
             // 检查教学班UUID是否已存在
@@ -50,7 +47,6 @@ public class TeachingClassService {
         }
     }
 
-    @Transactional
     public boolean updateTeachingClass(TeachingClass teachingClass) {
         try {
             // 检查教学班是否存在
@@ -68,7 +64,6 @@ public class TeachingClassService {
         }
     }
 
-    @Transactional
     public boolean deleteTeachingClass(String uuid) {
         try {
             // 检查教学班是否存在
@@ -104,7 +99,6 @@ public class TeachingClassService {
         }
     }
 
-    @Transactional
     public boolean incrementSelectedCount(String uuid) {
         try {
             // 检查教学班是否存在
@@ -122,7 +116,6 @@ public class TeachingClassService {
         }
     }
 
-    @Transactional
     public boolean decrementSelectedCount(String uuid) {
         try {
             // 检查教学班是否存在

@@ -1,4 +1,4 @@
-package Server.model.teachingclass;
+package Server.model.course;
 
 import Server.model.course.Course;
 import Server.model.student.Student;

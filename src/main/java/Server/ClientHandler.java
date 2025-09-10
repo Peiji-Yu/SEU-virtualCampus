@@ -8,13 +8,10 @@ import Server.model.student.Student;
 import Server.model.student.StudentStatus;
 import Server.service.UserService;
 import Server.service.StudentService;
-
 import Server.service.FinanceService;
 import Server.service.StoreService;
 import Server.dao.StoreMapper;
-
 import Server.service.BookService;
-
 import com.google.gson.Gson;
 
 import java.io.DataInputStream;
@@ -35,13 +32,9 @@ public class ClientHandler implements Runnable {
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
-
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
-
-
     private final BookService bookService = new BookService();
-
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
@@ -162,7 +155,6 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除成功") :
                                 Response.error("删除失败");
                         break;
-
 
                     case "getFinanceCard":
                         Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
@@ -373,7 +365,6 @@ public class ClientHandler implements Runnable {
                             response = Response.error("退款失败: " + e.getMessage());
                         }
                         break;
-
 
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());

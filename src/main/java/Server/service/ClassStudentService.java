@@ -1,17 +1,15 @@
 package Server.service;
 
 import Server.dao.ClassStudentMapper;
-import Server.model.student.ClassStudent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import Server.model.course.ClassStudent;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.stereotype.Service;
+//import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
 public class ClassStudentService {
 
-    @Autowired
     private ClassStudentMapper classStudentMapper;
 
     public ClassStudent findByCardNumber(Integer cardNumber) {
@@ -32,7 +30,6 @@ public class ClassStudentService {
         }
     }
 
-    @Transactional
     public boolean addStudent(ClassStudent student) {
         try {
             // 检查一卡通号是否已存在
@@ -57,7 +54,6 @@ public class ClassStudentService {
         }
     }
 
-    @Transactional
     public boolean updateStudent(ClassStudent student) {
         try {
             // 检查学生是否存在
@@ -75,7 +71,6 @@ public class ClassStudentService {
         }
     }
 
-    @Transactional
     public boolean deleteStudent(Integer cardNumber) {
         try {
             // 检查学生是否存在

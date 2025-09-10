@@ -1,0 +1,224 @@
+/* 浅色主题变量 */
+.root {
+    -fx-primary-color: #3b82f6;
+    -fx-primary-light: #eff6ff;
+    -fx-secondary-color: #f8fafc;
+    -fx-text-color: #1e293b;
+    -fx-border-color: #e2e8f0;
+    -fx-accent-color: #10a37f;
+}
+
+.root {
+    -fx-background-color: #f8fafc;
+}
+
+.header {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 0 1px 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 2);
+}
+
+.title {
+    -fx-text-fill: #1e293b;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+
+.scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #cbd5e1;
+    -fx-background-radius: 4px;
+}
+
+.scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar:vertical .increment-button,
+.scroll-pane .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 0;
+}
+
+.chat-container {
+    -fx-background-color: #f8fafc;
+    -fx-padding: 20px;
+}
+
+.user-message-container {
+    -fx-alignment: top-right;
+    -fx-padding: 0 0 15px 0;
+}
+
+.ai-message-container {
+    -fx-alignment: top-left;
+    -fx-padding: 0 0 15px 0;
+}
+
+.message-name {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+    -fx-padding: 0 0 5px 0;
+}
+
+.user-message {
+    -fx-background-color: #88cff0;
+    -fx-background-radius: 18px;
+    -fx-padding: 12px 18px;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-border-radius: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 8, 0, 0, 2);
+}
+
+.ai-message {
+    -fx-background-color: white;
+    -fx-background-radius: 18px;
+    -fx-padding: 12px 18px;
+    -fx-text-fill: #1e293b;
+    -fx-font-size: 14px;
+    -fx-border-radius: 18px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);
+}
+
+.ai-avatar {
+    -fx-fill: #10a37f;
+}
+
+.input-area {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px 0 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, -2);
+}
+
+.input-field {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-text-fill: #1e293b;
+    -fx-prompt-text-fill: #94a3b8;
+    -fx-padding: 0 0 0 15px;
+    -fx-font-size: 14px;
+}
+
+.input-field:focused {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 0);
+}
+
+.send-button {
+    -fx-background-color: #3b82f6;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.3), 6, 0, 0, 2);
+}
+
+.send-button:hover {
+    -fx-background-color: #2563eb;
+}
+
+.send-button:pressed {
+    -fx-background-color: #1d4ed8;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 1);
+}
+
+.typing-indicator {
+    -fx-padding: 0 0 15px 0;
+}
+
+.typing-dots {
+    -fx-padding: 12px 18px;
+    -fx-background-color: white;
+    -fx-background-radius: 18px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);
+}
+
+.typing-dot {
+    -fx-fill: #94a3b8;
+}
+
+/* 动画关键帧 */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.typing-dot {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+.typing-dot:nth-child(1) {
+    -fx-animation: blink 1.4s infinite;
+    -fx-animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+    -fx-animation: blink 1.4s infinite;
+    -fx-animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    -fx-animation: blink 1.4s infinite;
+    -fx-animation-delay: 0.4s;
+}
+
+/* 消息时间戳样式 */
+.message-time {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 10px;
+    -fx-padding: 2px 0 0 0;
+}
+
+/* 滚动到最新消息按钮 */
+.scroll-to-bottom {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-padding: 8px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 6, 0, 0, 2);
+}
+
+.scroll-to-bottom:hover {
+    -fx-background-color: #f1f5f9;
+}
+
+/* 主题切换按钮 */
+.theme-toggle {
+    -fx-background-color: transparent;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 15;
+    -fx-background-radius: 15;
+    -fx-padding: 5px;
+    -fx-cursor: hand;
+}
+
+.theme-toggle:hover {
+    -fx-background-color: #f1f5f9;
+}

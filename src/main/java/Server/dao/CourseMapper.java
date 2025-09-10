@@ -1,6 +1,6 @@
 package Server.dao;
 
-import Server.model.Course;
+import Server.model.course.Course;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
