@@ -44,8 +44,10 @@ public class InputAnimation {
         ScaleTransition scLine = new ScaleTransition(d, ui.getRectangle()); scLine.setFromX(0); scLine.setToX(1);
         if(ui.getPane().getChildren().get(1) instanceof TextField tf){
             String txt = tf.getText();
+            // 无论是否有文本，占位符都需要上浮到相同位置
+            TranslateTransition tt = new TranslateTransition(d, ui.getPlaceHolder()); tt.setToY(-14); tt.play();
             if(txt == null || txt.isEmpty()){
-                TranslateTransition tt = new TranslateTransition(d, ui.getPlaceHolder()); tt.setToY(-14); tt.play(); scLine.play();
+                scLine.play();
             } else {
                 Label temp = new Label(); temp.setMouseTransparent(true); temp.setStyle("-fx-font-size:14px;-fx-text-fill:#B4C0C7;-fx-background-color:white"); temp.setFont(Resources.ROBOTO_REGULAR); temp.setPrefHeight(15);
                 ui.getChildren().add(temp); AnchorPane.setLeftAnchor(temp,5.0); AnchorPane.setTopAnchor(temp,6.0);

@@ -1,6 +1,7 @@
 package Client.studentmgmt.admin;
 
 import Client.studentmgmt.service.StudentClientService;
+import Client.util.UIUtil;
 import Server.model.student.Student;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -104,5 +105,12 @@ public class StudentAdminPanel extends VBox {
 
     private void uniformButtonWidth(Button b){b.setPrefWidth(BUTTON_WIDTH);b.setMinWidth(BUTTON_WIDTH);b.setMaxWidth(BUTTON_WIDTH);}
 
-    private void showAlert(Alert.AlertType type,String title,String msg){Alert a=new Alert(type);a.setTitle(title);a.setHeaderText(null);a.setContentText(msg);a.showAndWait();}
+    private void showAlert(Alert.AlertType type,String title,String msg){
+        Alert a=new Alert(type);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        UIUtil.applyLogoToAlert(a);
+        a.showAndWait();
+    }
 }
