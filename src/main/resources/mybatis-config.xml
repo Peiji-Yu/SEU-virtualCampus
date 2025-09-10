@@ -26,9 +26,17 @@
     </environments>
 
     <mappers>
-        <mapper class="Server.dao.UserMapper"/>
-        <mapper class="Server.dao.StudentMapper"/>
-        <mapper class="Server.dao.FinanceMapper"/>
-        <mapper class="Server.dao.StoreMapper"/>
+        <mapper class="Server.dao.login.UserMapper"/>
+        <mapper class="Server.dao.student.StudentMapper"/>
+        <mapper class="Server.dao.shop.FinanceMapper"/>
+        <mapper class="Server.dao.shop.StoreMapper"/>
+        <mapper class="Server.dao.book.BookItemMapper"/>
+        <mapper class="Server.dao.book.BookMapper"/>
+        <mapper class="Server.dao.book.BookRecordMapper"/>
+        <mapper class="Server.dao.book.LibUserMapper"/>
+        <mapper class="Server.dao.course.ClassStudentMapper"/>
+        <mapper class="Server.dao.course.CourseMapper"/>
+        <mapper class="Server.dao.course.StudentTeachingClassMapper"/>
+        <mapper class="Server.dao.course.TeachingClassMapper"/>
     </mappers>
 </configuration>
