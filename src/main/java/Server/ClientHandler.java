@@ -14,6 +14,14 @@ import Server.dao.shop.StoreMapper;
 import Server.service.book.BookService;
 import com.google.gson.Gson;
 
+import Server.model.course.Course;
+import Server.model.teachingclass.TeachingClass;
+import Server.model.student.ClassStudent;
+import Server.service.ClassStudentService;
+import Server.service.CourseService;
+import Server.service.TeachingClassService;
+import Server.service.StudentTeachingClassService;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,6 +38,10 @@ public class ClientHandler implements Runnable {
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
+    private final ClassStudentService classStudentService = new ClassStudentService();
+    private final CourseService courseService = new CourseService();
+    private final TeachingClassService teachingClassService = new TeachingClassService();
+    private final StudentTeachingClassService studentTeachingClassService = new StudentTeachingClassService();
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
     private final BookService bookService = new BookService();
@@ -153,6 +165,260 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除成功") :
                                 Response.error("删除失败");
                         break;
+                        
+                    // 获取所有课程
+                    case "getAllCourses":
+                        List<Course> courses = courseService.getAllCourses();
+                        response = Response.success("获取所有课程成功", courses);
+                        break;
+                        
+                    // 根据学院查询课程
+                    case "getCoursesBySchool":
+                        String school = (String) request.getData().get("school");
+                        List<Course> schoolCourses = courseService.getCoursesBySchool(school);
+                        response = Response.success("获取学院课程成功", schoolCourses);
+                        break;
+                    
+                    // 获取所有教学班
+                    case "getAllTeachingClasses":
+                        List<TeachingClass> teachingClasses = teachingClassService.getAllTeachingClasses();
+                        response = Response.success("获取所有教学班成功", teachingClasses);
+                        break;
+                    
+                    // 根据课程ID获取教学班
+                    case "getTeachingClassesByCourseId":
+                        String courseId = (String) request.getData().get("courseId");
+                        List<TeachingClass> courseTeachingClasses = teachingClassService.findByCourseId(courseId);
+                        response = Response.success("获取课程教学班成功", courseTeachingClasses);
+                        break;
+                    
+                    // 根据教师ID获取教学班
+                    case "getTeachingClassesByTeacherId":
+                        Integer teacherId = ((Double) request.getData().get("teacherId")).intValue();
+                        List<TeachingClass> teacherTeachingClasses = teachingClassService.getTeachingClassesByTeacherId(teacherId);
+                        response = Response.success("获取教师教学班成功", teacherTeachingClasses);
+                        break;
+                    
+                    // 学生选课
+                    case "selectCourse":
+                        Integer selectCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        String teachingClassUuid = (String) request.getData().get("teachingClassUuid");
+                        
+                        try {
+                            // 检查教学班是否有空位
+                            boolean hasSeats = teachingClassService.hasAvailableSeats(teachingClassUuid);
+                            if (!hasSeats) {
+                                response = Response.error("教学班已满，无法选课");
+                                break;
+                            }
+                            
+                            // 检查是否已经选过该课程
+                            boolean alreadySelected = studentTeachingClassService.findByStudentAndTeachingClass(selectCardNumber, teachingClassUuid) != null;
+                            if (alreadySelected) {
+                                response = Response.error("您已经选过该课程");
+                                break;
+                            }
+                            
+                            // 创建选课关系
+                            boolean selectResult = studentTeachingClassService.addStudentTeachingClass(
+                                new StudentTeachingClass(selectCardNumber, teachingClassUuid));
+                            
+                            if (selectResult) {
+                                // 更新教学班选课人数
+                                teachingClassService.incrementSelectedCount(teachingClassUuid);
+                                response = Response.success("选课成功");
+                            } else {
+                                response = Response.error("选课失败");
+                            }
+                        } catch (Exception e) {
+                            response = Response.error("选课过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+                    
+                    // 学生退课
+                    case "dropCourse":
+                        Integer dropCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        String dropTeachingClassUuid = (String) request.getData().get("teachingClassUuid");
+                        
+                        try {
+                            // 检查是否选过该课程
+                            boolean isSelected = studentTeachingClassService.findByStudentAndTeachingClass(dropCardNumber, dropTeachingClassUuid) != null;
+                            if (!isSelected) {
+                                response = Response.error("您没有选过该课程");
+                                break;
+                            }
+                            
+                            // 删除选课关系
+                            boolean dropResult = studentTeachingClassService.deleteStudentTeachingClass(dropCardNumber, dropTeachingClassUuid);
+                            
+                            if (dropResult) {
+                                // 更新教学班选课人数
+                                teachingClassService.decrementSelectedCount(dropTeachingClassUuid);
+                                response = Response.success("退课成功");
+                            } else {
+                                response = Response.error("退课失败");
+                            }
+                        } catch (Exception e) {
+                            response = Response.error("退课过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+                    
+                    // 获取学生已选课程
+                    case "getStudentSelectedCourses":
+                        Integer studentCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
+                        
+                        try {
+                            // 获取学生的选课关系
+                            List<StudentTeachingClass> studentCourses = studentTeachingClassService.findByStudentCardNumber(studentCardNumber);
+                            
+                            // 获取教学班详细信息
+                            List<TeachingClass> teachingClasses = new ArrayList<>();
+                            for (StudentTeachingClass stc : studentCourses) {
+                                TeachingClass tc = teachingClassService.findByUuid(stc.getTeachingClassUuid());
+                                if (tc != null) {
+                                    teachingClasses.add(tc);
+                                }
+                            }
+                            
+                            response = Response.success("获取已选课程成功", teachingClasses);
+                        } catch (Exception e) {
+                            response = Response.error("获取已选课程失败: " + e.getMessage());
+                        }
+                        break;
+                    
+                    // 获取教学班的学生列表
+                    case "getTeachingClassStudents":
+                        String classUuid = (String) request.getData().get("teachingClassUuid");
+                        
+                        try {
+                            // 获取教学班的选课关系
+                            List<StudentTeachingClass> classStudents = studentTeachingClassService.findByTeachingClassUuid(classUuid);
+                            
+                            // 获取学生详细信息
+                            List<ClassStudent> students = new ArrayList<>();
+                            for (StudentTeachingClass stc : classStudents) {
+                                ClassStudent student = classStudentService.findByCardNumber(stc.getStudentCardNumber());
+                                if (student != null) {
+                                    students.add(student);
+                                }
+                            }
+                            
+                            response = Response.success("获取教学班学生列表成功", students);
+                        } catch (Exception e) {
+                            response = Response.error("获取教学班学生列表失败: " + e.getMessage());
+                        }
+                        break;
+                    
+                    // 添加课程（管理员功能）
+                    case "addCourse":
+                        Map<String, Object> courseData = (Map<String, Object>) request.getData().get("course");
+                        Course newCourse = createCourseFromMap(courseData);
+                        
+                        boolean addCourseResult = courseService.addCourse(newCourse);
+                        response = addCourseResult ? 
+                            Response.success("添加课程成功") : 
+                            Response.error("添加课程失败");
+                        break;
+                    
+                    // 更新课程（部分更新）
+                    case "updateCourse":
+                        String updateCourseId = (String) request.getData().get("courseId");
+                        Map<String, Object> courseUpdates = (Map<String, Object>) request.getData().get("updates");
+                        
+                        // 获取现有课程信息
+                        Course existingCourse = courseService.findByCourseId(updateCourseId);
+                        if (existingCourse == null) {
+                            response = Response.error("课程不存在");
+                            break;
+                        }
+                        
+                        // 应用更新 - 检查并更新所有可能的字段
+                        if (courseUpdates.containsKey("courseName")) {
+                            existingCourse.setCourseName((String) courseUpdates.get("courseName"));
+                        }
+                        if (courseUpdates.containsKey("school")) {
+                            existingCourse.setSchool((String) courseUpdates.get("school"));
+                        }
+                        if (courseUpdates.containsKey("credit")) {
+                            existingCourse.setCredit(((Double) courseUpdates.get("credit")).floatValue());
+                        }
+                        
+                        // 保存更新
+                        boolean updateCourseResult = courseService.updateCourse(existingCourse);
+                        response = updateCourseResult ? 
+                                Response.success("更新课程成功") : 
+                                Response.error("更新课程失败");
+                        break;
+                    
+                    // 删除课程（管理员功能）
+                    case "deleteCourse":
+                        String deleteCourseId = (String) request.getData().get("courseId");
+                        
+                        boolean deleteCourseResult = courseService.deleteCourse(deleteCourseId);
+                        response = deleteCourseResult ? 
+                            Response.success("删除课程成功") : 
+                            Response.error("删除课程失败");
+                        break;
+                    
+                    // 添加教学班（管理员功能）
+                    case "addTeachingClass":
+                        Map<String, Object> teachingClassData = (Map<String, Object>) request.getData().get("teachingClass");
+                        TeachingClass newTeachingClass = createTeachingClassFromMap(teachingClassData);
+                        
+                        boolean addTeachingClassResult = teachingClassService.addTeachingClass(newTeachingClass);
+                        response = addTeachingClassResult ? 
+                            Response.success("添加教学班成功") : 
+                            Response.error("添加教学班失败");
+                        break;
+                    
+                    // 更新教学班（部分更新）
+                    case "updateTeachingClass":
+                        String updateUuid = (String) request.getData().get("uuid");
+                        Map<String, Object> updates = (Map<String, Object>) request.getData().get("updates");
+                        
+                        // 获取现有教学班信息
+                        TeachingClass existingTeachingClass = teachingClassService.findByUuid(updateUuid);
+                        if (existingTeachingClass == null) {
+                            response = Response.error("教学班不存在");
+                            break;
+                        }
+                        
+                        // 应用更新 - 检查并更新所有可能的字段
+                        if (updates.containsKey("courseId")) {
+                            existingTeachingClass.setCourseId((String) updates.get("courseId"));
+                        }
+                        if (updates.containsKey("teacherId")) {
+                            existingTeachingClass.setTeacherId(((Double) updates.get("teacherId")).intValue());
+                        }
+                        if (updates.containsKey("schedule")) {
+                            existingTeachingClass.setSchedule((String) updates.get("schedule"));
+                        }
+                        if (updates.containsKey("place")) {
+                            existingTeachingClass.setPlace((String) updates.get("place"));
+                        }
+                        if (updates.containsKey("capacity")) {
+                            existingTeachingClass.setCapacity(((Double) updates.get("capacity")).intValue());
+                        }
+                        if (updates.containsKey("selectedCount")) {
+                            existingTeachingClass.setSelectedCount(((Double) updates.get("selectedCount")).intValue());
+                        }
+                        
+                        // 保存更新
+                        boolean updateResult = teachingClassService.updateTeachingClass(existingTeachingClass);
+                        response = updateResult ? 
+                                Response.success("更新教学班成功") : 
+                                Response.error("更新教学班失败");
+                        break;
+                    
+                    // 删除教学班（管理员功能）
+                    case "deleteTeachingClass":
+                        String deleteTeachingClassUuid = (String) request.getData().get("teachingClassUuid");
+                        
+                        boolean deleteTeachingClassResult = teachingClassService.deleteTeachingClass(deleteTeachingClassUuid);
+                        response = deleteTeachingClassResult ? 
+                            Response.success("删除教学班成功") : 
+                            Response.error("删除教学班失败");
+                        break;    
 
                     case "getFinanceCard":
                         Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
@@ -422,6 +688,33 @@ public class ClientHandler implements Runnable {
         return student;
     }
 
+    // 添加辅助方法，用于从Map创建Course对象
+    private Course createCourseFromMap(Map<String, Object> data) {
+        Course course = new Course();
+        
+        if (data.containsKey("courseId")) course.setCourseId((String) data.get("courseId"));
+        if (data.containsKey("courseName")) course.setCourseName((String) data.get("courseName"));
+        if (data.containsKey("school")) course.setSchool((String) data.get("school"));
+        if (data.containsKey("credit")) course.setCredit(((Double) data.get("credit")).floatValue());
+        
+        return course;
+    }
+    
+    // 添加辅助方法，用于从Map创建TeachingClass对象
+    private TeachingClass createTeachingClassFromMap(Map<String, Object> data) {
+        TeachingClass teachingClass = new TeachingClass();
+        
+        if (data.containsKey("uuid")) teachingClass.setUuid((String) data.get("uuid"));
+        if (data.containsKey("courseId")) teachingClass.setCourseId((String) data.get("courseId"));
+        if (data.containsKey("teacherId")) teachingClass.setTeacherId(((Double) data.get("teacherId")).intValue());
+        if (data.containsKey("schedule")) teachingClass.setSchedule((String) data.get("schedule"));
+        if (data.containsKey("place")) teachingClass.setPlace((String) data.get("place"));
+        if (data.containsKey("capacity")) teachingClass.setCapacity(((Double) data.get("capacity")).intValue());
+        if (data.containsKey("selectedCount")) teachingClass.setSelectedCount(((Double) data.get("selectedCount")).intValue());
+        
+        return teachingClass;
+    }
+    
     // 添加辅助方法，用于从Map创建StoreItem对象
     private StoreItem createStoreItemFromMap(Map<String, Object> data) {
         StoreItem item = new StoreItem();
