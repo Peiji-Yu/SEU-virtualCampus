@@ -85,8 +85,6 @@ public class StoreService {
         }
     }
 
-    // 在StoreService.java中添加以下方法
-
     /**
      * 按类别获取商品
      */
@@ -94,6 +92,16 @@ public class StoreService {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
             return storeMapper.findItemsByCategory(category);
+        }
+    }
+
+    /**
+     * 获取所有商品类别
+     */
+    public List<String> getAllCategories() {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+            return storeMapper.findAllCategories();
         }
     }
 
@@ -113,7 +121,6 @@ public class StoreService {
     public StoreOrder createOrder(StoreOrder order) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-            FinanceService financeService = new FinanceService();
 
             // 检查商品库存
             for (StoreOrderItem item : order.getItems()) {

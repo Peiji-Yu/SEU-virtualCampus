@@ -72,6 +72,12 @@ public interface StoreMapper {
     List<StoreItem> findItemsByCategory(@Param("category") String category);
 
     /**
+     * 获取所有商品类别
+     */
+    @Select("SELECT DISTINCT category FROM store_item")
+    List<String> findAllCategories();
+
+    /**
      * 按类别和关键词搜索商品
      */
     @Select("SELECT * FROM store_item WHERE category = #{category} AND " +
