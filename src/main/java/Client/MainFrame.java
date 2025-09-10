@@ -9,6 +9,7 @@ import Client.courseselect.CourseSelectPanel;
 import Client.teacherclass.MyClassroomPanel;
 import Client.coursemgmt.admin.CourseAdminPanel;
 import Client.finance.FinancePanel; // 新增导入
+import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -128,6 +129,12 @@ public class MainFrame {
         financeBtn.setPrefHeight(45);
         resetButtonStyle(financeBtn);
 
+        // 新增：AI 助手按钮（所有角色显示）
+        Button aiAssistBtn = new Button("AI助手");
+        aiAssistBtn.setPrefWidth(130);
+        aiAssistBtn.setPrefHeight(45);
+        resetButtonStyle(aiAssistBtn);
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -135,7 +142,8 @@ public class MainFrame {
         navButtons.add(timetableBtn);
         navButtons.add(courseSelectBtn);
         navButtons.add(myClassroomBtn);
-        navButtons.add(financeBtn); // 加入集合
+        navButtons.add(financeBtn); // 交易管理
+        navButtons.add(aiAssistBtn); // AI 助手
 
         // 为每个按钮添加图标与保存原文案
         attachIconAndRememberText(stuManageBtn, navIcon);
@@ -143,7 +151,8 @@ public class MainFrame {
         attachIconAndRememberText(timetableBtn, navIcon);
         attachIconAndRememberText(courseSelectBtn, navIcon);
         attachIconAndRememberText(myClassroomBtn, navIcon);
-        attachIconAndRememberText(financeBtn, navIcon); // 新增图标
+        attachIconAndRememberText(financeBtn, navIcon); // 交易管理图标
+        attachIconAndRememberText(aiAssistBtn, navIcon); // AI 助手图标
 
         // 右侧内容初始载入
         if ("student".equals(userType)) {
@@ -172,6 +181,8 @@ public class MainFrame {
             if ("student".equals(userType) || "admin".equals(userType) || "teacher".equals(userType)) {
                 leftBar.getChildren().add(financeBtn);
             }
+            // AI 助手按钮添加
+            leftBar.getChildren().add(aiAssistBtn);
 
             // 初次默认选中
             if ("student".equals(userType) || "admin".equals(userType)) {
@@ -260,6 +271,20 @@ public class MainFrame {
                 setSelectedButtonStyle(financeBtn);
                 currentSelectedButton = financeBtn;
                 root.setCenter(new FinancePanel(cardNumber, userType));
+            });
+
+            // 新增：AI 助手
+            aiAssistBtn.setOnAction(e -> {
+                if (currentSelectedButton == aiAssistBtn) {
+                    return;
+                }
+                if (currentSelectedButton != null) {
+                    resetButtonStyle(currentSelectedButton);
+                }
+                setSelectedButtonStyle(aiAssistBtn);
+                currentSelectedButton = aiAssistBtn;
+                // 传递一个用户显示名（这里用卡号，可按需改为角色+卡号）
+                root.setCenter(new AIChatPanel(cardNumber));
             });
         } else {
             // 其他类型暂无功能，显示提示

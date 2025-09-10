@@ -109,17 +109,17 @@ public class FinancePanel extends BorderPane {
         queryBalanceBtn.setOnAction(e -> fetchCardInfo());
 
         // 余额显示：前缀 + 金额（金额蓝色）
-        balancePrefixLabel = new Label("一卡通：");
+        balancePrefixLabel = new Label("一卡通号："); // 修改前缀文字
         balancePrefixLabel.setTextFill(Color.web(TEXT));
         balanceValueLabel = new Label("--");
         balanceValueLabel.setStyle("-fx-text-fill: " + PRIMARY + "; -fx-font-weight: bold;");
         HBox balanceBox = new HBox(4, balancePrefixLabel, balanceValueLabel);
         balanceBox.setAlignment(Pos.CENTER_LEFT);
 
-        // 充值区域
-        Label amtLb = new Label("充值金额(分):");
+        // 充值区域（单位改为元）
+        Label amtLb = new Label("充值金额(元):");
         rechargeAmtField = new TextField();
-        rechargeAmtField.setPromptText("整数");
+        rechargeAmtField.setPromptText("金额(元)");
         rechargeAmtField.setPrefWidth(90);
 
         Label descLb = new Label("备注:");
@@ -136,6 +136,12 @@ public class FinancePanel extends BorderPane {
         typeFilter = new ComboBox<>();
         typeFilter.getItems().addAll("全部", "充值", "消费", "退款");
         typeFilter.getSelectionModel().selectFirst();
+        // 切换类别时自动查询
+        typeFilter.valueProperty().addListener((obs, oldV, newV) -> {
+            String sel = newV;
+            if (sel == null || "全部".equals(sel)) sel = null;
+            fetchTransactions(sel);
+        });
 
         queryTxBtn = new Button("查询交易");
         stylePrimary(queryTxBtn);
@@ -145,11 +151,10 @@ public class FinancePanel extends BorderPane {
             fetchTransactions(sel);
         });
 
+        // 去除原先的三个分隔符，不再添加 Separator()
         pane.getChildren().addAll(
                 cardLb, cardField, queryBalanceBtn, balanceBox,
-                new Separator(),
                 amtLb, rechargeAmtField, descLb, rechargeDescField, rechargeBtn,
-                new Separator(),
                 typeLb, typeFilter, queryTxBtn
         );
         return pane;
@@ -171,7 +176,7 @@ public class FinancePanel extends BorderPane {
         typeCol.setCellValueFactory(c -> c.getValue().typeProperty());
         typeCol.setPrefWidth(60);
 
-        TableColumn<Transaction, String> amountCol = new TableColumn<>("金额");
+        TableColumn<Transaction, String> amountCol = new TableColumn<>("金额(分)"); // 保留原单位显示，如需转元可再改
         amountCol.setCellValueFactory(c -> c.getValue().amountProperty());
         amountCol.setPrefWidth(70);
 
@@ -183,6 +188,12 @@ public class FinancePanel extends BorderPane {
         timeCol.setPrefWidth(150);
 
         table.getColumns().addAll(idCol, typeCol, amountCol, descCol, timeCol);
+
+        // 监听 skin 创建后再设置表头样式
+        table.skinProperty().addListener((obs, o, n) -> styleTableHeader());
+        // 初始尝试一次（可能此时skin未就绪，方法内部再 runLater）
+        styleTableHeader();
+
         box.getChildren().add(table);
         VBox.setVgrow(table, Priority.ALWAYS);
         return box;
@@ -276,10 +287,14 @@ public class FinancePanel extends BorderPane {
         Integer card = parseTargetCard();
         if (card == null) return;
         String amtStr = rechargeAmtField.getText().trim();
-        if (amtStr.isEmpty()) { alertInfo("请输入充值金额(分)"); return; }
-        int amount;
-        try { amount = Integer.parseInt(amtStr); } catch (NumberFormatException e) { alertInfo("金额需为整数"); return; }
-        if (amount <= 0) { alertInfo("金额需>0"); return; }
+        if (amtStr.isEmpty()) { alertInfo("请输入充值金额(元)"); return; }
+        BigDecimal yuan;
+        try { yuan = new BigDecimal(amtStr); } catch (NumberFormatException e) { alertInfo("金额格式不正确"); return; }
+        if (yuan.compareTo(BigDecimal.ZERO) <= 0) { alertInfo("金额需>0"); return; }
+        // 转换为分，四舍五入到分
+        BigDecimal centsBD = yuan.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP);
+        if (centsBD.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0) { alertInfo("金额过大"); return; }
+        int amount = centsBD.intValueExact();
         String desc = rechargeDescField.getText().trim();
         runAsync(() -> FinanceRequestSender.rechargeFinanceCard(card, amount, desc), json -> {
             JsonObject obj = GSON.fromJson(json, JsonObject.class);
@@ -305,6 +320,22 @@ public class FinancePanel extends BorderPane {
     private void updateBalanceDisplay(int cents) { // 新增：分转元
         BigDecimal yuan = BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100), 2, RoundingMode.DOWN).stripTrailingZeros();
         balanceValueLabel.setText(yuan.toPlainString() + "元");
+    }
+
+    private void styleTableHeader() {
+        if (table == null) return;
+        Platform.runLater(() -> {
+            Region headerBg = (Region) table.lookup(".column-header-background");
+            if (headerBg != null) {
+                headerBg.setStyle("-fx-background-color: " + PRIMARY + ";");
+            }
+            // 设置每个列标题文本颜色
+            table.lookupAll(".column-header .label").forEach(n -> {
+                if (n instanceof Label) {
+                    ((Label) n).setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+                }
+            });
+        });
     }
 
     // 统一异步执行（简单封装）
