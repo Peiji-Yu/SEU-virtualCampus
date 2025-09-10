@@ -39,8 +39,8 @@ public class DeepSeekChat extends Application {
     private Button sendButton;
     private ScrollPane scrollPane;
     private List<JsonObject> conversationHistory = new ArrayList<>();
-    private String apiKey = "sk-8e26ac6a67c6403aa419ce1d31c46f45"; // 请替换为您的API密钥
-    private String apiUrl = "https://api.deepseek.com/v1/chat/completions"; // 根据实际API调整
+    private String apiKey = "your_api_key";
+    private String apiUrl = "https://api.deepseek.com/v1/chat/completions";
 
     // Gson实例
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
