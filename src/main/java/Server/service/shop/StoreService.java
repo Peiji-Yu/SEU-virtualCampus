@@ -8,6 +8,7 @@ import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static Server.model.shop.StoreOrder.STATUS_PAID;
@@ -175,7 +176,7 @@ public class StoreService {
                 throw new RuntimeException("订单不存在");
             }
 
-            if (order.getStatus() != STATUS_PENDING) {
+            if (!Objects.equals(order.getStatus(), STATUS_PENDING)) {
                 throw new RuntimeException("订单状态不正确: " + order.getStatus());
             }
 
@@ -193,7 +194,10 @@ public class StoreService {
 
                 // 增加商品销量
                 for (StoreOrderItem item : order.getItems()) {
-                    storeMapper.increaseItemSales(item.getItemUuid(), item.getAmount());
+                    int increaseItemSalesResult = storeMapper.increaseItemSales(item.getItemUuid(), item.getAmount());
+                    if (increaseItemSalesResult == 0) {
+                        throw new RuntimeException("增加商品销量失败");
+                    }
                 }
 
                 sqlSession.commit();
@@ -217,7 +221,7 @@ public class StoreService {
                 throw new RuntimeException("订单不存在");
             }
 
-            if (order.getStatus() == STATUS_PAID) {
+            if (Objects.equals(order.getStatus(), STATUS_PAID)) {
                 throw new RuntimeException("已支付的订单不能取消");
             }
 
@@ -228,6 +232,9 @@ public class StoreService {
                     throw new RuntimeException("更新商品库存失败");
                 }
             }
+
+            // 删除订单商品项
+            storeMapper.deleteOrderItems(orderUuid);
 
             // 删除订单
             int result = storeMapper.deleteOrder(orderUuid);
@@ -268,7 +275,18 @@ public class StoreService {
 
                 // 减少商品销量
                 for (StoreOrderItem item : order.getItems()) {
-                    storeMapper.decreaseItemSales(item.getItemUuid(), item.getAmount());
+                    int decreaseItemSalesResult = storeMapper.decreaseItemSales(item.getItemUuid(), item.getAmount());
+                    if (decreaseItemSalesResult == 0) {
+                        throw new RuntimeException("减少商品销量失败");
+                    }
+                }
+
+                // 恢复商品库存
+                for (StoreOrderItem item : order.getItems()) {
+                    int stockUpdateResult = storeMapper.updateItemStock(item.getItemUuid(), -item.getAmount());
+                    if (stockUpdateResult == 0) {
+                        throw new RuntimeException("更新商品库存失败");
+                    }
                 }
 
                 sqlSession.commit();
@@ -303,7 +321,7 @@ public class StoreService {
     public StoreOrder getOrderById(UUID orderUuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-            return storeMapper.findOrderById(orderUuid);
+            return storeMapper.findOrderWithDetailsById(orderUuid);
         }
     }
 
