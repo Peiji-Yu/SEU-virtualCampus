@@ -113,8 +113,15 @@ public class MainFrame {
         leftBar.setMaxHeight(Double.MAX_VALUE);
         leftBar.setFillWidth(true);
 
-        // 统一图标资源
-        Image navIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/Logo.png")));
+        // 统一图标资源（分别加载各自功能图标）
+        Image iconStudent = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/学生.png")));
+        Image iconCourseMgmt = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/课程.png")));
+        Image iconFinance = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/交易记录.png")));
+        Image iconStore = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/商店.png")));
+        Image iconAI = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/deepseek-copy.png")));
+        Image iconClassroom = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/课堂.png")));
+        Image iconTimetable = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/表格.png")));
+        Image iconCourseSelect = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/选课.png")));
 
         Button stuManageBtn = new Button("学籍管理");
         stuManageBtn.setPrefWidth(130);
@@ -183,14 +190,14 @@ public class MainFrame {
         navButtons.add(aiAssistBtn); // AI 助手
 
         // 为每个按钮添加图标与保存原文案
-        attachIconAndRememberText(stuManageBtn, navIcon);
-        attachIconAndRememberText(courseMgmtBtn, navIcon);
-        attachIconAndRememberText(timetableBtn, navIcon);
-        attachIconAndRememberText(courseSelectBtn, navIcon);
-        attachIconAndRememberText(myClassroomBtn, navIcon);
-        attachIconAndRememberText(financeBtn, navIcon); // 交易管理图标
-        attachIconAndRememberText(storeBtn, navIcon);   // 校园商店图标
-        attachIconAndRememberText(aiAssistBtn, navIcon); // AI 助手图标
+        attachIconAndRememberText(stuManageBtn, iconStudent);
+        attachIconAndRememberText(courseMgmtBtn, iconCourseMgmt);
+        attachIconAndRememberText(timetableBtn, iconTimetable);
+        attachIconAndRememberText(courseSelectBtn, iconCourseSelect);
+        attachIconAndRememberText(myClassroomBtn, iconClassroom);
+        attachIconAndRememberText(financeBtn, iconFinance);
+        attachIconAndRememberText(storeBtn, iconStore);
+        attachIconAndRememberText(aiAssistBtn, iconAI);
 
         // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
         centerContainer = new StackPane();
@@ -505,16 +512,12 @@ public class MainFrame {
 
     private void setSelectedButtonStyle(Button button) {
         button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 10; " +
-                "-fx-border-color: " + PRIMARY_COLOR + "; -fx-border-width: 2; -fx-border-radius: 10; " +
-                "-fx-background-color: " + BACKGROUND_COLOR + "; -fx-text-fill: " + PRIMARY_COLOR + "; " +
-                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
+                "-fx-text-fill: " + PRIMARY_COLOR + ";");
     }
 
     private void resetButtonStyle(Button button) {
         button.setStyle("-fx-font-size: 15px; -fx-background-radius: 10; " +
-                "-fx-background-color: white; -fx-text-fill: " + TEXT_COLOR + "; " +
-                "-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 10; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
+                "-fx-text-fill: " + TEXT_COLOR + ";");
     }
 
     private void setDangerButtonStyle(Button button) {
