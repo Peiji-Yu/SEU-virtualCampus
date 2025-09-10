@@ -1,4 +1,4 @@
-package Client;
+package Client.store;
 
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;

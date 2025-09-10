@@ -5,6 +5,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -27,11 +28,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import Client.util.Config; // 新增：读取 application.properties
 
 /**
- * 嵌入式 AI 助手聊天面板（替代独立 Application 的 DeepSeekChat）。
+ * 嵌入式 AI 助手聊天面板（替代独立 ）。
  * 直接作为主界面 center 内容使用，不再创建 Stage。\n * 说明：API Key 与 URL 通过配置 / 环境变量加载。
  */
 public class AIChatPanel extends BorderPane {
@@ -48,9 +50,16 @@ public class AIChatPanel extends BorderPane {
     private final Gson gson = new GsonBuilder().create();
     private final String userDisplayName; // 用于显示在用户消息头
 
+    // 新增：头像图片缓存
+    private Image aiAvatarImg;
+    private Image userAvatarImg;
+
     public AIChatPanel(String userDisplayName){
         this.userDisplayName = userDisplayName == null ? "用户" : userDisplayName;
-        // 启动前尝试加载外部配置：优先环境变量 > application.properties > 默认占位
+        // 加载头像资源
+        try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
+        try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
+        // 启动前尝试加载外部配置
         String envKey = System.getenv("DEEPSEEK_API_KEY");
         if (envKey != null && !envKey.isBlank()) {
             this.apiKey = envKey.trim();
@@ -88,7 +97,7 @@ public class AIChatPanel extends BorderPane {
         header.setAlignment(Pos.CENTER_LEFT);
 
         try {
-            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek-logo.jpeg")));
+            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
             logo.setFitHeight(30);
             logo.setPreserveRatio(true);
             Label title = new Label("AI助手");
@@ -135,8 +144,8 @@ public class AIChatPanel extends BorderPane {
         HBox messageBox = new HBox();
         messageBox.getStyleClass().add("ai-message-container");
         messageBox.setAlignment(Pos.TOP_LEFT);
-        Circle aiAvatar = new Circle(20);
-        aiAvatar.getStyleClass().add("ai-avatar");
+        // 使用图片头像替换圆形
+        Node aiAvatarNode = buildAiAvatarNode();
         VBox messageContent = new VBox();
         messageContent.setSpacing(5);
         Label nameLabel = new Label("DeepSeek");
@@ -147,7 +156,7 @@ public class AIChatPanel extends BorderPane {
         textFlow.getChildren().add(t);
         messageContent.getChildren().addAll(nameLabel, textFlow);
         HBox.setMargin(messageContent, new Insets(0,0,0,10));
-        messageBox.getChildren().addAll(aiAvatar, messageContent);
+        messageBox.getChildren().addAll(aiAvatarNode, messageContent);
         chatContainer.getChildren().add(messageBox);
         FadeTransition ft = new FadeTransition(Duration.millis(500), messageBox);
         ft.setFromValue(0); ft.setToValue(1); ft.play();
@@ -166,8 +175,9 @@ public class AIChatPanel extends BorderPane {
 
         sendButton.getStyleClass().add("send-button");
         sendButton.setPrefSize(40,40);
+        sendButton.setAlignment(Pos.CENTER); // 新增：按钮内容居中
         try {
-            ImageView sendIcon = new ImageView(new Image(getClass().getResourceAsStream("/Image/send-icon.jpg")));
+            ImageView sendIcon = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/send-icon.png")));
             sendIcon.setFitHeight(20); sendIcon.setPreserveRatio(true);
             sendButton.setGraphic(sendIcon);
         } catch (Exception ignore) {}
@@ -198,8 +208,10 @@ public class AIChatPanel extends BorderPane {
         TextFlow tf = new TextFlow(); tf.getStyleClass().add("user-message");
         tf.getChildren().add(new Text(message));
         content.getChildren().addAll(name, tf);
+        // 用户头像（右侧）
+        Node userAvatarNode = buildUserAvatarNode();
         HBox.setMargin(content, new Insets(0,10,0,0));
-        box.getChildren().add(content);
+        box.getChildren().addAll(content, userAvatarNode);
         chatContainer.getChildren().add(box);
         FadeTransition ft = new FadeTransition(Duration.millis(300), box); ft.setFromValue(0); ft.setToValue(1); ft.play();
         JsonObject obj = new JsonObject(); obj.addProperty("role","user"); obj.addProperty("content", message); conversationHistory.add(obj);
@@ -208,26 +220,26 @@ public class AIChatPanel extends BorderPane {
     private void addAiMessage(String message){
         removeTypingIndicator();
         HBox box = new HBox(); box.getStyleClass().add("ai-message-container"); box.setAlignment(Pos.TOP_LEFT);
-        Circle aiAvatar = new Circle(20); aiAvatar.getStyleClass().add("ai-avatar");
+        Node aiAvatarNode = buildAiAvatarNode();
         VBox content = new VBox(); content.setSpacing(5);
         Label name = new Label("DeepSeek"); name.getStyleClass().add("message-name");
         TextFlow tf = new TextFlow(); tf.getStyleClass().add("ai-message");
         tf.getChildren().add(new Text(message));
         content.getChildren().addAll(name, tf); HBox.setMargin(content, new Insets(0,0,0,10));
-        box.getChildren().addAll(aiAvatar, content); chatContainer.getChildren().add(box);
+        box.getChildren().addAll(aiAvatarNode, content); chatContainer.getChildren().add(box);
         FadeTransition ft = new FadeTransition(Duration.millis(500), box); ft.setFromValue(0); ft.setToValue(1); ft.play();
         JsonObject obj = new JsonObject(); obj.addProperty("role","assistant"); obj.addProperty("content", message); conversationHistory.add(obj);
     }
 
     private void showTypingIndicator(){
         HBox typing = new HBox(); typing.getStyleClass().add("typing-indicator"); typing.setAlignment(Pos.TOP_LEFT); typing.setId("typing-indicator");
-        Circle aiAvatar = new Circle(20); aiAvatar.getStyleClass().add("ai-avatar");
+        Node aiAvatarNode = buildAiAvatarNode();
         VBox indicatorContent = new VBox(); indicatorContent.setSpacing(5);
         Label name = new Label("DeepSeek"); name.getStyleClass().add("message-name");
         HBox dots = new HBox(5); dots.getStyleClass().add("typing-dots"); dots.setAlignment(Pos.CENTER_LEFT);
         for(int i=0;i<3;i++){ Circle d = new Circle(4); d.getStyleClass().add("typing-dot"); dots.getChildren().add(d);}
         indicatorContent.getChildren().addAll(name,dots); HBox.setMargin(indicatorContent,new Insets(0,0,0,10));
-        typing.getChildren().addAll(aiAvatar, indicatorContent); chatContainer.getChildren().add(typing);
+        typing.getChildren().addAll(aiAvatarNode, indicatorContent); chatContainer.getChildren().add(typing);
     }
 
     private void removeTypingIndicator(){
@@ -278,5 +290,26 @@ public class AIChatPanel extends BorderPane {
         task.setOnSucceeded(e -> addAiMessage(task.getValue()));
         task.setOnFailed(e -> addAiMessage("任务失败: " + task.getException().getMessage()));
         Thread th = new Thread(task, "ai-chat-api"); th.setDaemon(true); th.start();
+    }
+
+    // 新增：构建AI头像节点
+    private Node buildAiAvatarNode(){
+        if (aiAvatarImg != null) {
+            ImageView iv = new ImageView(aiAvatarImg);
+            iv.setFitWidth(40); iv.setFitHeight(40); iv.setPreserveRatio(true);
+            iv.setSmooth(true); iv.setCache(true);
+            return iv;
+        }
+        Circle fallback = new Circle(20); fallback.getStyleClass().add("ai-avatar"); return fallback;
+    }
+    // 新增：构建用户头像节点
+    private Node buildUserAvatarNode(){
+        if (userAvatarImg != null) {
+            ImageView iv = new ImageView(userAvatarImg);
+            iv.setFitWidth(40); iv.setFitHeight(40); iv.setPreserveRatio(true);
+            iv.setSmooth(true); iv.setCache(true);
+            return iv;
+        }
+        Circle fallback = new Circle(20); fallback.getStyleClass().add("user-avatar"); return fallback;
     }
 }

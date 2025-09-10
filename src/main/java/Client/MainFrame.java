@@ -10,6 +10,7 @@ import Client.teacherclass.MyClassroomPanel;
 import Client.coursemgmt.admin.CourseAdminPanel;
 import Client.finance.FinancePanel; // 新增导入
 import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
+import Client.store.StorePanel; // 新增：校园商店面板
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -24,6 +25,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.Node; // 新增
 import java.util.*;
 
 /**
@@ -57,6 +59,9 @@ public class MainFrame {
     // 当前选中导航按钮（用于复位样式）
     private Button currentSelectedButton;
 
+    // 新增：中心内容容器字段
+    private StackPane centerContainer;
+
     public MainFrame(String cardNumber) {
         this.cardNumber = cardNumber;
         this.userType = getUserType(cardNumber);
@@ -77,61 +82,92 @@ public class MainFrame {
         stage.setMinWidth(1300);
         stage.setMinHeight(750);
 
-        BorderPane root = new BorderPane();
-        root.setPadding(new Insets(10));
+        // ===== 最外层根容器（铺满窗口） =====
+        StackPane rootStack = new StackPane();
+        rootStack.setStyle("-fx-background-color: linear-gradient(to bottom right,#f1f6ff,#ffffff);");
 
-        // 顶部用户栏
+        // 主功能面板：内部使用 BorderPane 分区（顶部、左侧功能栏、中心内容区）
+        BorderPane mainLayout = new BorderPane();
+        mainLayout.setPrefSize(1300, 750);
+        AnchorPane anchorWrapper = new AnchorPane(mainLayout);
+        AnchorPane.setTopAnchor(mainLayout, 0.0);
+        AnchorPane.setBottomAnchor(mainLayout, 0.0);
+        AnchorPane.setLeftAnchor(mainLayout, 0.0);
+        AnchorPane.setRightAnchor(mainLayout, 0.0);
+        rootStack.getChildren().add(anchorWrapper);
+
+        // 顶部用户栏容器
         HBox topBar = buildTopBar();
-        root.setTop(topBar);
+        VBox topContainer = new VBox(topBar); // 后续如需加入二级工具条可追加
+        topContainer.setFillWidth(true);
+        mainLayout.setTop(topContainer);
 
-        // 左侧导航栏
+        // 左侧导航栏（原 leftBar 与折叠容器 sidebarContainer 将被加入功能栏容器）
         VBox leftBar = new VBox(18);
         leftBar.setPadding(new Insets(15));
         leftBar.setAlignment(Pos.TOP_CENTER);
-        leftBar.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-background-radius: 12; " +
+        // 修改：去除左上圆角，仅保留左下外侧圆角
+        leftBar.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-background-radius: 0 0 0 12; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
+        leftBar.setPrefHeight(Double.MAX_VALUE);
+        leftBar.setMaxHeight(Double.MAX_VALUE);
+        leftBar.setFillWidth(true);
 
         // 统一图标资源
         Image navIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/Logo.png")));
 
         Button stuManageBtn = new Button("学籍管理");
         stuManageBtn.setPrefWidth(130);
+        stuManageBtn.setMaxWidth(Double.MAX_VALUE);
         stuManageBtn.setPrefHeight(45);
         setSelectedButtonStyle(stuManageBtn);
 
         // 管理员-课程管理按钮
         Button courseMgmtBtn = new Button("课程管理");
         courseMgmtBtn.setPrefWidth(130);
+        courseMgmtBtn.setMaxWidth(Double.MAX_VALUE);
         courseMgmtBtn.setPrefHeight(45);
         resetButtonStyle(courseMgmtBtn);
 
         // 学生-我的课表按钮
         Button timetableBtn = new Button("我的课表");
         timetableBtn.setPrefWidth(130);
+        timetableBtn.setMaxWidth(Double.MAX_VALUE);
         timetableBtn.setPrefHeight(45);
         resetButtonStyle(timetableBtn);
 
         // 学生-选课按钮
         Button courseSelectBtn = new Button("选课");
         courseSelectBtn.setPrefWidth(130);
+        courseSelectBtn.setMaxWidth(Double.MAX_VALUE);
         courseSelectBtn.setPrefHeight(45);
         resetButtonStyle(courseSelectBtn);
 
         // 教师-我的课堂按钮
         Button myClassroomBtn = new Button("我的课堂");
         myClassroomBtn.setPrefWidth(130);
+        myClassroomBtn.setMaxWidth(Double.MAX_VALUE);
         myClassroomBtn.setPrefHeight(45);
         resetButtonStyle(myClassroomBtn);
 
         // 新增：交易管理按钮（所有已知三类角色可见）
         Button financeBtn = new Button("交易管理");
         financeBtn.setPrefWidth(130);
+        financeBtn.setMaxWidth(Double.MAX_VALUE);
         financeBtn.setPrefHeight(45);
         resetButtonStyle(financeBtn);
+
+        // 新增：校园商店按钮
+        Button storeBtn = new Button("校园商店");
+        storeBtn.setPrefWidth(130);
+        storeBtn.setMaxWidth(Double.MAX_VALUE);
+        storeBtn.setPrefHeight(45);
+        resetButtonStyle(storeBtn);
 
         // 新增：AI 助手按钮（所有角色显示）
         Button aiAssistBtn = new Button("AI助手");
         aiAssistBtn.setPrefWidth(130);
+        aiAssistBtn.setMaxWidth(Double.MAX_VALUE);
         aiAssistBtn.setPrefHeight(45);
         resetButtonStyle(aiAssistBtn);
 
@@ -143,6 +179,7 @@ public class MainFrame {
         navButtons.add(courseSelectBtn);
         navButtons.add(myClassroomBtn);
         navButtons.add(financeBtn); // 交易管理
+        navButtons.add(storeBtn);   // 校园商店
         navButtons.add(aiAssistBtn); // AI 助手
 
         // 为每个按钮添加图标与保存原文案
@@ -152,15 +189,23 @@ public class MainFrame {
         attachIconAndRememberText(courseSelectBtn, navIcon);
         attachIconAndRememberText(myClassroomBtn, navIcon);
         attachIconAndRememberText(financeBtn, navIcon); // 交易管理图标
+        attachIconAndRememberText(storeBtn, navIcon);   // 校园商店图标
         attachIconAndRememberText(aiAssistBtn, navIcon); // AI 助手图标
+
+        // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
+        centerContainer = new StackPane();
+        // 修改：去除与顶部栏、侧边栏相交的圆角，仅保留右下外侧圆角
+        centerContainer.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 0 0 12 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04),12,0,0,2);");
+        StackPane.setMargin(centerContainer, new Insets(0));
+        mainLayout.setCenter(centerContainer);
 
         // 右侧内容初始载入
         if ("student".equals(userType)) {
-            root.setCenter(new StudentSelfPanel(cardNumber));
+            setCenterContent(new StudentSelfPanel(cardNumber));
         } else if ("admin".equals(userType)) {
-            root.setCenter(new StudentAdminPanel());
+            setCenterContent(new StudentAdminPanel());
         } else if ("teacher".equals(userType)) {
-            root.setCenter(new MyClassroomPanel(cardNumber));
+            setCenterContent(new MyClassroomPanel(cardNumber));
         }
 
         // 学生与管理员显示“学籍管理”按钮；学生显示“我的课表”“选课”；教师显示“我的课堂”；管理员显示“课程管理”
@@ -180,6 +225,7 @@ public class MainFrame {
             // 三类角色统一添加交易管理
             if ("student".equals(userType) || "admin".equals(userType) || "teacher".equals(userType)) {
                 leftBar.getChildren().add(financeBtn);
+                leftBar.getChildren().add(storeBtn); // 新增：校园商店
             }
             // AI 助手按钮添加
             leftBar.getChildren().add(aiAssistBtn);
@@ -202,9 +248,9 @@ public class MainFrame {
                 setSelectedButtonStyle(stuManageBtn);
                 currentSelectedButton = stuManageBtn;
                 if ("student".equals(userType)) {
-                    root.setCenter(new StudentSelfPanel(cardNumber));
+                    setCenterContent(new StudentSelfPanel(cardNumber));
                 } else {
-                    root.setCenter(new StudentAdminPanel());
+                    setCenterContent(new StudentAdminPanel());
                 }
             });
 
@@ -218,7 +264,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseMgmtBtn);
                 currentSelectedButton = courseMgmtBtn;
-                root.setCenter(new CourseAdminPanel());
+                setCenterContent(new CourseAdminPanel());
             });
 
             // 学生-我的课表
@@ -231,7 +277,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(timetableBtn);
                 currentSelectedButton = timetableBtn;
-                root.setCenter(new TimetablePanel(cardNumber));
+                setCenterContent(new TimetablePanel(cardNumber));
             });
 
             // 学生-选课
@@ -244,7 +290,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseSelectBtn);
                 currentSelectedButton = courseSelectBtn;
-                root.setCenter(new CourseSelectPanel(cardNumber));
+                setCenterContent(new CourseSelectPanel(cardNumber));
             });
 
             // 教师-我的课堂
@@ -257,20 +303,25 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(myClassroomBtn);
                 currentSelectedButton = myClassroomBtn;
-                root.setCenter(new MyClassroomPanel(cardNumber));
+                setCenterContent(new MyClassroomPanel(cardNumber));
             });
 
             // 新增：交易管理
             financeBtn.setOnAction(e -> {
-                if (currentSelectedButton == financeBtn) {
-                    return;
-                }
-                if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
-                }
+                if (currentSelectedButton == financeBtn) return;
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
                 setSelectedButtonStyle(financeBtn);
                 currentSelectedButton = financeBtn;
-                root.setCenter(new FinancePanel(cardNumber, userType));
+                setCenterContent(new FinancePanel(cardNumber, userType));
+            });
+
+            // 新增：校园商店事件
+            storeBtn.setOnAction(e -> {
+                if (currentSelectedButton == storeBtn) return;
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
+                setSelectedButtonStyle(storeBtn);
+                currentSelectedButton = storeBtn;
+                setCenterContent(new StorePanel(cardNumber, userType));
             });
 
             // 新增：AI 助手
@@ -283,9 +334,14 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(aiAssistBtn);
                 currentSelectedButton = aiAssistBtn;
-                // 传递一个用户显示名（这里用卡号，可按需改为角色+卡号）
-                root.setCenter(new AIChatPanel(cardNumber));
+                setCenterContent(new AIChatPanel(cardNumber));
             });
+
+            // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
+            Region functionSpacer = new Region();
+            VBox.setVgrow(functionSpacer, Priority.ALWAYS);
+            leftBar.getChildren().add(functionSpacer);
+            // ===== 修改结束 =====
         } else {
             // 其他类型暂无功能，显示提示
             VBox noFunctionBox = new VBox(20);
@@ -297,7 +353,7 @@ public class MainFrame {
             Label noFunctionDesc = new Label("您当前的账户类型暂无可用功能模块");
             noFunctionDesc.setStyle("-fx-font-size: 16px; -fx-text-fill: " + SECONDARY_TEXT_COLOR + ";");
             noFunctionBox.getChildren().addAll(noFunctionTitle, noFunctionDesc);
-            root.setCenter(noFunctionBox);
+            setCenterContent(noFunctionBox);
         }
 
         // ---- 折叠侧边栏容器与动画 ----
@@ -305,10 +361,15 @@ public class MainFrame {
         sidebarContainer.minWidthProperty().bind(sidebarWidth);
         sidebarContainer.prefWidthProperty().bind(sidebarWidth);
         sidebarContainer.maxWidthProperty().bind(sidebarWidth);
+        // 让侧栏容器占满 BorderPane 的垂直空间，从而 leftBar 能填满左侧剩余高度
+        sidebarContainer.prefHeightProperty().bind(mainLayout.heightProperty());
+        sidebarContainer.maxHeightProperty().bind(mainLayout.heightProperty());
+        // leftBar 高度跟随容器，保证不出现空隙
+        leftBar.prefHeightProperty().bind(sidebarContainer.heightProperty());
         // 内容裁剪，避免收起时外溢
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(sidebarWidth);
-        clip.heightProperty().bind(root.heightProperty());
+        clip.heightProperty().bind(sidebarContainer.heightProperty());
         sidebarContainer.setClip(clip);
 
         final Timeline[] currentAnim = new Timeline[1];
@@ -341,9 +402,9 @@ public class MainFrame {
             hideDelay.playFromStart();
         });
 
-        root.setLeft(sidebarContainer);
+        mainLayout.setLeft(sidebarContainer);
 
-        Scene scene = new Scene(root, 1500, 780);
+        Scene scene = new Scene(rootStack, 1500, 780);
         // 场景左缘热区：鼠标靠近左侧时自动展开
         scene.addEventFilter(MouseEvent.MOUSE_MOVED, e -> {
             if (e.getSceneX() <= 6 && sidebarWidth.get() <= SIDEBAR_COLLAPSED_WIDTH + 0.5) {
@@ -363,7 +424,8 @@ public class MainFrame {
         HBox bar = new HBox(12);
         bar.setPadding(new Insets(8, 12, 8, 12));
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
+        // 修改：仅保留顶部外侧两个圆角，上边圆角，下边相接为 0
+        bar.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12 12 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
         String roleCN;
         switch (userType) {
@@ -413,6 +475,19 @@ public class MainFrame {
             Object ud = b.getUserData();
             String original = ud instanceof String ? (String) ud : b.getText();
             b.setText(expanded ? original : "");
+            if (expanded) {
+                b.setPrefWidth(130);
+                b.setPrefHeight(45);
+            } else {
+                b.setPrefWidth(45);
+                b.setPrefHeight(45);
+                b.setContentDisplay(ContentDisplay.GRAPHIC_ONLY); // 收起时只显示图标
+                b.setAlignment(Pos.CENTER); // 图标居中
+            }
+            if (expanded) {
+                b.setContentDisplay(ContentDisplay.LEFT); // 展开时图标在左
+                b.setAlignment(Pos.CENTER_LEFT);
+            }
         }
     }
 
@@ -471,5 +546,12 @@ public class MainFrame {
             // 忽略异常，返回未知类型
         }
         return "unknown";
+    }
+
+    // 新增缺失的方法：设置中心内容
+    private void setCenterContent(Node node) {
+        if (centerContainer == null || node == null) return;
+        centerContainer.getChildren().setAll(node);
+        StackPane.setAlignment(node, Pos.CENTER);
     }
 }

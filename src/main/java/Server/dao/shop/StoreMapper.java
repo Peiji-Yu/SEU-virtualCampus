@@ -36,14 +36,14 @@ public interface StoreMapper {
      * 添加新商品
      */
     @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode) " +
-            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, #{salesVolume}, #{description}, #{barcode})")
+            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode})")
     int insertItem(StoreItem item);
 
     /**
      * 更新商品信息
      */
     @Update("UPDATE store_item SET item_name = #{itemName}, price = #{price}, picture_link = #{pictureLink}, " +
-            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode} " +
+            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode}, category = #{category}" +
             "WHERE uuid = #{uuid}")
     int updateItem(StoreItem item);
 
