@@ -8,6 +8,7 @@ import Client.timetable.TimetablePanel;
 import Client.courseselect.CourseSelectPanel;
 import Client.teacherclass.MyClassroomPanel;
 import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.finance.FinancePanel; // 新增导入
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -121,6 +122,12 @@ public class MainFrame {
         myClassroomBtn.setPrefHeight(45);
         resetButtonStyle(myClassroomBtn);
 
+        // 新增：交易管理按钮（所有已知三类角色可见）
+        Button financeBtn = new Button("交易管理");
+        financeBtn.setPrefWidth(130);
+        financeBtn.setPrefHeight(45);
+        resetButtonStyle(financeBtn);
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -128,6 +135,7 @@ public class MainFrame {
         navButtons.add(timetableBtn);
         navButtons.add(courseSelectBtn);
         navButtons.add(myClassroomBtn);
+        navButtons.add(financeBtn); // 加入集合
 
         // 为每个按钮添加图标与保存原文案
         attachIconAndRememberText(stuManageBtn, navIcon);
@@ -135,6 +143,7 @@ public class MainFrame {
         attachIconAndRememberText(timetableBtn, navIcon);
         attachIconAndRememberText(courseSelectBtn, navIcon);
         attachIconAndRememberText(myClassroomBtn, navIcon);
+        attachIconAndRememberText(financeBtn, navIcon); // 新增图标
 
         // 右侧内容初始载入
         if ("student".equals(userType)) {
@@ -158,6 +167,10 @@ public class MainFrame {
             }
             if ("teacher".equals(userType)) {
                 leftBar.getChildren().add(myClassroomBtn);
+            }
+            // 三类角色统一添加交易管理
+            if ("student".equals(userType) || "admin".equals(userType) || "teacher".equals(userType)) {
+                leftBar.getChildren().add(financeBtn);
             }
 
             // 初次默认选中
@@ -234,6 +247,19 @@ public class MainFrame {
                 setSelectedButtonStyle(myClassroomBtn);
                 currentSelectedButton = myClassroomBtn;
                 root.setCenter(new MyClassroomPanel(cardNumber));
+            });
+
+            // 新增：交易管理
+            financeBtn.setOnAction(e -> {
+                if (currentSelectedButton == financeBtn) {
+                    return;
+                }
+                if (currentSelectedButton != null) {
+                    resetButtonStyle(currentSelectedButton);
+                }
+                setSelectedButtonStyle(financeBtn);
+                currentSelectedButton = financeBtn;
+                root.setCenter(new FinancePanel(cardNumber, userType));
             });
         } else {
             // 其他类型暂无功能，显示提示
