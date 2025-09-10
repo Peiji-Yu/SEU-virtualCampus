@@ -1,4 +1,4 @@
-package Server.dao;
+package Server.dao.student;
 
 import Server.model.student.SearchType;
 import Server.model.student.Student;

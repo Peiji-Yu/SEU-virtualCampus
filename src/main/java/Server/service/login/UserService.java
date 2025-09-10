@@ -1,7 +1,7 @@
-package Server.service;
+package Server.service.login;
 
-import Server.dao.UserMapper;
-import Server.dao.FinanceMapper;
+import Server.dao.login.UserMapper;
+import Server.dao.shop.FinanceMapper;
 import Server.model.Response;
 import Server.model.login.User;
 import Server.model.shop.FinanceCard;

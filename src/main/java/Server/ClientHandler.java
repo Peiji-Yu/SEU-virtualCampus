@@ -6,12 +6,12 @@ import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
-import Server.service.UserService;
-import Server.service.StudentService;
-import Server.service.FinanceService;
-import Server.service.StoreService;
-import Server.dao.StoreMapper;
-import Server.service.BookService;
+import Server.service.login.UserService;
+import Server.service.student.StudentService;
+import Server.service.shop.FinanceService;
+import Server.service.shop.StoreService;
+import Server.dao.shop.StoreMapper;
+import Server.service.book.BookService;
 import com.google.gson.Gson;
 
 import java.io.DataInputStream;
@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-
-import Server.service.BookService;
 
 /**
  * 客户端处理器

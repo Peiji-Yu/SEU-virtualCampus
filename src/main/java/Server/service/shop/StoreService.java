@@ -1,6 +1,6 @@
-package Server.service;
+package Server.service.shop;
 
-import Server.dao.StoreMapper;
+import Server.dao.shop.StoreMapper;
 import Server.model.shop.StoreItem;
 import Server.model.shop.StoreOrder;
 import Server.model.shop.StoreOrderItem;

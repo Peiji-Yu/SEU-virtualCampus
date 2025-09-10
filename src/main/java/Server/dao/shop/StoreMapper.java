@@ -1,4 +1,4 @@
-package Server.dao;
+package Server.dao.shop;
 
 import Server.model.shop.StoreItem;
 import Server.model.shop.StoreOrder;
@@ -102,7 +102,7 @@ public interface StoreMapper {
     @Results({
             @Result(property = "uuid", column = "uuid"),
             @Result(property = "items", column = "uuid",
-                    many = @Many(select = "Server.dao.StoreMapper.findOrderItemsByOrderId"))
+                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsByOrderId"))
     })
     StoreOrder findOrderById(@Param("uuid") UUID uuid);
 

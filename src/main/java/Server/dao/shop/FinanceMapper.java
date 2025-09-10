@@ -1,11 +1,10 @@
-package Server.dao;
+package Server.dao.shop;
 
 import Server.model.shop.CardTransaction;
 import Server.model.shop.FinanceCard;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 一卡通数据访问接口

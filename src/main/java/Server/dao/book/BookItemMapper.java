@@ -1,7 +1,6 @@
-package Server.dao;
+package Server.dao.book;
 
 import Server.model.book.BookItem;
-import Server.model.book.BookStatus;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package Server.dao;
+package Server.dao.login;
 
 import Server.model.login.User;
 import org.apache.ibatis.annotations.Param;

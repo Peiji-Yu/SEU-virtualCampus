@@ -1,14 +1,9 @@
-package Server.service;
+package Server.service.book;
 
-import Server.dao.BookMapper;
+import Server.dao.book.BookMapper;
 import Server.model.book.Book;
-import Server.dao.BookItemMapper;
-import Server.model.book.BookItem;
-import Server.dao.BookRecordMapper;
+import Server.dao.book.BookRecordMapper;
 import Server.model.book.BookRecord;
-import Server.dao.LibUserMapper;
-import Server.dao.StudentMapper;
-import Server.model.book.LibUser;
 import Server.util.DatabaseUtil;
 import java.util.List;
 import org.apache.ibatis.session.SqlSession;

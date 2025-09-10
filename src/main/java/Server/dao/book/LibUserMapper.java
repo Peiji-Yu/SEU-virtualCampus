@@ -1,4 +1,4 @@
-package Server.dao;
+package Server.dao.book;
 import Server.model.book.LibUser;
 import org.apache.ibatis.annotations.*;
 

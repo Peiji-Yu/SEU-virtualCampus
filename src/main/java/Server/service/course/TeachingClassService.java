@@ -1,6 +1,6 @@
-package Server.service;
+package Server.service.course;
 
-import Server.dao.TeachingClassMapper;
+import Server.dao.course.TeachingClassMapper;
 import Server.model.course.TeachingClass;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.stereotype.Service;

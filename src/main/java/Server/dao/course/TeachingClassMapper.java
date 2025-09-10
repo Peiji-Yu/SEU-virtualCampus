@@ -1,4 +1,4 @@
-package Server.dao;
+package Server.dao.course;
 
 import Server.model.course.TeachingClass;
 import org.apache.ibatis.annotations.*;

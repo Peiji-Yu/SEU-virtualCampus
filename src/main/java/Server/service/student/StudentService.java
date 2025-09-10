@@ -1,6 +1,6 @@
-package Server.service;
+package Server.service.student;
 
-import Server.dao.StudentMapper;
+import Server.dao.student.StudentMapper;
 import Server.model.student.SearchType;
 import Server.model.student.Student;
 import Server.util.DatabaseUtil;
