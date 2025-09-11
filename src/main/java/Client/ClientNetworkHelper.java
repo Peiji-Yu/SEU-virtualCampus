@@ -1,13 +1,18 @@
 package Client;
 
+import Client.util.adapter.LocalDateAdapter;
+import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * 通用客户端网络工具。
@@ -24,7 +29,10 @@ import java.nio.charset.StandardCharsets;
 public final class ClientNetworkHelper {
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 8888;
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder()  //增加了UUID和LocalDate的适配
+            .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+            .registerTypeAdapter(UUID.class, new UUIDAdapter())
+            .create();
 
     private ClientNetworkHelper() {}
 
