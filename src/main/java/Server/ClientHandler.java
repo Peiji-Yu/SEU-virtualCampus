@@ -490,9 +490,24 @@ public class ClientHandler implements Runnable {
                         break;
 
                     case "getFinanceCard":
-                        Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
-                        FinanceCard financeCard = financeService.getFinanceCard(cardNumber1);
-                        response = Response.success("获取一卡通信息成功", financeCard);
+                        Object cardNumberObj = request.getData().get("cardNumber");
+                        if (cardNumberObj == null) {
+                            response = Response.error("缺少参数: cardNumber");
+                            break;
+                        }
+                        try {
+                            Integer cardNumber1 = ((Double) cardNumberObj).intValue();
+                            FinanceCard financeCard = financeService.getFinanceCard(cardNumber1);
+                            if (financeCard != null) {
+                                response = Response.success("获取一卡通信息成功", financeCard);
+                            } else {
+                                response = Response.error("未找到一卡通信息");
+                            }
+                        } catch (ClassCastException e) {
+                            response = Response.error("cardNumber参数类型错误");
+                        } catch (Exception e) {
+                            response = Response.error("获取一卡通信息失败: " + e.getMessage());
+                        }
                         break;
 
                     case "rechargeFinanceCard":
