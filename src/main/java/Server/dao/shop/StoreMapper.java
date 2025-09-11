@@ -108,21 +108,58 @@ public interface StoreMapper {
     int insertOrderItem(StoreOrderItem orderItem);
 
     /**
-     * 根据ID查询订单（包含商品项）
+     * 根据ID查询订单
      */
     @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
-    @Results({
-            @Result(property = "uuid", column = "uuid"),
-            @Result(property = "items", column = "uuid",
-                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsByOrderId"))
-    })
     StoreOrder findOrderById(@Param("uuid") UUID uuid);
 
+//    /**
+//     * 查询订单的所有商品项
+//     */
+//    @Select("SELECT * FROM store_order_item WHERE order_uuid = #{orderUuid}")
+//    List<StoreOrderItem> findOrderItemsByOrderId(@Param("orderUuid") UUID orderUuid);
+
     /**
-     * 查询订单的所有商品项
+     * 根据ID查询订单（包含商品项和商品详细信息）
      */
-    @Select("SELECT * FROM store_order_item WHERE order_uuid = #{orderUuid}")
-    List<StoreOrderItem> findOrderItemsByOrderId(@Param("orderUuid") UUID orderUuid);
+    @Select("SELECT so.*, soi.uuid as item_id, soi.item_uuid, soi.item_price, soi.amount, " +
+            "si.item_name, si.picture_link, si.description, si.barcode " +
+            "FROM store_order so " +
+            "LEFT JOIN store_order_item soi ON so.uuid = soi.order_uuid " +
+            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "WHERE so.uuid = #{uuid}")
+    @Results({
+            @Result(property = "uuid", column = "uuid"),
+            @Result(property = "cardNumber", column = "card_number"),
+            @Result(property = "totalAmount", column = "total_amount"),
+            @Result(property = "time", column = "time"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "remark", column = "remark"),
+            @Result(property = "items", column = "uuid",
+                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsWithDetailsByOrderId"))
+    })
+    StoreOrder findOrderWithDetailsById(@Param("uuid") UUID uuid);
+
+    /**
+     * 查询订单的所有商品项（包含商品详细信息）
+     */
+    @Select("SELECT soi.*, si.item_name, si.picture_link, si.description, si.barcode " +
+            "FROM store_order_item soi " +
+            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "WHERE soi.order_uuid = #{orderUuid}")
+    @Results({
+            @Result(property = "uuid", column = "uuid"),
+            @Result(property = "orderUuid", column = "order_uuid"),
+            @Result(property = "itemUuid", column = "item_uuid"),
+            @Result(property = "itemPrice", column = "item_price"),
+            @Result(property = "amount", column = "amount"),
+            @Result(property = "item.itemName", column = "item_name"),
+            @Result(property = "item.pictureLink", column = "picture_link"),
+            @Result(property = "item.description", column = "description"),
+            @Result(property = "item.category", column = "category"),
+            @Result(property = "item.barcode", column = "barcode")
+    })
+    List<StoreOrderItem> findOrderItemsWithDetailsByOrderId(@Param("orderUuid") UUID orderUuid);
 
     /**
      * 更新订单状态
