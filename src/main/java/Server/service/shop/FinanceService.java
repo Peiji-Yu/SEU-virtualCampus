@@ -1,6 +1,7 @@
 package Server.service.shop;
 
 import Server.dao.shop.FinanceMapper;
+import Server.model.Response;
 import Server.model.shop.CardTransaction;
 import Server.model.shop.FinanceCard;
 import Server.util.DatabaseUtil;
@@ -8,11 +9,75 @@ import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
 
+import static Server.model.shop.FinanceCard.STATUS_LOST;
+
 /**
  * 一卡通服务类
  * 处理一卡通相关的业务逻辑
  */
 public class FinanceService {
+    /**
+     * 挂失一卡通（用户自己操作）
+     */
+    public Response reportLoss(Integer cardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            // 检查一卡通是否存在
+            FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+            if (card == null) {
+                return Response.error("一卡通账户不存在");
+            }
+
+            // 检查是否已经是挂失状态
+            if (FinanceCard.STATUS_LOST.equals(card.getStatus())) {
+                return Response.error("一卡通已经是挂失状态");
+            }
+
+            // 更新状态为挂失
+            int updateResult = financeMapper.updateFinanceCardStatus(cardNumber, FinanceCard.STATUS_LOST);
+
+            sqlSession.commit();
+            return updateResult > 0 ?
+                    Response.success("挂失成功") :
+                    Response.error("挂失失败");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error(500, "挂失过程中发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 解除挂失一卡通（管理员操作）
+     */
+    public Response cancelReportLoss(Integer targetCardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            // 检查目标一卡通是否存在
+            FinanceCard card = financeMapper.findFinanceCardByCardNumber(targetCardNumber);
+            if (card == null) {
+                return Response.error("目标一卡通账户不存在");
+            }
+
+            // 检查是否不是挂失状态
+            if (!FinanceCard.STATUS_LOST.equals(card.getStatus())) {
+                return Response.error("一卡通不是挂失状态，无法解除挂失");
+            }
+
+            // 更新状态为正常
+            int updateResult = financeMapper.updateFinanceCardStatus(targetCardNumber, FinanceCard.STATUS_NORMAL);
+
+            sqlSession.commit();
+            return updateResult > 0 ?
+                    Response.success("解除挂失成功") :
+                    Response.error("解除挂失失败");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error(500, "解除挂失过程中发生错误: " + e.getMessage());
+        }
+    }
+
     /**
      * 查询一卡通余额
      */
@@ -33,6 +98,14 @@ public class FinanceService {
 
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+            if (card == null) {
+                throw new RuntimeException("一卡通账户不存在");
+            }
+            if (STATUS_LOST.equals(card.getStatus())) {
+                throw new RuntimeException("一卡通已挂失，无法充值");
+            }
 
             // 更新余额
             int updateResult = financeMapper.updateFinanceCardBalance(cardNumber, amount);
@@ -68,7 +141,9 @@ public class FinanceService {
             if (card == null) {
                 throw new RuntimeException("一卡通账户不存在");
             }
-
+            if (STATUS_LOST.equals(card.getStatus())) {
+                throw new RuntimeException("一卡通已挂失，无法充值");
+            }
             if (card.getBalance() < amount) {
                 throw new RuntimeException("一卡通余额不足");
             }

@@ -4,9 +4,12 @@ package Server.model.shop;
  * 一卡通实体类
  */
 public class FinanceCard {
+    public static final String STATUS_NORMAL = "正常";
+    public static final String STATUS_LOST = "挂失";
+
     private Integer cardNumber;  // 一卡通号
     private Integer balance;     // 余额（以分为单位）
-    private String status;       // 状态：正常、冻结、挂失
+    private String status;       // 状态：正常、挂失
 
     // 构造方法、Getter和Setter
     public FinanceCard() {}

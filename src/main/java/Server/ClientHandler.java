@@ -525,6 +525,22 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
+                    case "reportLoss":
+                        // 用户挂失自己的卡
+                        Map<String, Object> reportLossData = request.getData();
+                        Integer reportCardNumber = ((Double) reportLossData.get("cardNumber")).intValue();
+
+                        response = financeService.reportLoss(reportCardNumber);
+                        break;
+
+                    case "cancelReportLoss":
+                        // 管理员解除挂失
+                        Map<String, Object> cancelReportData = request.getData();
+                        Integer targetCardNumber = ((Double) cancelReportData.get("targetCardNumber")).intValue();
+
+                        response = financeService.cancelReportLoss(targetCardNumber);
+                        break;
+
                     case "getTransactions":
                         Integer transactionCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
                         String transactionType = (String) request.getData().get("type");

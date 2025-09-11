@@ -10,6 +10,8 @@ import org.apache.ibatis.session.SqlSession;
 
 import java.util.Map;
 
+import static Server.model.shop.FinanceCard.STATUS_NORMAL;
+
 /**
  * 用户服务类
  * 处理用户相关的业务逻辑
@@ -43,7 +45,7 @@ public class UserService {
             }
 
             // 创建新账户
-            FinanceCard newCard = new FinanceCard(cardNumber, 0, "正常");
+            FinanceCard newCard = new FinanceCard(cardNumber, 0, STATUS_NORMAL);
             int result = financeMapper.insertFinanceCard(newCard);
             sqlSession.commit();
             return result > 0;
