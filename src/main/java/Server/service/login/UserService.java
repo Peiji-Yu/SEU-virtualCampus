@@ -16,6 +16,20 @@ import java.util.Map;
  */
 public class UserService {
     /**
+     * 添加用户
+     * @param user User对象
+     * @return 添加用户结果
+     */
+    public boolean addUser(User user) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+            int result = userMapper.insertUser(user);
+            sqlSession.commit();
+            return result > 0;
+        }
+    }
+
+    /**
      * 创建一卡通账户
      */
     public static boolean createFinanceCard(Integer cardNumber) {
