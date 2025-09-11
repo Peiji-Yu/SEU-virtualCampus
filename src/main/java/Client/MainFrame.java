@@ -17,6 +17,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle; // 新增导入
 import javafx.animation.*;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -62,6 +63,23 @@ public class MainFrame {
     // 新增：中心内容容器字段
     private StackPane centerContainer;
 
+    // 新增：窗口拖动偏移
+    private double dragOffsetX = 0;
+    private double dragOffsetY = 0;
+
+    // 新增：窗口缩放相关字段
+    private boolean resizing = false;
+    private double resizeStartX, resizeStartY;
+    private double resizeStartStageX, resizeStartStageY, resizeStartWidth, resizeStartHeight;
+    private ResizeDirection resizeDir = ResizeDirection.NONE;
+    private static final int RESIZE_MARGIN = 8;
+
+    // 边缘方向枚举
+    private enum ResizeDirection {
+        NONE, LEFT, RIGHT, TOP, BOTTOM,
+        TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT
+    }
+
     public MainFrame(String cardNumber) {
         this.cardNumber = cardNumber;
         this.userType = getUserType(cardNumber);
@@ -72,6 +90,8 @@ public class MainFrame {
      */
     public void show() {
         stage = new Stage();
+        // 去除自带标题栏
+        stage.initStyle(StageStyle.UNDECORATED);
         // 设置窗口图标
         try {
             var url = MainFrame.class.getResource("/Image/Logo.png");
@@ -420,6 +440,97 @@ public class MainFrame {
             }
         });
 
+        // 新增：窗口边缘拖动缩放
+        scene.setOnMouseMoved(e -> {
+            ResizeDirection dir = getResizeDirection(e, stage);
+            switch (dir) {
+                case LEFT: scene.setCursor(javafx.scene.Cursor.W_RESIZE); break;
+                case RIGHT: scene.setCursor(javafx.scene.Cursor.E_RESIZE); break;
+                case TOP: scene.setCursor(javafx.scene.Cursor.N_RESIZE); break;
+                case BOTTOM: scene.setCursor(javafx.scene.Cursor.S_RESIZE); break;
+                case TOP_LEFT: scene.setCursor(javafx.scene.Cursor.NW_RESIZE); break;
+                case TOP_RIGHT: scene.setCursor(javafx.scene.Cursor.NE_RESIZE); break;
+                case BOTTOM_LEFT: scene.setCursor(javafx.scene.Cursor.SW_RESIZE); break;
+                case BOTTOM_RIGHT: scene.setCursor(javafx.scene.Cursor.SE_RESIZE); break;
+                default: scene.setCursor(javafx.scene.Cursor.DEFAULT);
+            }
+        });
+
+        scene.setOnMousePressed(e -> {
+            resizeDir = getResizeDirection(e, stage);
+            if (resizeDir != ResizeDirection.NONE) {
+                resizing = true;
+                resizeStartX = e.getScreenX();
+                resizeStartY = e.getScreenY();
+                resizeStartStageX = stage.getX();
+                resizeStartStageY = stage.getY();
+                resizeStartWidth = stage.getWidth();
+                resizeStartHeight = stage.getHeight();
+                e.consume();
+            }
+        });
+
+        scene.setOnMouseDragged(e -> {
+            if (resizing && resizeDir != ResizeDirection.NONE) {
+                double dx = e.getScreenX() - resizeStartX;
+                double dy = e.getScreenY() - resizeStartY;
+                double minW = stage.getMinWidth();
+                double minH = stage.getMinHeight();
+                switch (resizeDir) {
+                    case LEFT:
+                        double newW = Math.max(minW, resizeStartWidth - dx);
+                        stage.setWidth(newW);
+                        stage.setX(resizeStartStageX + (resizeStartWidth - newW));
+                        break;
+                    case RIGHT:
+                        stage.setWidth(Math.max(minW, resizeStartWidth + dx));
+                        break;
+                    case TOP:
+                        double newH = Math.max(minH, resizeStartHeight - dy);
+                        stage.setHeight(newH);
+                        stage.setY(resizeStartStageY + (resizeStartHeight - newH));
+                        break;
+                    case BOTTOM:
+                        stage.setHeight(Math.max(minH, resizeStartHeight + dy));
+                        break;
+                    case TOP_LEFT:
+                        newW = Math.max(minW, resizeStartWidth - dx);
+                        newH = Math.max(minH, resizeStartHeight - dy);
+                        stage.setWidth(newW);
+                        stage.setHeight(newH);
+                        stage.setX(resizeStartStageX + (resizeStartWidth - newW));
+                        stage.setY(resizeStartStageY + (resizeStartHeight - newH));
+                        break;
+                    case TOP_RIGHT:
+                        newW = Math.max(minW, resizeStartWidth + dx);
+                        newH = Math.max(minH, resizeStartHeight - dy);
+                        stage.setWidth(newW);
+                        stage.setHeight(newH);
+                        stage.setY(resizeStartStageY + (resizeStartHeight - newH));
+                        break;
+                    case BOTTOM_LEFT:
+                        newW = Math.max(minW, resizeStartWidth - dx);
+                        newH = Math.max(minH, resizeStartHeight + dy);
+                        stage.setWidth(newW);
+                        stage.setHeight(newH);
+                        stage.setX(resizeStartStageX + (resizeStartWidth - newW));
+                        break;
+                    case BOTTOM_RIGHT:
+                        newW = Math.max(minW, resizeStartWidth + dx);
+                        newH = Math.max(minH, resizeStartHeight + dy);
+                        stage.setWidth(newW);
+                        stage.setHeight(newH);
+                        break;
+                }
+                e.consume();
+            }
+        });
+
+        scene.setOnMouseReleased(e -> {
+            resizing = false;
+            resizeDir = ResizeDirection.NONE;
+        });
+
         stage.setScene(scene);
         stage.show();
 
@@ -431,7 +542,6 @@ public class MainFrame {
         HBox bar = new HBox(12);
         bar.setPadding(new Insets(8, 12, 8, 12));
         bar.setAlignment(Pos.CENTER_LEFT);
-        // 修改：仅保留顶部外侧两个圆角，上边圆角，下边相接为 0
         bar.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12 12 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
         // 新增：标题栏
@@ -465,6 +575,28 @@ public class MainFrame {
 
         // 顺序调整：标题栏、用户信息、spacer、修改密码、退出登录
         bar.getChildren().addAll(titleLabel, userInfo, spacer, changePwdBtn, logoutTopBtn);
+
+        // 新增：用户栏空白处拖动窗口
+        bar.setOnMousePressed(e -> {
+            // 仅在点击空白区域（spacer）时允许拖动
+            if (e.getTarget() == spacer) {
+                dragOffsetX = e.getSceneX();
+                dragOffsetY = e.getSceneY();
+            } else {
+                dragOffsetX = -1;
+                dragOffsetY = -1;
+            }
+        });
+        bar.setOnMouseDragged(e -> {
+            if (dragOffsetX >= 0 && dragOffsetY >= 0) {
+                Stage s = stage;
+                if (s != null) {
+                    s.setX(e.getScreenX() - dragOffsetX);
+                    s.setY(e.getScreenY() - dragOffsetY);
+                }
+            }
+        });
+
         return bar;
     }
 
@@ -560,5 +692,26 @@ public class MainFrame {
         if (centerContainer == null || node == null) return;
         centerContainer.getChildren().setAll(node);
         StackPane.setAlignment(node, Pos.CENTER);
+    }
+
+    // 判断鼠标是否在窗口边缘
+    private ResizeDirection getResizeDirection(MouseEvent e, Stage stage) {
+        double x = e.getSceneX();
+        double y = e.getSceneY();
+        double w = stage.getWidth();
+        double h = stage.getHeight();
+        boolean left = x <= RESIZE_MARGIN;
+        boolean right = x >= w - RESIZE_MARGIN;
+        boolean top = y <= RESIZE_MARGIN;
+        boolean bottom = y >= h - RESIZE_MARGIN;
+        if (top && left) return ResizeDirection.TOP_LEFT;
+        if (top && right) return ResizeDirection.TOP_RIGHT;
+        if (bottom && left) return ResizeDirection.BOTTOM_LEFT;
+        if (bottom && right) return ResizeDirection.BOTTOM_RIGHT;
+        if (left) return ResizeDirection.LEFT;
+        if (right) return ResizeDirection.RIGHT;
+        if (top) return ResizeDirection.TOP;
+        if (bottom) return ResizeDirection.BOTTOM;
+        return ResizeDirection.NONE;
     }
 }
