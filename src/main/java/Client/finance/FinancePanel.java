@@ -192,6 +192,10 @@ public class FinancePanel extends BorderPane {
         table.skinProperty().addListener((obs, o, n) -> styleTableHeader());
         styleTableHeader();
 
+        // 拉长表格高度，填满父容器
+        VBox.setVgrow(table, Priority.ALWAYS);
+        table.setPrefHeight(600); // 可根据实际界面调整高度
+
         box.getChildren().add(table);
         VBox.setVgrow(table, Priority.ALWAYS);
         return box;

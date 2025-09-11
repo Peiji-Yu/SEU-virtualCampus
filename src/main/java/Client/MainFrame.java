@@ -44,6 +44,8 @@ public class MainFrame {
     private static final String SIDEBAR_COLOR = "#6EFF7E";
     private static final String TEXT_COLOR = "#2a4d7b";
     private static final String SECONDARY_TEXT_COLOR = "#666666";
+    // 新增：顶部栏固定高度（使右上角三个按钮与顶部栏上下边界重合）
+    private static final double TOP_BAR_HEIGHT = 48.0;
 
     // 折叠侧边栏尺寸
     private static final double SIDEBAR_EXPANDED_WIDTH = 180;
@@ -105,7 +107,7 @@ public class MainFrame {
         stage.setTitle("智慧校园");
         // 调整窗口尺寸以适应更多列
         stage.setMinWidth(1300);
-        stage.setMinHeight(750);
+        stage.setMinHeight(830);
 
         // ===== 最外层根容器（铺满窗口） =====
         StackPane rootStack = new StackPane();
@@ -125,8 +127,8 @@ public class MainFrame {
         // 顶部用户栏容器
         HBox topBar = buildTopBar();
         // 增加底部分割线
-        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);"
-            + " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
+        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);" +
+            " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
         VBox topContainer = new VBox(topBar);
         topContainer.setFillWidth(true);
         mainLayout.setTop(topContainer);
@@ -422,6 +424,58 @@ public class MainFrame {
             Region functionSpacer = new Region();
             VBox.setVgrow(functionSpacer, Priority.ALWAYS);
             leftBar.getChildren().add(functionSpacer);
+
+            // 新增：左下角“修改密码”按钮
+            Button changePwdSidebarBtn = new Button();
+            changePwdSidebarBtn.setPrefWidth(40);
+            changePwdSidebarBtn.setPrefHeight(40);
+            changePwdSidebarBtn.setMinWidth(40);
+            changePwdSidebarBtn.setMinHeight(40);
+            changePwdSidebarBtn.setMaxWidth(40);
+            changePwdSidebarBtn.setMaxHeight(40);
+            changePwdSidebarBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            changePwdSidebarBtn.setAlignment(Pos.CENTER);
+            // 设置图标
+            Image pwdIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/修改密码.png")));
+            ImageView pwdView = new ImageView(pwdIcon);
+            pwdView.setFitWidth(28);
+            pwdView.setFitHeight(28);
+            pwdView.setPreserveRatio(true);
+            changePwdSidebarBtn.setGraphic(pwdView);
+            // 样式与功能区按钮一致
+            changePwdSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";");
+            // 悬停阴影
+            changePwdSidebarBtn.setOnMouseEntered(e -> setButtonHoverShadow(changePwdSidebarBtn));
+            changePwdSidebarBtn.setOnMouseExited(e -> changePwdSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";"));
+            // 事件
+            changePwdSidebarBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
+            // Tooltip
+            setRightTooltip(changePwdSidebarBtn, "修改密码");
+            // 添加到左侧底部（退出登录按钮之上）
+            leftBar.getChildren().add(changePwdSidebarBtn);
+
+            // 左下角退出登录按钮（保持原样式与逻辑）
+            Button logoutSidebarBtn = new Button();
+            logoutSidebarBtn.setPrefWidth(40);
+            logoutSidebarBtn.setPrefHeight(40);
+            logoutSidebarBtn.setMinWidth(40);
+            logoutSidebarBtn.setMinHeight(40);
+            logoutSidebarBtn.setMaxWidth(40);
+            logoutSidebarBtn.setMaxHeight(40);
+            logoutSidebarBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            logoutSidebarBtn.setAlignment(Pos.CENTER);
+            Image logoutIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/退出.png")));
+            ImageView logoutView = new ImageView(logoutIcon);
+            logoutView.setFitWidth(28);
+            logoutView.setFitHeight(28);
+            logoutView.setPreserveRatio(true);
+            logoutSidebarBtn.setGraphic(logoutView);
+            logoutSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";");
+            logoutSidebarBtn.setOnMouseEntered(e -> setButtonHoverShadow(logoutSidebarBtn));
+            logoutSidebarBtn.setOnMouseExited(e -> logoutSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";"));
+            logoutSidebarBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
+            setRightTooltip(logoutSidebarBtn, "退出登录");
+            leftBar.getChildren().add(logoutSidebarBtn);
             // ===== 修改结束 =====
         } else {
             // 其他类型暂无功能，显示提示
@@ -555,8 +609,12 @@ public class MainFrame {
     }
 
     private HBox buildTopBar() {
-        HBox bar = new HBox(12);
-        bar.setPadding(new Insets(8, 12, 8, 12));
+        HBox bar = new HBox(0);
+        // 顶栏高度固定，去除垂直内边距，保证右上角按钮与上下边界重合
+        bar.setMinHeight(TOP_BAR_HEIGHT);
+        bar.setPrefHeight(TOP_BAR_HEIGHT);
+        bar.setMaxHeight(TOP_BAR_HEIGHT);
+        bar.setPadding(new Insets(0, 0, 0, 0));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
@@ -582,34 +640,33 @@ public class MainFrame {
         Label userInfo = new Label(roleCN + " " + cardNumber);
         userInfo.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px; -fx-font-weight: bold;");
 
+        // 左侧组合容器，提供水平内边距
+        HBox leftGroup = new HBox(6);
+        leftGroup.setAlignment(Pos.CENTER_LEFT);
+        leftGroup.setPadding(new Insets(0, 6, 0, 6));
+
+        // 移除顶部“修改密码”按钮
+        // Button changePwdBtn = new Button("修改密码");
+        // changePwdBtn.setPrefHeight(34);
+        // changePwdBtn.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
+        //         "-fx-background-color: #4e8cff; -fx-text-fill: white; " +
+        //         "-fx-background-radius: 8; " +
+        //         "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.18), 8, 0, 0, 2);");
+        // changePwdBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
+
+        // 只显示 logo 和用户信息
+        if (logoView != null) {
+            leftGroup.getChildren().addAll(logoView, userInfo);
+        } else {
+            leftGroup.getChildren().addAll(userInfo);
+        }
+
+        // 中部可拖动区域（占满剩余空间）
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button changePwdBtn = new Button("修改密码");
-        changePwdBtn.setPrefHeight(34);
-        // 样式与退出登录按钮统一（颜色不变）
-        changePwdBtn.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
-                "-fx-background-color: #4e8cff; -fx-text-fill: white; " +
-                "-fx-background-radius: 8; " +
-                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.18), 8, 0, 0, 2);");
-        changePwdBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
-
-        Button logoutTopBtn = new Button("退出登录");
-        logoutTopBtn.setPrefHeight(34);
-        setDangerButtonStyle(logoutTopBtn);
-        logoutTopBtn.setOnMouseEntered(e -> setDangerButtonHoverStyle(logoutTopBtn));
-        logoutTopBtn.setOnMouseExited(e -> setDangerButtonStyle(logoutTopBtn));
-        logoutTopBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
-
-        // 顺序调整：Logo、用户信息、spacer、修改密码、退出登录
-        if (logoView != null) {
-            bar.getChildren().addAll(logoView, userInfo, spacer, changePwdBtn, logoutTopBtn);
-        } else {
-            bar.getChildren().addAll(userInfo, spacer, changePwdBtn, logoutTopBtn);
-        }
-
-        // 新增：窗口控制按钮组
-        HBox windowBtnBox = new HBox(4);
+        // 新增：窗口控制按钮组（与顶部栏等高正方形）
+        HBox windowBtnBox = new HBox(0);
         windowBtnBox.setAlignment(Pos.CENTER_RIGHT);
 
         Image imgMin = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/Minimize-2.png")));
@@ -618,22 +675,31 @@ public class MainFrame {
         Image imgClose = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/关闭.png")));
 
         Button minBtn = new Button();
-        minBtn.setPrefSize(28, 28);
-        minBtn.setStyle("-fx-background-color: transparent;");
+        minBtn.setMinSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        minBtn.setPrefSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        minBtn.setMaxSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        // 去除圆角
+        minBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;");
         minBtn.setTooltip(new Tooltip("最小化"));
         ImageView minView = new ImageView(imgMin);
-        minView.setFitWidth(14); minView.setFitHeight(14); minView.setPreserveRatio(true);
+        minView.setFitWidth(10); minView.setFitHeight(10); minView.setPreserveRatio(true);
         minBtn.setGraphic(minView);
         minBtn.setOnAction(e -> {
             if (stage != null) stage.setIconified(true);
         });
+        // 悬停变灰色
+        minBtn.setOnMouseEntered(e -> minBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        minBtn.setOnMouseExited(e -> minBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button maxBtn = new Button();
-        maxBtn.setPrefSize(28, 28);
-        maxBtn.setStyle("-fx-background-color: transparent;");
+        maxBtn.setMinSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        maxBtn.setPrefSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        maxBtn.setMaxSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        // 去除圆角
+        maxBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;");
         maxBtn.setTooltip(new Tooltip("最大化/还原"));
         ImageView maxView = new ImageView(imgMax);
-        maxView.setFitWidth(14); maxView.setFitHeight(14); maxView.setPreserveRatio(true);
+        maxView.setFitWidth(10); maxView.setFitHeight(10); maxView.setPreserveRatio(true);
         maxBtn.setGraphic(maxView);
         maxBtn.setOnAction(e -> {
             if (stage != null) {
@@ -647,24 +713,34 @@ public class MainFrame {
                 }
             }
         });
+        // 悬停变灰色
+        maxBtn.setOnMouseEntered(e -> maxBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        maxBtn.setOnMouseExited(e -> maxBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button closeBtn = new Button();
-        closeBtn.setPrefSize(28, 28);
-        closeBtn.setStyle("-fx-background-color: transparent;");
+        closeBtn.setMinSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        closeBtn.setPrefSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        closeBtn.setMaxSize(TOP_BAR_HEIGHT, TOP_BAR_HEIGHT);
+        // 去除圆角
+        closeBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;");
         closeBtn.setTooltip(new Tooltip("关闭"));
         ImageView closeView = new ImageView(imgClose);
-        closeView.setFitWidth(14); closeView.setFitHeight(14); closeView.setPreserveRatio(true);
+        closeView.setFitWidth(10); closeView.setFitHeight(10); closeView.setPreserveRatio(true);
         closeBtn.setGraphic(closeView);
         closeBtn.setOnAction(e -> {
             if (stage != null) stage.close();
         });
+        // 悬停变红色
+        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color: #ff5252; -fx-background-radius: 0;"));
+        closeBtn.setOnMouseExited(e -> closeBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         windowBtnBox.getChildren().addAll(minBtn, maxBtn, closeBtn);
-        bar.getChildren().add(windowBtnBox);
 
-        // 新增：用户栏空白处拖动窗口
+        // 顶栏内容：左组、拖动空白、右侧按钮
+        bar.getChildren().addAll(leftGroup, spacer, windowBtnBox);
+
+        // 新增：用户栏空白处拖动窗口（仅 spacer 区域可拖动）
         bar.setOnMousePressed(e -> {
-            // 仅在点击空白区域（spacer）时允许拖动
             if (e.getTarget() == spacer) {
                 dragOffsetX = e.getSceneX();
                 dragOffsetY = e.getSceneY();

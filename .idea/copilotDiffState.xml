@@ -3,12 +3,36 @@
   <component name="CopilotDiffPersistence">
     <option name="pendingDiffs">
       <map>
+        <entry key="$PROJECT_DIR$/src/components/UserBar.css">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/src/components/UserBar.css" />
+              <option name="updatedContent" value="/* ...existing code... */&#10;.user-bar {&#10;  width: 48px; /* 假设用户栏宽度为48px，可根据实际情况调整 */&#10;  height: 48px;&#10;  /* ...existing code... */&#10;}&#10;&#10;.user-bar-buttons {&#10;  display: flex;&#10;  align-items: center;&#10;  height: 48px; /* 与用户栏高度一致 */&#10;}&#10;&#10;.user-bar-button {&#10;  width: 48px;&#10;  height: 48px;&#10;  display: flex;&#10;  align-items: center;&#10;  justify-content: center;&#10;  margin: 0; /* 去除间距，确保上下边界重合 */&#10;  padding: 0;&#10;  box-sizing: border-box;&#10;  /* ...existing code... */&#10;}&#10;&#10;.user-bar-button img {&#10;  width: 24px;&#10;  height: 24px;&#10;  object-fit: contain;&#10;}&#10;/* ...existing code... */&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/src/components/UserBar.jsx">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/src/components/UserBar.jsx" />
+              <option name="updatedContent" value="// ...existing code...&#10;&lt;div className=&quot;user-bar&quot;&gt;&#10;  {/* ...existing code... */}&#10;  &lt;div className=&quot;user-bar-buttons&quot;&gt;&#10;    &lt;button className=&quot;user-bar-button&quot;&gt;&#10;      &lt;img src=&quot;icon1.png&quot; alt=&quot;按钮1&quot; /&gt;&#10;    &lt;/button&gt;&#10;    &lt;button className=&quot;user-bar-button&quot;&gt;&#10;      &lt;img src=&quot;icon2.png&quot; alt=&quot;按钮2&quot; /&gt;&#10;    &lt;/button&gt;&#10;    &lt;button className=&quot;user-bar-button&quot;&gt;&#10;      &lt;img src=&quot;icon3.png&quot; alt=&quot;按钮3&quot; /&gt;&#10;    &lt;/button&gt;&#10;  &lt;/div&gt;&#10;  {/* ...existing code... */}&#10;&lt;/div&gt;&#10;// ...existing code...&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
         <entry key="$PROJECT_DIR$/src/main/java/Client/LogoutHandler.java">
           <value>
             <PendingDiffInfo>
               <option name="filePath" value="$PROJECT_DIR$/src/main/java/Client/LogoutHandler.java" />
               <option name="originalContent" value="package Client;&#10;&#10;/**&#10; * 包装类：实际实现已迁移至 Client.login.LogoutHandler。&#10; * 仅为兼容旧引用保留，后续可移除。 &#10; * 使用请改为引用 Client.login.LogoutHandler。 &#10; * @author Msgo-srAm&#10; */&#10;@Deprecated&#10;public class LogoutHandler extends Client.login.LogoutHandler {&#10;}&#10;" />
               <option name="updatedContent" value="package Client;&#10;&#10;// 已移除：原退出处理类迁移至 Client.login.LogoutHandler。&#10;// 请使用 Client.login.LogoutHandler。此文件为过渡占位，可后续物理删除。" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/src/main/resources/styles/window-buttons.css">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/src/main/resources/styles/window-buttons.css" />
+              <option name="updatedContent" value="// ...existing code...&#10;&#10;.minimize-btn:hover,&#10;.maximize-btn:hover {&#10;    filter: brightness(1.3);&#10;}&#10;&#10;.close-btn:hover {&#10;    background-color: #e74c3c;&#10;    filter: none;&#10;}&#10;&#10;// ...existing code...&#10;" />
             </PendingDiffInfo>
           </value>
         </entry>
