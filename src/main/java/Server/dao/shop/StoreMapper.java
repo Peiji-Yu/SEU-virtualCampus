@@ -60,10 +60,16 @@ public interface StoreMapper {
     int updateItemStock(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
 
     /**
+     * 增加商品库存（取消或退款回补）
+     */
+    @Update("UPDATE store_item SET stock = stock + #{amount} WHERE uuid = #{itemUuid}")
+    int increaseItemStock(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
+
+    /**
      * 增加商品销量
      */
     @Update("UPDATE store_item SET sales_volume = sales_volume + #{amount} WHERE uuid = #{itemUuid}")
-    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
+    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount" ) Integer amount);
 
     /**
      * 按类别搜索商品
@@ -156,6 +162,12 @@ public interface StoreMapper {
      */
     @Select("SELECT * FROM store_order ORDER BY time DESC")
     List<StoreOrder> findAllOrders();
+
+    /**
+     * 更新订单状态和备注
+     */
+    @Update("UPDATE store_order SET status = #{status}, remark = #{remark} WHERE uuid = #{uuid} AND status = '已支付'")
+    int updateOrderStatusAndRemark(@Param("uuid") UUID uuid, @Param("status") String status, @Param("remark") String remark);
 
     // 销售统计相关操作
 

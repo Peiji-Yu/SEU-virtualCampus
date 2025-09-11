@@ -434,6 +434,10 @@ public class MainFrame {
         // 修改：仅保留顶部外侧两个圆角，上边圆角，下边相接为 0
         bar.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12 12 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
+        // 新增：标题栏
+        Label titleLabel = new Label("智慧校园");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_COLOR + ";");
+
         String roleCN;
         switch (userType) {
             case "student": roleCN = "学生"; break;
@@ -441,7 +445,6 @@ public class MainFrame {
             case "admin": roleCN = "管理员"; break;
             default: roleCN = "未知";
         }
-        // 显示为“角色 卡号”，不加“用户：”与句号
         Label userInfo = new Label(roleCN + " " + cardNumber);
         userInfo.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px; -fx-font-weight: bold;");
 
@@ -460,7 +463,8 @@ public class MainFrame {
         logoutTopBtn.setOnMouseExited(e -> setDangerButtonStyle(logoutTopBtn));
         logoutTopBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
 
-        bar.getChildren().addAll(userInfo, spacer, changePwdBtn, logoutTopBtn);
+        // 顺序调整：标题栏、用户信息、spacer、修改密码、退出登录
+        bar.getChildren().addAll(titleLabel, userInfo, spacer, changePwdBtn, logoutTopBtn);
         return bar;
     }
 

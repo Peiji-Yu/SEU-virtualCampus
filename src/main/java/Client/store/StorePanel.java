@@ -152,6 +152,8 @@ public class StorePanel extends BorderPane {
         Tab t = new Tab("我的订单");
         VBox root = new VBox(10);
         myOrdersTable = buildOrderTable(myOrderData, true, false);
+        // 新增：允许表格在垂直方向填满
+        VBox.setVgrow(myOrdersTable, Priority.ALWAYS);
         HBox op = new HBox(8);
         Button refresh = new Button("刷新"); refresh.setOnAction(e -> fetchMyOrders());
         op.getChildren().addAll(refresh);
@@ -217,6 +219,8 @@ public class StorePanel extends BorderPane {
         Tab t = new Tab("全部订单");
         VBox root = new VBox(10);
         allOrdersTable = buildOrderTable(allOrderData, false, true);
+        // 新增：允许表格在垂直方向填满
+        VBox.setVgrow(allOrdersTable, Priority.ALWAYS);
         HBox op = new HBox(8);
         TextField orderIdField = new TextField(); orderIdField.setPromptText("按UUID查询");
         Button query = new Button("查询"); query.setOnAction(e -> getOrderById(orderIdField.getText().trim()));
@@ -232,6 +236,8 @@ public class StorePanel extends BorderPane {
     /* ================= 构建订单表 ================= */
     private TableView<OrderRow> buildOrderTable(ObservableList<OrderRow> data, boolean userTable, boolean adminAll){
         TableView<OrderRow> tv = new TableView<>(data);
+        // 新增：列自适应填满宽度
+        tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         TableColumn<OrderRow,String> cId = new TableColumn<>("订单UUID"); cId.setCellValueFactory(new PropertyValueFactory<>("uuid")); cId.setPrefWidth(180);
         if (adminAll){
             TableColumn<OrderRow,String> cCard = new TableColumn<>("卡号"); cCard.setCellValueFactory(new PropertyValueFactory<>("cardNumber")); cCard.setPrefWidth(80);
@@ -241,7 +247,11 @@ public class StorePanel extends BorderPane {
         TableColumn<OrderRow,String> cStatus = new TableColumn<>("状态"); cStatus.setCellValueFactory(new PropertyValueFactory<>("status")); cStatus.setPrefWidth(70);
         TableColumn<OrderRow,String> cTime = new TableColumn<>("时间"); cTime.setCellValueFactory(new PropertyValueFactory<>("time")); cTime.setPrefWidth(140);
         TableColumn<OrderRow,String> cRemark = new TableColumn<>("备注"); cRemark.setCellValueFactory(new PropertyValueFactory<>("remark"));
+        // 让备注列可以扩展占用剩余空间
+        cRemark.setMinWidth(150);
+        cRemark.setMaxWidth(Double.MAX_VALUE);
         TableColumn<OrderRow,Void> cAct = new TableColumn<>("操作");
+        cAct.setPrefWidth(260); cAct.setMinWidth(240); cAct.setMaxWidth(300);
         cAct.setCellFactory(col -> new TableCell<>(){
             private final HBox box = new HBox(4);
             private final Button pay = new Button("支付");
@@ -261,7 +271,7 @@ public class StorePanel extends BorderPane {
                 if ("待支付".equals(row.status)){
                     if (userTable || adminAll) { pay.setVisible(true); cancel.setVisible(true); }
                 } else if ("已支付".equals(row.status)) {
-                    if (adminAll) refund.setVisible(true);
+                    refund.setVisible(true);
                 }
                 setGraphic(box);
             }
@@ -333,8 +343,24 @@ public class StorePanel extends BorderPane {
     private void removeSelected(){ CartRow sel = cartTable.getSelectionModel().getSelectedItem(); if (sel!=null){ cartData.remove(sel); updateCartTotal(); } }
     private void updateCartTotal(){ long sum = cartData.stream().mapToLong(c -> (long)c.priceFen*c.quantity).sum(); cartTotalLabel.setText("合计: "+fenToYuan(sum)+" 元"); }
 
+    /* === 统一响应弹窗工具 === */
+    private boolean showResponse(String title, String resp){
+        String msg = resp;
+        boolean success = false;
+        try {
+            JsonObject o = JsonParser.parseString(resp).getAsJsonObject();
+            if(o.has("message")) msg = o.get("message").getAsString();
+            if(o.has("code")) success = (o.get("code").getAsInt()==200);
+        } catch (Exception ignore){}
+        Alert.AlertType type = success? Alert.AlertType.INFORMATION: Alert.AlertType.ERROR;
+        Alert a = new Alert(type, msg, ButtonType.OK);
+        a.setHeaderText(title);
+        a.showAndWait();
+        return success;
+    }
+
     private void createOrder(){ if (cartData.isEmpty()) return; List<Map<String,Object>> items = new ArrayList<>(); for (CartRow c: cartData){ Map<String,Object> m=new HashMap<>(); m.put("itemId", c.uuid); m.put("amount", c.quantity); items.add(m);} Map<String,Object> payload=new HashMap<>(); payload.put("cardNumber", Integer.parseInt(cardNumber)); payload.put("remark", Optional.ofNullable(orderRemarkField.getText()).orElse("")); payload.put("items", items); new Thread(() -> {
-        try { String resp = ClientNetworkHelper.send(new Request("createOrder", payload)); Platform.runLater(() -> { new Alert(Alert.AlertType.INFORMATION,"下单结果: "+resp).showAndWait(); cartData.clear(); updateCartTotal(); orderRemarkField.clear(); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); }); } catch (Exception e){ /*忽略*/ }
+        try { String resp = ClientNetworkHelper.send(new Request("createOrder", payload)); Platform.runLater(() -> { if(showResponse("下单", resp)){ cartData.clear(); updateCartTotal(); orderRemarkField.clear(); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); loadAllItems(); } }); } catch (Exception e){ Platform.runLater(() -> showResponse("下单","{\"code\":500,\"message\":\"网络错误\"}")); }
     }).start(); }
 
     /* ==================== 订单相关 ==================== */
@@ -365,6 +391,10 @@ public class StorePanel extends BorderPane {
             r.totalYuan = fenToYuan(r.totalFen);
             r.status = nullableString(o,"status");
             r.remark = nullableString(o,"remark");
+            // 将含退款标记的已取消订单转为显示已退款
+            if("已取消".equals(r.status) && r.remark != null && r.remark.contains("[退款]")) {
+                r.status = "已退款";
+            }
             r.time = nullableString(o,"time");
             r.items = new ArrayList<>();
             if(o.has("items") && o.get("items").isJsonArray()){
@@ -376,17 +406,39 @@ public class StorePanel extends BorderPane {
         } catch (Exception e){ return null; }
     }
 
-    private void payOrder(String orderId){ if(orderId==null) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("payOrder", data)); Platform.runLater(()-> { infoDialog("支付结果", resp); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
-    private void cancelOrder(String orderId){ if(orderId==null) return; if(!confirm("确认取消该订单?")) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("cancelOrder", data)); Platform.runLater(()-> { infoDialog("取消结果", resp); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
-    private void refundOrder(String orderId){ if(orderId==null) return; TextInputDialog td = new TextInputDialog(); td.setHeaderText(null); td.setContentText("退款理由:"); Optional<String> reason = td.showAndWait(); if(reason.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); data.put("reason", reason.get()); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("refundOrder", data)); Platform.runLater(()-> { infoDialog("退款结果", resp); fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
-    private void getOrderById(String orderId){ if(orderId==null||orderId.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getOrder", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200){ Platform.runLater(() -> infoDialog("查询结果", resp)); return; } OrderRow r = parseOrder(o.getAsJsonObject("data")); if(r!=null) Platform.runLater(()-> { allOrderData.setAll(Collections.singletonList(r)); }); } catch (Exception ignored){} }).start(); }
+    private void payOrder(String orderId){ if(orderId==null) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("payOrder", data)); Platform.runLater(()-> { if(showResponse("支付", resp)){ fetchMyOrders(); if(isAdmin()) fetchAllOrders(); loadAllItems(); } }); } catch (Exception ignored){ Platform.runLater(() -> showResponse("支付","{\"code\":500,\"message\":\"网络错误\"}")); } }).start(); }
+    private void cancelOrder(String orderId){ if(orderId==null) return; if(!confirm("确认取消该订单?")) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("cancelOrder", data)); Platform.runLater(()-> { if(showResponse("取消", resp)){ fetchMyOrders(); if(isAdmin()) fetchAllOrders(); loadAllItems(); } }); } catch (Exception ignored){ Platform.runLater(() -> showResponse("取消","{\"code\":500,\"message\":\"网络错误\"}")); } }).start(); }
+    private void refundOrder(String orderId){ if(orderId==null) return; TextInputDialog td = new TextInputDialog(); td.setHeaderText(null); td.setContentText("退款理由:"); Optional<String> reason = td.showAndWait(); if(reason.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); data.put("reason", reason.get()); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("refundOrder", data)); Platform.runLater(()-> { if(showResponse("退款", resp)){ fetchAllOrders(); fetchMyOrders(); loadAllItems(); } }); } catch (Exception ignored){ Platform.runLater(() -> showResponse("退款","{\"code\":500,\"message\":\"网络错误\"}")); } }).start(); }
+    private void getOrderById(String orderId){ if(orderId==null||orderId.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getOrder", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200){ Platform.runLater(() -> showResponse("查询", resp)); return; } OrderRow r = parseOrder(o.getAsJsonObject("data")); if(r!=null) Platform.runLater(()-> { allOrderData.setAll(Collections.singletonList(r)); }); } catch (Exception ignored){ Platform.runLater(() -> showResponse("查询","{\"code\":500,\"message\":\"网络错误\"}")); } }).start(); }
 
-    private void showOrderDetail(OrderRow row){ if(row==null) return; StringBuilder sb = new StringBuilder(); sb.append("订单ID: ").append(row.uuid).append('\n'); sb.append("状态: ").append(row.status).append('\n'); sb.append("金额: ").append(row.totalYuan).append(" 元\n"); sb.append("时间: ").append(row.time).append('\n'); sb.append("备注: ").append(Optional.ofNullable(row.remark).orElse("")); sb.append("\n商品列表:\n"); if(row.items!=null){ for(OrderItemRow it: row.items){ sb.append(" - ").append(Optional.ofNullable(it.itemName).orElse(it.itemUuid)).append(" x").append(it.amount).append(" 单价:").append(fenToYuan(it.price)).append("元").append('\n'); } } infoDialog("订单详情", sb.toString()); }
+    // ========== 订单详情弹窗（补回缺失方法） ==========
+    private void showOrderDetail(OrderRow row){
+        if(row==null){ return; }
+        StringBuilder sb = new StringBuilder();
+        sb.append("订单ID: ").append(row.uuid).append('\n');
+        sb.append("状态: ").append(row.status).append('\n');
+        sb.append("金额: ").append(row.totalYuan).append(" 元\n");
+        sb.append("时间: ").append(Optional.ofNullable(row.time).orElse("-" )).append('\n');
+        sb.append("备注: ").append(Optional.ofNullable(row.remark).orElse("" )).append('\n');
+        sb.append("商品列表:\n");
+        if(row.items!=null && !row.items.isEmpty()){
+            for(OrderItemRow it : row.items){
+                sb.append(" - ")
+                  .append(Optional.ofNullable(it.itemName).orElse(it.itemUuid))
+                  .append(" x").append(it.amount)
+                  .append(" 单价:").append(fenToYuan(it.price)).append("元")
+                  .append('\n');
+            }
+        } else {
+            sb.append("(无明细)\n");
+        }
+        infoDialog("订单详情", sb.toString());
+    }
 
     /* ==================== 管理员商品操作 ==================== */
-    private void adminAddItem(){ try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); String uuid = formUuid.getText().trim(); if(uuid.isEmpty()) uuid = java.util.UUID.randomUUID().toString(); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", uuid); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("addItem", data, s -> { infoDialog("添加结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
-    private void adminUpdateItem(){ if(formUuid.getText().trim().isEmpty()){ infoDialog("提示","请填写UUID"); return;} try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", formUuid.getText().trim()); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("updateItem", data, s -> { infoDialog("更新结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
-    private void adminDeleteItem(){ String uuid = formUuid.getText().trim(); if(uuid.isEmpty()){ infoDialog("提示","请填写UUID"); return;} if(!confirm("确认删除?")) return; Map<String,Object> data=new HashMap<>(); data.put("itemId", uuid); sendAsync("deleteItem", data, s -> { infoDialog("删除结果", s); loadAllItems(); }); }
+    private void adminAddItem(){ try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); String uuid = formUuid.getText().trim(); if(uuid.isEmpty()) uuid = java.util.UUID.randomUUID().toString(); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", uuid); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("addItem", data, s -> { if(showResponse("添加商品", s)) loadAllItems(); }); } catch (Exception e){ showResponse("添加商品","{\"code\":400,\"message\":\"数据格式错误\"}"); } }
+    private void adminUpdateItem(){ if(formUuid.getText().trim().isEmpty()){ showResponse("更新商品","{\"code\":400,\"message\":\"请填写UUID\"}"); return;} try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", formUuid.getText().trim()); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("updateItem", data, s -> { if(showResponse("更新商品", s)) loadAllItems(); }); } catch (Exception e){ showResponse("更新商品","{\"code\":400,\"message\":\"数据格式错误\"}"); } }
+    private void adminDeleteItem(){ String uuid = formUuid.getText().trim(); if(uuid.isEmpty()){ showResponse("删除商品","{\"code\":400,\"message\":\"请填写UUID\"}"); return;} if(!confirm("确认删除?")) return; Map<String,Object> data=new HashMap<>(); data.put("itemId", uuid); sendAsync("deleteItem", data, s -> { if(showResponse("删除商品", s)) loadAllItems(); }); }
     private void fillFormFromSelection(){ ItemRow sel = itemTable.getSelectionModel().getSelectedItem(); if(sel==null){ infoDialog("提示","先在商品页选择一行"); return;} formUuid.setText(sel.uuid); formName.setText(sel.itemName); formPrice.setText(sel.priceYuan); formCategory.setText(sel.category); formStock.setText(String.valueOf(sel.stock)); formBarcode.setText(Optional.ofNullable(sel.barcode).orElse("")); formPicture.setText(Optional.ofNullable(sel.pictureLink).orElse("")); formDescription.setText(Optional.ofNullable(sel.description).orElse("")); formSalesVolume.setText(sel.salesVolume==null?"":String.valueOf(sel.salesVolume)); }
     private void clearForm(){ Arrays.asList(formUuid,formName,formPrice,formCategory,formStock,formBarcode,formPicture,formDescription,formSalesVolume).forEach(tf->tf.setText("")); }
 
