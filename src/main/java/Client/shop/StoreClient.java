@@ -1,4 +1,3 @@
-// java
 package Client.shop;
 
 import javafx.application.Application;
@@ -450,9 +449,8 @@ public class StoreClient extends Application {
         Label priceLabel = new Label(String.format("¥%.2f", item.getPrice()));
         priceLabel.setStyle("-fx-text-fill: #111111; -fx-font-weight: bold; -fx-font-size: 15px;");
 
-        // “+”按钮缩小为32x32，字体保持22px加粗，文本明确为 "+"
-        Button addButton = new Button();
-        addButton.setText("+");
+        // 将“+”按钮缩小为32x32，但字体仍为22px
+        Button addButton = new Button("+");
         addButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 22px; -fx-font-weight: bold;");
         addButton.setPrefSize(32, 32);
         addButton.setMinSize(32, 32);
