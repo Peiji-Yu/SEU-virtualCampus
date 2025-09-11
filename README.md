@@ -1,9 +1,16 @@
+根据一卡通号判断用户类型：
+学生：2开头，9位数
+教师：1开头，9位数
+管理员/教务：1000以内
+
+-- user表：存储用户（包括学生、教师、管理员）信息
 CREATE TABLE user (
     card_number INT PRIMARY KEY,
     password VARCHAR(255) NOT NULL, -- 存储加密后的密码
     id VARCHAR(18) UNIQUE NOT NULL
 );
 
+-- student表：存储学生学籍信息
 CREATE TABLE student (
     identity VARCHAR(18) UNIQUE NOT NULL,      -- 身份证号，唯一，非空
     card_number INT PRIMARY KEY,       -- 一卡通号，主键
@@ -72,4 +79,44 @@ CREATE TABLE store_order_item (
     amount INT NOT NULL,                -- 商品数量
     FOREIGN KEY (order_uuid) REFERENCES store_order(uuid),
     FOREIGN KEY (item_uuid) REFERENCES store_item(uuid)
+);
+
+-- 书籍信息表
+CREATE TABLE book (
+    isbn VARCHAR(20) PRIMARY KEY,        -- ISBN 作为主键
+    name VARCHAR(200) NOT NULL,          -- 书名
+    author VARCHAR(100),                 -- 作者
+    publisher VARCHAR(100),              -- 出版社
+    publish_date DATE,                   -- 出版日期
+    description TEXT,                    -- 简介
+    inventory INT DEFAULT 0,             -- 库存量
+    category VARCHAR(50)                 -- 类别
+);
+
+-- 书籍副本表
+CREATE TABLE book_item (
+    uuid VARCHAR(64) PRIMARY KEY,        -- 副本唯一ID
+    isbn VARCHAR(20) NOT NULL,           -- 对应 book.isbn
+    place VARCHAR(100),                  -- 馆藏位置
+    book_status VARCHAR(20),             -- 状态（在馆/借出/丢失）
+    FOREIGN KEY (isbn) REFERENCES book(isbn) -- 外键约束
+);
+
+-- 用户表
+CREATE TABLE lib_user (
+    user_id INT PRIMARY KEY,             -- 用户一卡通号
+    borrowed INT DEFAULT 0,              -- 已借书数量
+    max_borrowed INT DEFAULT 5,          -- 最大可借书数量
+    user_status VARCHAR(20)              -- 用户状态
+);
+
+-- 借阅记录表
+CREATE TABLE book_record (
+    id INT AUTO_INCREMENT PRIMARY KEY,   -- 借阅记录ID
+    uuid VARCHAR(64) NOT NULL,           -- 对应 book_item.uuid
+    user_id INT NOT NULL,                -- 对应 lib_user.user_id
+    borrow_time DATE,                    -- 借书时间
+    due_time DATE,                       -- 应还时间
+    FOREIGN KEY (uuid) REFERENCES book_item(uuid),
+    FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
 );
