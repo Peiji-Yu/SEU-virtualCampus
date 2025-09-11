@@ -154,65 +154,89 @@ public class MainFrame {
         Image iconCourseSelect = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/选课.png")));
 
         Button stuManageBtn = new Button();
-        stuManageBtn.setPrefWidth(45);
-        stuManageBtn.setMaxWidth(Double.MAX_VALUE);
-        stuManageBtn.setPrefHeight(45);
+        stuManageBtn.setPrefWidth(40);
+        stuManageBtn.setPrefHeight(40);
+        stuManageBtn.setMinWidth(40);
+        stuManageBtn.setMinHeight(40);
+        stuManageBtn.setMaxWidth(40);
+        stuManageBtn.setMaxHeight(40);
         setSelectedButtonStyle(stuManageBtn);
         stuManageBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         stuManageBtn.setAlignment(Pos.CENTER);
 
         Button courseMgmtBtn = new Button();
-        courseMgmtBtn.setPrefWidth(45);
-        courseMgmtBtn.setMaxWidth(Double.MAX_VALUE);
-        courseMgmtBtn.setPrefHeight(45);
+        courseMgmtBtn.setPrefWidth(40);
+        courseMgmtBtn.setPrefHeight(40);
+        courseMgmtBtn.setMinWidth(40);
+        courseMgmtBtn.setMinHeight(40);
+        courseMgmtBtn.setMaxWidth(40);
+        courseMgmtBtn.setMaxHeight(40);
         resetButtonStyle(courseMgmtBtn);
         courseMgmtBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         courseMgmtBtn.setAlignment(Pos.CENTER);
 
         Button timetableBtn = new Button();
-        timetableBtn.setPrefWidth(45);
-        timetableBtn.setMaxWidth(Double.MAX_VALUE);
-        timetableBtn.setPrefHeight(45);
+        timetableBtn.setPrefWidth(40);
+        timetableBtn.setPrefHeight(40);
+        timetableBtn.setMinWidth(40);
+        timetableBtn.setMinHeight(40);
+        timetableBtn.setMaxWidth(40);
+        timetableBtn.setMaxHeight(40);
         resetButtonStyle(timetableBtn);
         timetableBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         timetableBtn.setAlignment(Pos.CENTER);
 
         Button courseSelectBtn = new Button();
-        courseSelectBtn.setPrefWidth(45);
-        courseSelectBtn.setMaxWidth(Double.MAX_VALUE);
-        courseSelectBtn.setPrefHeight(45);
+        courseSelectBtn.setPrefWidth(40);
+        courseSelectBtn.setPrefHeight(40);
+        courseSelectBtn.setMinWidth(40);
+        courseSelectBtn.setMinHeight(40);
+        courseSelectBtn.setMaxWidth(40);
+        courseSelectBtn.setMaxHeight(40);
         resetButtonStyle(courseSelectBtn);
         courseSelectBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         courseSelectBtn.setAlignment(Pos.CENTER);
 
         Button myClassroomBtn = new Button();
-        myClassroomBtn.setPrefWidth(45);
-        myClassroomBtn.setMaxWidth(Double.MAX_VALUE);
-        myClassroomBtn.setPrefHeight(45);
+        myClassroomBtn.setPrefWidth(40);
+        myClassroomBtn.setPrefHeight(40);
+        myClassroomBtn.setMinWidth(40);
+        myClassroomBtn.setMinHeight(40);
+        myClassroomBtn.setMaxWidth(40);
+        myClassroomBtn.setMaxHeight(40);
         resetButtonStyle(myClassroomBtn);
         myClassroomBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         myClassroomBtn.setAlignment(Pos.CENTER);
 
         Button financeBtn = new Button();
-        financeBtn.setPrefWidth(45);
-        financeBtn.setMaxWidth(Double.MAX_VALUE);
-        financeBtn.setPrefHeight(45);
+        financeBtn.setPrefWidth(40);
+        financeBtn.setPrefHeight(40);
+        financeBtn.setMinWidth(40);
+        financeBtn.setMinHeight(40);
+        financeBtn.setMaxWidth(40);
+        financeBtn.setMaxHeight(40);
         resetButtonStyle(financeBtn);
         financeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         financeBtn.setAlignment(Pos.CENTER);
 
         Button storeBtn = new Button();
-        storeBtn.setPrefWidth(45);
-        storeBtn.setMaxWidth(Double.MAX_VALUE);
-        storeBtn.setPrefHeight(45);
+        storeBtn.setPrefWidth(40);
+        storeBtn.setPrefHeight(40);
+        storeBtn.setMinWidth(40);
+        storeBtn.setMinHeight(40);
+        storeBtn.setMaxWidth(40);
+        storeBtn.setMaxHeight(40);
         resetButtonStyle(storeBtn);
         storeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         storeBtn.setAlignment(Pos.CENTER);
 
         Button aiAssistBtn = new Button();
-        aiAssistBtn.setPrefWidth(45);
-        aiAssistBtn.setMaxWidth(Double.MAX_VALUE);
-        aiAssistBtn.setPrefHeight(45);
+        aiAssistBtn.setPrefWidth(40);
+        aiAssistBtn.setPrefHeight(40);
+        aiAssistBtn.setMinWidth(40);
+        aiAssistBtn.setMinHeight(40);
+        aiAssistBtn.setMaxWidth(40);
+        aiAssistBtn.setMaxHeight(40);
         resetButtonStyle(aiAssistBtn);
         aiAssistBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         aiAssistBtn.setAlignment(Pos.CENTER);
@@ -413,62 +437,22 @@ public class MainFrame {
             setCenterContent(noFunctionBox);
         }
 
-        // ---- 折叠侧边栏容器与动画 ----
-        StackPane sidebarContainer = new StackPane(leftBar);final DoubleProperty sidebarWidth = new SimpleDoubleProperty(SIDEBAR_COLLAPSED_WIDTH); // 默认收起
-        sidebarContainer.minWidthProperty().bind(sidebarWidth);
-        sidebarContainer.prefWidthProperty().bind(sidebarWidth);
-        sidebarContainer.maxWidthProperty().bind(sidebarWidth);
-        // 让侧栏容器占满 BorderPane 的垂直空间，从而 leftBar 能填满左侧剩余高度
+        // ---- 侧边栏容器（无展开/收起动画） ----
+        StackPane sidebarContainer = new StackPane(leftBar);
+        sidebarContainer.setMinWidth(SIDEBAR_COLLAPSED_WIDTH);
+        sidebarContainer.setPrefWidth(SIDEBAR_COLLAPSED_WIDTH);
+        sidebarContainer.setMaxWidth(SIDEBAR_COLLAPSED_WIDTH);
         sidebarContainer.prefHeightProperty().bind(mainLayout.heightProperty());
         sidebarContainer.maxHeightProperty().bind(mainLayout.heightProperty());
-        // leftBar 高度跟随容器，保证不出现空隙
         leftBar.prefHeightProperty().bind(sidebarContainer.heightProperty());
-        // 内容裁剪，避免收起时外溢
         Rectangle clip = new Rectangle();
-        clip.widthProperty().bind(sidebarWidth);
+        clip.widthProperty().bind(sidebarContainer.widthProperty());
         clip.heightProperty().bind(sidebarContainer.heightProperty());
         sidebarContainer.setClip(clip);
-
-        final Timeline[] currentAnim = new Timeline[1];
-        Runnable expand = () -> {
-            if (currentAnim[0] != null) currentAnim[0].stop();
-            Timeline tl = new Timeline(
-                    new KeyFrame(Duration.millis(200), new KeyValue(sidebarWidth, SIDEBAR_EXPANDED_WIDTH, Interpolator.EASE_BOTH))
-            );
-            tl.setOnFinished(e -> applySidebarText(navButtons, true));
-            currentAnim[0] = tl; tl.play();
-        };
-        Runnable collapse = () -> {
-            if (currentAnim[0] != null) currentAnim[0].stop();
-            Timeline tl = new Timeline(
-                    new KeyFrame(Duration.millis(200), new KeyValue(sidebarWidth, SIDEBAR_COLLAPSED_WIDTH, Interpolator.EASE_BOTH))
-            );
-            tl.setOnFinished(e -> applySidebarText(navButtons, false));
-            currentAnim[0] = tl; tl.play();
-        };
-        // 移出后延时收起，避免误触
-        final PauseTransition hideDelay = new PauseTransition(Duration.millis(600));
-        hideDelay.setOnFinished(e -> collapse.run());
-
-        sidebarContainer.addEventHandler(MouseEvent.MOUSE_ENTERED, e -> {
-            hideDelay.stop();
-            expand.run();
-        });
-        sidebarContainer.addEventHandler(MouseEvent.MOUSE_EXITED, e -> {
-            // 若鼠标离开侧边栏，延时收起
-            hideDelay.playFromStart();
-        });
 
         mainLayout.setLeft(sidebarContainer);
 
         Scene scene = new Scene(rootStack, 1500, 780);
-        // 场景左缘热区：鼠标靠近左侧时自动展开
-        scene.addEventFilter(MouseEvent.MOUSE_MOVED, e -> {
-            if (e.getSceneX() <= 6 && sidebarWidth.get() <= SIDEBAR_COLLAPSED_WIDTH + 0.5) {
-                hideDelay.stop();
-                expand.run();
-            }
-        });
 
         // 新增：窗口边缘拖动缩放
         scene.setOnMouseMoved(e -> {
@@ -566,6 +550,8 @@ public class MainFrame {
 
         // 初次进入为收起状态，隐藏文字；靠近左缘或移入侧栏展开
         applySidebarText(navButtons, false);
+
+
     }
 
     private HBox buildTopBar() {
@@ -690,7 +676,7 @@ public class MainFrame {
         bar.setOnMouseDragged(e -> {
             if (dragOffsetX >= 0 && dragOffsetY >= 0) {
                 Stage s = stage;
-                if (s != null) {
+                if( s != null) {
                     s.setX(e.getScreenX() - dragOffsetX);
                     s.setY(e.getScreenY() - dragOffsetY);
                 }
@@ -706,21 +692,67 @@ public class MainFrame {
             btn.setUserData(btn.getText());
         }
         ImageView iv = new ImageView(icon);
-        iv.setFitWidth(18);
-        iv.setFitHeight(18);
+        iv.setFitWidth(28); // 图标宽度扩大
+        iv.setFitHeight(28); // 图标高度扩大
         iv.setPreserveRatio(true);
         btn.setGraphic(iv);
         btn.setGraphicTextGap(8);
     }
 
+    private void setSelectedButtonStyle(Button button) {
+        button.setStyle(
+            "-fx-background-color: " + SIDEBAR_COLOR + ";" +
+            "-fx-effect: dropshadow(gaussian, #1E1F22, 10, 0, 0, 2);" +
+            "-fx-font-size: 15px; -fx-font-weight: bold; " +
+            "-fx-text-fill: " + PRIMARY_COLOR + ";"
+        );
+    }
+
+    private void resetButtonStyle(Button button) {
+        button.setStyle(
+            "-fx-background-color: " + SIDEBAR_COLOR + ";" +
+            "-fx-effect: none;" +
+            "-fx-font-size: 15px; " +
+            "-fx-text-fill: " + TEXT_COLOR + ";"
+        );
+    }
+
+    private void setButtonHoverShadow(Button button) {
+        button.setStyle(
+            "-fx-background-color: " + SIDEBAR_COLOR + ";" +
+            "-fx-effect: dropshadow(gaussian, #1E1F22, 10, 0, 0, 2);" + // 光效颜色与悬停阴影一致
+            "-fx-font-size: 15px; " +
+            "-fx-text-fill: " + TEXT_COLOR + ";"
+        );
+    }
+
     private void applySidebarText(List<Button> buttons, boolean expanded){
         for (Button b : buttons) {
-            // 只保留图片，取消文字
+            // 只保留图片，取消文字，并设置为正方形 40x40
             b.setText("");
-            b.setPrefWidth(45);
-            b.setPrefHeight(45);
+            b.setPrefWidth(40);
+            b.setPrefHeight(40);
+            b.setMinWidth(40);
+            b.setMinHeight(40);
+            b.setMaxWidth(40);
+            b.setMaxHeight(40);
             b.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             b.setAlignment(Pos.CENTER);
+
+            // 按钮背景色与功能区一致
+            b.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none;");
+
+            // 悬停阴影
+            b.setOnMouseEntered(e -> {
+                if (currentSelectedButton != b) setButtonHoverShadow(b);
+            });
+            b.setOnMouseExited(e -> {
+                if (currentSelectedButton != b) resetButtonStyle(b);
+            });
+        }
+        // 默认选中按钮也展示悬停阴影
+        if (currentSelectedButton != null) {
+            setSelectedButtonStyle(currentSelectedButton);
         }
     }
 
@@ -736,15 +768,6 @@ public class MainFrame {
         return logoutBtn;
     }
 
-    private void setSelectedButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
-                "-fx-text-fill: " + PRIMARY_COLOR + ";");
-    }
-
-    private void resetButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; " +
-                "-fx-text-fill: " + TEXT_COLOR + ";");
-    }
 
     private void setDangerButtonStyle(Button button) {
         button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
