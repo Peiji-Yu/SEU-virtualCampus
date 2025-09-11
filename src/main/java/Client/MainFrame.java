@@ -80,6 +80,11 @@ public class MainFrame {
         TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT
     }
 
+    // 新增：功能解释悬浮层
+    private StackPane hoverTipLayer;
+    private Label hoverTipLabel;
+    private Pane hoverTipBox;
+
     public MainFrame(String cardNumber) {
         this.cardNumber = cardNumber;
         this.userType = getUserType(cardNumber);
@@ -105,6 +110,7 @@ public class MainFrame {
         // ===== 最外层根容器（铺满窗口） =====
         StackPane rootStack = new StackPane();
         rootStack.setStyle("-fx-background-color: linear-gradient(to bottom right,#f1f6ff,#ffffff);");
+        // 移除圆角裁剪
 
         // 主功能面板：内部使用 BorderPane 分区（顶部、左侧功能栏、中心内容区）
         BorderPane mainLayout = new BorderPane();
@@ -118,17 +124,21 @@ public class MainFrame {
 
         // 顶部用户栏容器
         HBox topBar = buildTopBar();
-        VBox topContainer = new VBox(topBar); // 后续如需加入二级工具条可追加
+        // 增加底部分割线
+        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);"
+            + " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
+        VBox topContainer = new VBox(topBar);
         topContainer.setFillWidth(true);
         mainLayout.setTop(topContainer);
 
-        // 左侧导航栏（原 leftBar 与折叠容器 sidebarContainer 将被加入功能栏容器）
+        // 左侧导航栏
         VBox leftBar = new VBox(18);
         leftBar.setPadding(new Insets(15));
         leftBar.setAlignment(Pos.TOP_CENTER);
-        // 修改：去除左上圆角，仅保留左下外侧圆角
-        leftBar.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-background-radius: 0 0 0 12; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
+        // 增加顶部和右侧分割线
+        leftBar.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; "
+            + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);"
+            + " -fx-border-color: #e2e8f0; -fx-border-width: 1px 1px 0 0;");
         leftBar.setPrefHeight(Double.MAX_VALUE);
         leftBar.setMaxHeight(Double.MAX_VALUE);
         leftBar.setFillWidth(true);
@@ -143,60 +153,69 @@ public class MainFrame {
         Image iconTimetable = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/表格.png")));
         Image iconCourseSelect = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/选课.png")));
 
-        Button stuManageBtn = new Button("学籍管理");
-        stuManageBtn.setPrefWidth(130);
+        Button stuManageBtn = new Button();
+        stuManageBtn.setPrefWidth(45);
         stuManageBtn.setMaxWidth(Double.MAX_VALUE);
         stuManageBtn.setPrefHeight(45);
         setSelectedButtonStyle(stuManageBtn);
+        stuManageBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        stuManageBtn.setAlignment(Pos.CENTER);
 
-        // 管理员-课程管理按钮
-        Button courseMgmtBtn = new Button("课程管理");
-        courseMgmtBtn.setPrefWidth(130);
+        Button courseMgmtBtn = new Button();
+        courseMgmtBtn.setPrefWidth(45);
         courseMgmtBtn.setMaxWidth(Double.MAX_VALUE);
         courseMgmtBtn.setPrefHeight(45);
         resetButtonStyle(courseMgmtBtn);
+        courseMgmtBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        courseMgmtBtn.setAlignment(Pos.CENTER);
 
-        // 学生-我的课表按钮
-        Button timetableBtn = new Button("我的课表");
-        timetableBtn.setPrefWidth(130);
+        Button timetableBtn = new Button();
+        timetableBtn.setPrefWidth(45);
         timetableBtn.setMaxWidth(Double.MAX_VALUE);
         timetableBtn.setPrefHeight(45);
         resetButtonStyle(timetableBtn);
+        timetableBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        timetableBtn.setAlignment(Pos.CENTER);
 
-        // 学生-选课按钮
-        Button courseSelectBtn = new Button("选课");
-        courseSelectBtn.setPrefWidth(130);
+        Button courseSelectBtn = new Button();
+        courseSelectBtn.setPrefWidth(45);
         courseSelectBtn.setMaxWidth(Double.MAX_VALUE);
         courseSelectBtn.setPrefHeight(45);
         resetButtonStyle(courseSelectBtn);
+        courseSelectBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        courseSelectBtn.setAlignment(Pos.CENTER);
 
-        // 教师-我的课堂按钮
-        Button myClassroomBtn = new Button("我的课堂");
-        myClassroomBtn.setPrefWidth(130);
+        Button myClassroomBtn = new Button();
+        myClassroomBtn.setPrefWidth(45);
         myClassroomBtn.setMaxWidth(Double.MAX_VALUE);
         myClassroomBtn.setPrefHeight(45);
         resetButtonStyle(myClassroomBtn);
+        myClassroomBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        myClassroomBtn.setAlignment(Pos.CENTER);
 
-        // 新增：交易管理按钮（所有已知三类角色可见）
-        Button financeBtn = new Button("交易管理");
-        financeBtn.setPrefWidth(130);
+        Button financeBtn = new Button();
+        financeBtn.setPrefWidth(45);
         financeBtn.setMaxWidth(Double.MAX_VALUE);
         financeBtn.setPrefHeight(45);
         resetButtonStyle(financeBtn);
+        financeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        financeBtn.setAlignment(Pos.CENTER);
 
-        // 新增：校园商店按钮
-        Button storeBtn = new Button("校园商店");
-        storeBtn.setPrefWidth(130);
+        Button storeBtn = new Button();
+        storeBtn.setPrefWidth(45);
         storeBtn.setMaxWidth(Double.MAX_VALUE);
         storeBtn.setPrefHeight(45);
         resetButtonStyle(storeBtn);
+        storeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        storeBtn.setAlignment(Pos.CENTER);
 
-        // 新增：AI 助手按钮（所有角色显示）
-        Button aiAssistBtn = new Button("AI助手");
-        aiAssistBtn.setPrefWidth(130);
+        Button aiAssistBtn = new Button();
+        aiAssistBtn.setPrefWidth(45);
         aiAssistBtn.setMaxWidth(Double.MAX_VALUE);
         aiAssistBtn.setPrefHeight(45);
         resetButtonStyle(aiAssistBtn);
+        aiAssistBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        aiAssistBtn.setAlignment(Pos.CENTER);
 
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
@@ -219,10 +238,21 @@ public class MainFrame {
         attachIconAndRememberText(storeBtn, iconStore);
         attachIconAndRememberText(aiAssistBtn, iconAI);
 
+        // 为每个功能区按钮设置右侧 tooltip
+        setRightTooltip(stuManageBtn, "学籍管理");
+        setRightTooltip(courseMgmtBtn, "课程管理");
+        setRightTooltip(timetableBtn, "我的课表");
+        setRightTooltip(courseSelectBtn, "选课");
+        setRightTooltip(myClassroomBtn, "我的课堂");
+        setRightTooltip(financeBtn, "交易管理");
+        setRightTooltip(storeBtn, "校园商店");
+        setRightTooltip(aiAssistBtn, "AI助手");
+
         // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
         centerContainer = new StackPane();
-        // 修改：去除与顶部栏、侧边栏相交的圆角，仅保留右下外侧圆角
-        centerContainer.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 0 0 12 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04),12,0,0,2);");
+        // 增加顶部分割线和左侧分割线
+        centerContainer.setStyle("-fx-background-color: #F6F8FA; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04),12,0,0,2);"
+            + " -fx-border-color: #e2e8f0; -fx-border-width: 1px 0 0 1px;");
         StackPane.setMargin(centerContainer, new Insets(0));
         mainLayout.setCenter(centerContainer);
 
@@ -542,11 +572,19 @@ public class MainFrame {
         HBox bar = new HBox(12);
         bar.setPadding(new Insets(8, 12, 8, 12));
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12 12 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
+        bar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
-        // 新增：标题栏
-        Label titleLabel = new Label("智慧校园");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_COLOR + ";");
+        // 左侧Logo
+        ImageView logoView = null;
+        try {
+            var url = MainFrame.class.getResource("/Image/Logo.png");
+            if (url != null) {
+                Image logoImg = new Image(url.toExternalForm());
+                logoView = new ImageView(logoImg);
+                logoView.setFitHeight(32);
+                logoView.setPreserveRatio(true);
+            }
+        } catch (Exception ignore) {}
 
         String roleCN;
         switch (userType) {
@@ -563,7 +601,11 @@ public class MainFrame {
 
         Button changePwdBtn = new Button("修改密码");
         changePwdBtn.setPrefHeight(34);
-        changePwdBtn.setStyle("-fx-font-size: 13px; -fx-background-radius: 8; -fx-background-color: #4e8cff; -fx-text-fill: white;");
+        // 样式与退出登录按钮统一（颜色不变）
+        changePwdBtn.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
+                "-fx-background-color: #4e8cff; -fx-text-fill: white; " +
+                "-fx-background-radius: 8; " +
+                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.18), 8, 0, 0, 2);");
         changePwdBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
 
         Button logoutTopBtn = new Button("退出登录");
@@ -573,8 +615,66 @@ public class MainFrame {
         logoutTopBtn.setOnMouseExited(e -> setDangerButtonStyle(logoutTopBtn));
         logoutTopBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
 
-        // 顺序调整：标题栏、用户信息、spacer、修改密码、退出登录
-        bar.getChildren().addAll(titleLabel, userInfo, spacer, changePwdBtn, logoutTopBtn);
+        // 顺序调整：Logo、用户信息、spacer、修改密码、退出登录
+        if (logoView != null) {
+            bar.getChildren().addAll(logoView, userInfo, spacer, changePwdBtn, logoutTopBtn);
+        } else {
+            bar.getChildren().addAll(userInfo, spacer, changePwdBtn, logoutTopBtn);
+        }
+
+        // 新增：窗口控制按钮组
+        HBox windowBtnBox = new HBox(4);
+        windowBtnBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Image imgMin = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/Minimize-2.png")));
+        Image imgMax = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/Maximize-1.png")));
+        Image imgRestore = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/Maximize-3.png")));
+        Image imgClose = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/titlebar/关闭.png")));
+
+        Button minBtn = new Button();
+        minBtn.setPrefSize(28, 28);
+        minBtn.setStyle("-fx-background-color: transparent;");
+        minBtn.setTooltip(new Tooltip("最小化"));
+        ImageView minView = new ImageView(imgMin);
+        minView.setFitWidth(14); minView.setFitHeight(14); minView.setPreserveRatio(true);
+        minBtn.setGraphic(minView);
+        minBtn.setOnAction(e -> {
+            if (stage != null) stage.setIconified(true);
+        });
+
+        Button maxBtn = new Button();
+        maxBtn.setPrefSize(28, 28);
+        maxBtn.setStyle("-fx-background-color: transparent;");
+        maxBtn.setTooltip(new Tooltip("最大化/还原"));
+        ImageView maxView = new ImageView(imgMax);
+        maxView.setFitWidth(14); maxView.setFitHeight(14); maxView.setPreserveRatio(true);
+        maxBtn.setGraphic(maxView);
+        maxBtn.setOnAction(e -> {
+            if (stage != null) {
+                boolean toMax = !stage.isMaximized();
+                stage.setMaximized(toMax);
+                // 切换图标
+                if (toMax) {
+                    maxView.setImage(imgRestore);
+                } else {
+                    maxView.setImage(imgMax);
+                }
+            }
+        });
+
+        Button closeBtn = new Button();
+        closeBtn.setPrefSize(28, 28);
+        closeBtn.setStyle("-fx-background-color: transparent;");
+        closeBtn.setTooltip(new Tooltip("关闭"));
+        ImageView closeView = new ImageView(imgClose);
+        closeView.setFitWidth(14); closeView.setFitHeight(14); closeView.setPreserveRatio(true);
+        closeBtn.setGraphic(closeView);
+        closeBtn.setOnAction(e -> {
+            if (stage != null) stage.close();
+        });
+
+        windowBtnBox.getChildren().addAll(minBtn, maxBtn, closeBtn);
+        bar.getChildren().add(windowBtnBox);
 
         // 新增：用户栏空白处拖动窗口
         bar.setOnMousePressed(e -> {
@@ -615,22 +715,12 @@ public class MainFrame {
 
     private void applySidebarText(List<Button> buttons, boolean expanded){
         for (Button b : buttons) {
-            Object ud = b.getUserData();
-            String original = ud instanceof String ? (String) ud : b.getText();
-            b.setText(expanded ? original : "");
-            if (expanded) {
-                b.setPrefWidth(130);
-                b.setPrefHeight(45);
-            } else {
-                b.setPrefWidth(45);
-                b.setPrefHeight(45);
-                b.setContentDisplay(ContentDisplay.GRAPHIC_ONLY); // 收起时只显示图标
-                b.setAlignment(Pos.CENTER); // 图标居中
-            }
-            if (expanded) {
-                b.setContentDisplay(ContentDisplay.LEFT); // 展开时图标在左
-                b.setAlignment(Pos.CENTER_LEFT);
-            }
+            // 只保留图片，取消文字
+            b.setText("");
+            b.setPrefWidth(45);
+            b.setPrefHeight(45);
+            b.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            b.setAlignment(Pos.CENTER);
         }
     }
 
@@ -647,23 +737,23 @@ public class MainFrame {
     }
 
     private void setSelectedButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
                 "-fx-text-fill: " + PRIMARY_COLOR + ";");
     }
 
     private void resetButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; -fx-background-radius: 10; " +
+        button.setStyle("-fx-font-size: 15px; " +
                 "-fx-text-fill: " + TEXT_COLOR + ";");
     }
 
     private void setDangerButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
                 "-fx-background-color: " + DANGER_COLOR + "; -fx-text-fill: white; " +
                 "-fx-effect: dropshadow(gaussian, rgba(255,107,107,0.3), 8, 0, 0, 2);");
     }
 
     private void setDangerButtonHoverStyle(Button button) {
-        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 10; " +
+        button.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
                 "-fx-background-color: " + DANGER_HOVER_COLOR + "; -fx-text-fill: white; " +
                 "-fx-effect: dropshadow(gaussian, rgba(255,82,82,0.4), 10, 0, 0, 3);");
     }
@@ -713,5 +803,54 @@ public class MainFrame {
         if (top) return ResizeDirection.TOP;
         if (bottom) return ResizeDirection.BOTTOM;
         return ResizeDirection.NONE;
+    }
+
+    // 显示悬浮解释窗口
+    private void showHoverTip(Button btn, StackPane sidebarContainer) {
+        Object ud = btn.getUserData();
+        if (ud == null) return;
+        hoverTipLabel.setText(ud.toString());
+
+        // 计算解释窗口位置：在 sidebarContainer 右侧，按钮垂直居中
+        javafx.geometry.Point2D sidebarScene = sidebarContainer.localToScene(0, 0);
+        javafx.geometry.Point2D btnScene = btn.localToScene(0, 0);
+
+        double x = sidebarScene.getX() + sidebarContainer.getWidth() + 8;
+        double y = btnScene.getY() + (btn.getHeight() - hoverTipBox.getPrefHeight()) / 2.0;
+
+        hoverTipBox.setLayoutX(x);
+        hoverTipBox.setLayoutY(y);
+        hoverTipBox.setVisible(true);
+        hoverTipLabel.setVisible(true);
+        hoverTipLayer.toFront();
+        hoverTipBox.toFront();
+    }
+
+    // 隐藏悬浮解释窗口
+    private void hideHoverTip() {
+        hoverTipBox.setVisible(false);
+        hoverTipLabel.setVisible(false);
+    }
+
+    /**
+     * 设置按钮右侧显示的 Tooltip
+     */
+    private void setRightTooltip(Button btn, String text) {
+        Tooltip tip = new Tooltip(text);
+        tip.setShowDelay(Duration.millis(200));
+        tip.setHideDelay(Duration.millis(100));
+        tip.setStyle("-fx-font-size: 14px; -fx-background-radius: 8; -fx-padding: 6 12 6 12;");
+        // 设置 tooltip 显示在右侧
+        tip.setOnShowing(e -> {
+            javafx.stage.Window w = tip.getOwnerWindow();
+            if (w != null && btn.getScene() != null) {
+                javafx.geometry.Point2D btnPos = btn.localToScene(0, 0);
+                double x = btn.getScene().getWindow().getX() + btnPos.getX() + btn.getWidth() + 10;
+                double y = btn.getScene().getWindow().getY() + btnPos.getY() + btn.getHeight() / 2 - 18;
+                tip.setAnchorX(x);
+                tip.setAnchorY(y);
+            }
+        });
+        btn.setTooltip(tip);
     }
 }
