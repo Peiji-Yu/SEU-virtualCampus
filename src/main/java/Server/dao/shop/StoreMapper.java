@@ -43,7 +43,7 @@ public interface StoreMapper {
      * 更新商品信息
      */
     @Update("UPDATE store_item SET item_name = #{itemName}, price = #{price}, picture_link = #{pictureLink}, " +
-            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode}, category = #{category}" +
+            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode}, category = #{category} " +
             "WHERE uuid = #{uuid}")
     int updateItem(StoreItem item);
 
@@ -148,13 +148,13 @@ public interface StoreMapper {
     /**
      * 查询用户的所有订单
      */
-    @Select("SELECT * FROM store_transaction WHERE card_number = #{cardNumber} ORDER BY time DESC")
+    @Select("SELECT * FROM store_order WHERE card_number = #{cardNumber} ORDER BY time DESC")
     List<StoreOrder> findOrdersByUser(@Param("cardNumber") Integer cardNumber);
 
     /**
      * 查询所有订单
      */
-    @Select("SELECT * FROM store_transaction ORDER BY time DESC")
+    @Select("SELECT * FROM store_order ORDER BY time DESC")
     List<StoreOrder> findAllOrders();
 
     // 销售统计相关操作

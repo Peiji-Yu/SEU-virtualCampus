@@ -168,34 +168,25 @@ public class StoreService {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
             FinanceService financeService = new FinanceService();
-
-            // 获取订单信息
             StoreOrder order = storeMapper.findOrderById(orderUuid);
             if (order == null) {
                 throw new RuntimeException("订单不存在");
             }
-
-            if (order.getStatus() != STATUS_PENDING) {
+            // 使用 equals 判断，避免字符串引用不一致导致失败
+            if (!STATUS_PENDING.equals(order.getStatus())) {
                 throw new RuntimeException("订单状态不正确: " + order.getStatus());
             }
-
-            // 使用一卡通支付
             boolean paymentResult = financeService.consumeFinanceCard(
                     order.getCardNumber(),
                     order.getTotalAmount(),
                     "商店购物支付",
                     orderUuid.toString()
             );
-
             if (paymentResult) {
-                // 更新订单状态为已支付
-                int updateResult = storeMapper.updateOrderStatus(orderUuid, "已支付");
-
-                // 增加商品销量
+                int updateResult = storeMapper.updateOrderStatus(orderUuid, STATUS_PAID);
                 for (StoreOrderItem item : order.getItems()) {
                     storeMapper.increaseItemSales(item.getItemUuid(), item.getAmount());
                 }
-
                 sqlSession.commit();
                 return updateResult > 0;
             } else {
@@ -210,26 +201,20 @@ public class StoreService {
     public boolean cancelOrder(UUID orderUuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-
-            // 获取订单信息
             StoreOrder order = storeMapper.findOrderById(orderUuid);
             if (order == null) {
                 throw new RuntimeException("订单不存在");
             }
-
-            if (order.getStatus() == STATUS_PAID) {
+            // 使用 equals 判断
+            if (STATUS_PAID.equals(order.getStatus())) {
                 throw new RuntimeException("已支付的订单不能取消");
             }
-
-            // 恢复商品库存
             for (StoreOrderItem item : order.getItems()) {
                 int stockUpdateResult = storeMapper.updateItemStock(item.getItemUuid(), -item.getAmount());
                 if (stockUpdateResult == 0) {
                     throw new RuntimeException("更新商品库存失败");
                 }
             }
-
-            // 删除订单
             int result = storeMapper.deleteOrder(orderUuid);
             sqlSession.commit();
             return result > 0;

@@ -40,7 +40,7 @@ public class StorePanel extends BorderPane {
     private TextField idSearchField; // 按UUID查商品
 
     // 管理员商品表单
-    private TextField formName, formPrice, formCategory, formStock, formBarcode, formPicture, formDescription, formUuid;
+    private TextField formName, formPrice, formCategory, formStock, formBarcode, formPicture, formDescription, formUuid, formSalesVolume;
 
     // 订单备注输入
     private TextField orderRemarkField;
@@ -104,8 +104,18 @@ public class StorePanel extends BorderPane {
         TableColumn<ItemRow,String> cPrice = new TableColumn<>("单价(元)"); cPrice.setCellValueFactory(new PropertyValueFactory<>("priceYuan")); cPrice.setPrefWidth(80);
         TableColumn<ItemRow,Integer> cStock = new TableColumn<>("库存"); cStock.setCellValueFactory(new PropertyValueFactory<>("stock")); cStock.setPrefWidth(60);
         TableColumn<ItemRow,String> cCat = new TableColumn<>("类别"); cCat.setCellValueFactory(new PropertyValueFactory<>("category")); cCat.setPrefWidth(80);
-        itemTable.getColumns().addAll(cId,cName,cPrice,cStock,cCat);
+        TableColumn<ItemRow,Integer> cSales = new TableColumn<>("销量"); cSales.setCellValueFactory(new PropertyValueFactory<>("salesVolume")); cSales.setPrefWidth(70);
+        itemTable.getColumns().addAll(cId,cName,cPrice,cStock,cCat,cSales);
         itemTable.setPrefHeight(240);
+        // 行描述提示
+        itemTable.setRowFactory(tv -> {
+            TableRow<ItemRow> row = new TableRow<>();
+            Tooltip tip = new Tooltip();
+            row.itemProperty().addListener((o,ov,nv)->{
+                if(nv==null){ row.setTooltip(null); } else { tip.setText(Optional.ofNullable(nv.description).orElse("无描述")); row.setTooltip(tip); }
+            });
+            return row;
+        });
 
         // 加入购物车
         HBox addBox = new HBox(8);
@@ -155,7 +165,7 @@ public class StorePanel extends BorderPane {
         Tab t = new Tab("商品管理");
         VBox root = new VBox(10);
         root.setPadding(new Insets(4));
-        Label tips = new Label("选择行可编辑；新增不填UUID自动生成");
+        Label tips = new Label("选择行可编辑；新增不填UUID自动生成；销量可选");
 
         GridPane form = new GridPane(); form.setHgap(8); form.setVgap(6);
         formUuid = new TextField(); formUuid.setPromptText("UUID(更新/删除用)"); formUuid.setPrefWidth(280);
@@ -166,6 +176,7 @@ public class StorePanel extends BorderPane {
         formBarcode = new TextField(); formBarcode.setPromptText("条码");
         formPicture = new TextField(); formPicture.setPromptText("图片链接");
         formDescription = new TextField(); formDescription.setPromptText("描述");
+        formSalesVolume = new TextField(); formSalesVolume.setPromptText("销量(可选)");
 
         int r=0;
         form.add(new Label("UUID"),0,r); form.add(formUuid,1,r,3,1); r++;
@@ -173,6 +184,7 @@ public class StorePanel extends BorderPane {
         form.add(new Label("类别"),0,r); form.add(formCategory,1,r); form.add(new Label("库存"),2,r); form.add(formStock,3,r); r++;
         form.add(new Label("条码"),0,r); form.add(formBarcode,1,r); form.add(new Label("图片"),2,r); form.add(formPicture,3,r); r++;
         form.add(new Label("描述"),0,r); form.add(formDescription,1,r,3,1); r++;
+        form.add(new Label("销量"),0,r); form.add(formSalesVolume,1,r); r++;
 
         HBox btns = new HBox(10);
         Button add = new Button("添加"); add.setOnAction(e -> adminAddItem());
@@ -188,7 +200,8 @@ public class StorePanel extends BorderPane {
         TableColumn<ItemRow,String> cPrice = new TableColumn<>("价格(元)"); cPrice.setCellValueFactory(new PropertyValueFactory<>("priceYuan")); cPrice.setPrefWidth(80);
         TableColumn<ItemRow,Integer> cStock = new TableColumn<>("库存"); cStock.setCellValueFactory(new PropertyValueFactory<>("stock")); cStock.setPrefWidth(60);
         TableColumn<ItemRow,String> cCat = new TableColumn<>("类别"); cCat.setCellValueFactory(new PropertyValueFactory<>("category")); cCat.setPrefWidth(80);
-        adminTable.getColumns().addAll(cId,cName,cPrice,cStock,cCat);
+        TableColumn<ItemRow,Integer> cSales = new TableColumn<>("销量"); cSales.setCellValueFactory(new PropertyValueFactory<>("salesVolume")); cSales.setPrefWidth(70);
+        adminTable.getColumns().addAll(cId,cName,cPrice,cStock,cCat,cSales);
         adminTable.setPrefHeight(280);
         adminTable.getSelectionModel().selectedItemProperty().addListener((o,ov,nv)->{ if(nv!=null) formUuid.setText(nv.uuid); });
 
@@ -208,7 +221,9 @@ public class StorePanel extends BorderPane {
         TextField orderIdField = new TextField(); orderIdField.setPromptText("按UUID查询");
         Button query = new Button("查询"); query.setOnAction(e -> getOrderById(orderIdField.getText().trim()));
         Button refresh = new Button("刷新"); refresh.setOnAction(e -> fetchAllOrders());
-        op.getChildren().addAll(orderIdField, query, refresh);
+        TextField userCardField = new TextField(); userCardField.setPromptText("按卡号查该用户订单");
+        Button userQuery = new Button("查用户"); userQuery.setOnAction(e -> adminGetUserOrders(userCardField.getText().trim()));
+        op.getChildren().addAll(orderIdField, query, userCardField, userQuery, refresh);
         root.getChildren().addAll(op, allOrdersTable);
         t.setContent(root);
         return t;
@@ -256,10 +271,10 @@ public class StorePanel extends BorderPane {
     }
 
     /* ==================== 数据类 ==================== */
-    public static class ItemRow { public String uuid,itemName; public int priceFen; public String priceYuan; public int stock; public String category; public String description; public String barcode; public String pictureLink; public int getStock(){return stock;} public String getItemName(){return itemName;} public String getPriceYuan(){return priceYuan;} public String getCategory(){return category;} public String getUuid(){return uuid;} }
-    public static class CartRow { String uuid,itemName; int priceFen; int quantity; CartRow(String u,String n,int p,int q){uuid=u;itemName=n;priceFen=p;quantity=q;} String getItemName(){return itemName;} int getQuantity(){return quantity;} String getSubtotalYuan(){return fenToYuan((long)priceFen*quantity);} String getPriceYuan(){return fenToYuan(priceFen);} }
+    public static class ItemRow { public String uuid,itemName; public int priceFen; public String priceYuan; public int stock; public String category; public String description; public String barcode; public String pictureLink; public Integer salesVolume; public int getStock(){return stock;} public String getItemName(){return itemName;} public String getPriceYuan(){return priceYuan;} public String getCategory(){return category;} public String getUuid(){return uuid;} public Integer getSalesVolume(){return salesVolume;} }
+    public static class CartRow { String uuid,itemName; int priceFen; int quantity; CartRow(String u,String n,int p,int q){uuid=u;itemName=n;priceFen=p;quantity=q;} public String getItemName(){return itemName;} public int getQuantity(){return quantity;} public String getSubtotalYuan(){return fenToYuan((long)priceFen*quantity);} public String getPriceYuan(){return fenToYuan(priceFen);} }
     public static class OrderRow { String uuid; String cardNumber; int totalFen; String totalYuan; String status; String time; String remark; List<OrderItemRow> items; public String getUuid(){return uuid;} public String getCardNumber(){return cardNumber;} public String getTotalYuan(){return totalYuan;} public String getStatus(){return status;} public String getTime(){return time;} public String getRemark(){return remark;} }
-    public static class OrderItemRow { String itemUuid; int price; int amount; }
+    public static class OrderItemRow { String itemUuid; int price; int amount; String itemName; }
 
     public static String fenToYuan(long fen){ return String.format(Locale.CHINA,"%.2f", fen/100.0); }
 
@@ -278,11 +293,12 @@ public class StorePanel extends BorderPane {
             else { type="getAllItems"; }
             String resp = ClientNetworkHelper.send(new Request(type, data));
             JsonObject o = JsonParser.parseString(resp).getAsJsonObject();
-            if (o.get("code").getAsInt()!=200) return;
+            if (!o.has("code") || o.get("code").getAsInt()!=200) return;
             List<ItemRow> list = new ArrayList<>();
-            JsonArray arr = o.getAsJsonArray("data"); if(arr!=null){
+            if(o.get("data")!=null && o.get("data").isJsonArray()){
+                JsonArray arr = o.getAsJsonArray("data");
                 for (JsonElement el: arr){ if(!el.isJsonObject()) continue; JsonObject it = el.getAsJsonObject(); ItemRow r = parseItem(it); if(r!=null) list.add(r); }
-            } else if (o.get("data").isJsonObject()){ // 单个
+            } else if (o.has("data") && o.get("data").isJsonObject()){
                 ItemRow r = parseItem(o.getAsJsonObject("data")); if(r!=null) list.add(r);
             }
             Platform.runLater(() -> itemData.setAll(list));
@@ -301,14 +317,15 @@ public class StorePanel extends BorderPane {
             r.description = nullableString(it, "description");
             r.barcode = nullableString(it, "barcode");
             r.pictureLink = nullableString(it, "pictureLink");
+            r.salesVolume = it.has("salesVolume") && !it.get("salesVolume").isJsonNull()? it.get("salesVolume").getAsInt(): null;
             return r;
         } catch (Exception e){ return null; }
     }
 
-    private String nullableString(JsonObject o, String k){ return o.has(k)&&!o.get(k).isJsonNull()? o.get(k).getAsString():null; }
+    private String nullableString(JsonObject o, String k){ return o!=null && o.has(k)&&!o.get(k).isJsonNull()? o.get(k).getAsString():null; }
 
     private void getItemById(){ String id = idSearchField.getText().trim(); if(id.isEmpty()) return; new Thread(() -> {
-        try { Map<String,Object> data = new HashMap<>(); data.put("itemId", id); String resp = ClientNetworkHelper.send(new Request("getItemById", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(o.get("code").getAsInt()!=200) return; JsonObject it = o.getAsJsonObject("data"); ItemRow r = parseItem(it); if(r!=null){ Platform.runLater(()-> { itemData.setAll(Collections.singletonList(r)); }); } } catch (Exception ignored){}
+        try { Map<String,Object> data = new HashMap<>(); data.put("itemId", id); String resp = ClientNetworkHelper.send(new Request("getItemById", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200) return; JsonObject it = o.getAsJsonObject("data"); ItemRow r = parseItem(it); if(r!=null){ Platform.runLater(()-> { itemData.setAll(Collections.singletonList(r)); }); } } catch (Exception ignored){}
     }).start(); }
 
     /* ==================== 购物车 ==================== */
@@ -321,17 +338,21 @@ public class StorePanel extends BorderPane {
     }).start(); }
 
     /* ==================== 订单相关 ==================== */
-    private void fetchMyOrders(){ new Thread(() -> fetchOrders(false)).start(); }
-    private void fetchAllOrders(){ new Thread(() -> fetchOrders(true)).start(); }
+    private void fetchMyOrders(){ new Thread(() -> fetchOrders(false, null)).start(); }
+    private void fetchAllOrders(){ new Thread(() -> fetchOrders(true, null)).start(); }
+    private void adminGetUserOrders(String card){ if(card==null||card.isEmpty()) return; new Thread(() -> fetchOrders(false, card)).start(); }
 
-    private void fetchOrders(boolean all){
+    private void fetchOrders(boolean all, String specifiedUser){
         try {
             String type = all?"getAllOrders":"getUserOrders";
-            Map<String,Object> data = all? new HashMap<>() : new HashMap<>(){{ put("cardNumber", Integer.parseInt(cardNumber)); }};
-            if (!all) data.put("cardNumber", Integer.parseInt(cardNumber));
+            Map<String,Object> data = new HashMap<>();
+            if(!all){
+                String c = specifiedUser!=null? specifiedUser : cardNumber;
+                try { data.put("cardNumber", Integer.parseInt(c)); } catch (NumberFormatException ignored) { return; }
+            }
             String resp = ClientNetworkHelper.send(new Request(type, data));
-            JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(o.get("code").getAsInt()!=200) return;
-            JsonArray arr = o.getAsJsonArray("data"); if(arr==null) return; List<OrderRow> list = new ArrayList<>(); for(JsonElement el: arr){ if(!el.isJsonObject()) continue; OrderRow r = parseOrder(el.getAsJsonObject()); if(r!=null) list.add(r);} Platform.runLater(()-> { if(all) allOrderData.setAll(list); else myOrderData.setAll(list); });
+            JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200) return;
+            JsonArray arr = o.getAsJsonArray("data"); if(arr==null) return; List<OrderRow> list = new ArrayList<>(); for(JsonElement el: arr){ if(!el.isJsonObject()) continue; OrderRow r = parseOrder(el.getAsJsonObject()); if(r!=null) list.add(r);} Platform.runLater(()-> { if(all) allOrderData.setAll(list); else { if(specifiedUser!=null) allOrderData.setAll(list); else myOrderData.setAll(list);} });
         } catch (Exception ignore) {}
     }
 
@@ -348,7 +369,7 @@ public class StorePanel extends BorderPane {
             r.items = new ArrayList<>();
             if(o.has("items") && o.get("items").isJsonArray()){
                 for(JsonElement ie: o.getAsJsonArray("items")){
-                    if(!ie.isJsonObject()) continue; JsonObject jo = ie.getAsJsonObject(); OrderItemRow ir = new OrderItemRow(); ir.itemUuid = nullableString(jo,"itemUuid"); ir.price = jo.has("price")&&!jo.get("price").isJsonNull()? jo.get("price").getAsInt():0; ir.amount = jo.has("amount")&&!jo.get("amount").isJsonNull()? jo.get("amount").getAsInt():0; r.items.add(ir);
+                    if(!ie.isJsonObject()) continue; JsonObject jo = ie.getAsJsonObject(); OrderItemRow ir = new OrderItemRow(); ir.itemUuid = nullableString(jo,"itemUuid"); ir.price = jo.has("itemPrice") && !jo.get("itemPrice").isJsonNull()? jo.get("itemPrice").getAsInt(): (jo.has("price")&&!jo.get("price").isJsonNull()? jo.get("price").getAsInt():0); ir.amount = jo.has("amount")&&!jo.get("amount").isJsonNull()? jo.get("amount").getAsInt():0; if(jo.has("item") && jo.get("item").isJsonObject()){ JsonObject nested = jo.getAsJsonObject("item"); ir.itemName = nullableString(nested, "itemName"); } r.items.add(ir);
                 }
             }
             return r;
@@ -358,22 +379,23 @@ public class StorePanel extends BorderPane {
     private void payOrder(String orderId){ if(orderId==null) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("payOrder", data)); Platform.runLater(()-> { infoDialog("支付结果", resp); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
     private void cancelOrder(String orderId){ if(orderId==null) return; if(!confirm("确认取消该订单?")) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("cancelOrder", data)); Platform.runLater(()-> { infoDialog("取消结果", resp); fetchMyOrders(); if(isAdmin()) fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
     private void refundOrder(String orderId){ if(orderId==null) return; TextInputDialog td = new TextInputDialog(); td.setHeaderText(null); td.setContentText("退款理由:"); Optional<String> reason = td.showAndWait(); if(reason.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); data.put("reason", reason.get()); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("refundOrder", data)); Platform.runLater(()-> { infoDialog("退款结果", resp); fetchAllOrders(); }); } catch (Exception ignored){} }).start(); }
-    private void getOrderById(String orderId){ if(orderId==null||orderId.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getOrder", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(o.get("code").getAsInt()!=200){ Platform.runLater(() -> infoDialog("查询结果", resp)); return; } OrderRow r = parseOrder(o.getAsJsonObject("data")); if(r!=null) Platform.runLater(()-> { allOrderData.setAll(Collections.singletonList(r)); }); } catch (Exception ignored){} }).start(); }
+    private void getOrderById(String orderId){ if(orderId==null||orderId.isEmpty()) return; Map<String,Object> data=new HashMap<>(); data.put("orderId", orderId); new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getOrder", data)); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200){ Platform.runLater(() -> infoDialog("查询结果", resp)); return; } OrderRow r = parseOrder(o.getAsJsonObject("data")); if(r!=null) Platform.runLater(()-> { allOrderData.setAll(Collections.singletonList(r)); }); } catch (Exception ignored){} }).start(); }
 
-    private void showOrderDetail(OrderRow row){ if(row==null) return; StringBuilder sb = new StringBuilder(); sb.append("订单ID: ").append(row.uuid).append('\n'); sb.append("状态: ").append(row.status).append('\n'); sb.append("金额: ").append(row.totalYuan).append(" 元\n"); sb.append("时间: ").append(row.time).append('\n'); sb.append("备注: ").append(Optional.ofNullable(row.remark).orElse("")); sb.append("\n商品列表:\n"); if(row.items!=null){ for(OrderItemRow it: row.items){ sb.append(" - ").append(it.itemUuid).append(" x").append(it.amount).append(" 单价:").append(fenToYuan(it.price)).append("元").append('\n'); } } infoDialog("订单详情", sb.toString()); }
+    private void showOrderDetail(OrderRow row){ if(row==null) return; StringBuilder sb = new StringBuilder(); sb.append("订单ID: ").append(row.uuid).append('\n'); sb.append("状态: ").append(row.status).append('\n'); sb.append("金额: ").append(row.totalYuan).append(" 元\n"); sb.append("时间: ").append(row.time).append('\n'); sb.append("备注: ").append(Optional.ofNullable(row.remark).orElse("")); sb.append("\n商品列表:\n"); if(row.items!=null){ for(OrderItemRow it: row.items){ sb.append(" - ").append(Optional.ofNullable(it.itemName).orElse(it.itemUuid)).append(" x").append(it.amount).append(" 单价:").append(fenToYuan(it.price)).append("元").append('\n'); } } infoDialog("订单详情", sb.toString()); }
 
     /* ==================== 管理员商品操作 ==================== */
-    private void adminAddItem(){ try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); String uuid = formUuid.getText().trim(); if(uuid.isEmpty()) uuid = java.util.UUID.randomUUID().toString(); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", uuid); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("addItem", data, s -> { infoDialog("添加结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
-    private void adminUpdateItem(){ if(formUuid.getText().trim().isEmpty()){ infoDialog("提示","请填写UUID"); return;} try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", formUuid.getText().trim()); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("updateItem", data, s -> { infoDialog("更新结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
+    private void adminAddItem(){ try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); String uuid = formUuid.getText().trim(); if(uuid.isEmpty()) uuid = java.util.UUID.randomUUID().toString(); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", uuid); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("addItem", data, s -> { infoDialog("添加结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
+    private void adminUpdateItem(){ if(formUuid.getText().trim().isEmpty()){ infoDialog("提示","请填写UUID"); return;} try { Integer priceFen = parsePriceFen(formPrice.getText()); Integer stock = parseIntSafe(formStock.getText(),0); Map<String,Object> item = new LinkedHashMap<>(); item.put("uuid", formUuid.getText().trim()); item.put("itemName", formName.getText().trim()); item.put("price", priceFen); item.put("pictureLink", formPicture.getText().trim()); item.put("stock", stock); item.put("description", formDescription.getText().trim()); item.put("category", formCategory.getText().trim()); item.put("barcode", formBarcode.getText().trim()); Integer sales = parseIntNullable(formSalesVolume.getText()); if(sales!=null) item.put("salesVolume", sales); Map<String,Object> data = new HashMap<>(); data.put("item", item); sendAsync("updateItem", data, s -> { infoDialog("更新结果", s); loadAllItems(); }); } catch (Exception e){ infoDialog("错误", "数据格式错误: "+e.getMessage()); } }
     private void adminDeleteItem(){ String uuid = formUuid.getText().trim(); if(uuid.isEmpty()){ infoDialog("提示","请填写UUID"); return;} if(!confirm("确认删除?")) return; Map<String,Object> data=new HashMap<>(); data.put("itemId", uuid); sendAsync("deleteItem", data, s -> { infoDialog("删除结果", s); loadAllItems(); }); }
-    private void fillFormFromSelection(){ ItemRow sel = itemTable.getSelectionModel().getSelectedItem(); if(sel==null){ infoDialog("提示","先在商品页选择一行"); return;} formUuid.setText(sel.uuid); formName.setText(sel.itemName); formPrice.setText(sel.priceYuan); formCategory.setText(sel.category); formStock.setText(String.valueOf(sel.stock)); formBarcode.setText(Optional.ofNullable(sel.barcode).orElse("")); formPicture.setText(Optional.ofNullable(sel.pictureLink).orElse("")); formDescription.setText(Optional.ofNullable(sel.description).orElse("")); }
-    private void clearForm(){ Arrays.asList(formUuid,formName,formPrice,formCategory,formStock,formBarcode,formPicture,formDescription).forEach(tf->tf.setText("")); }
+    private void fillFormFromSelection(){ ItemRow sel = itemTable.getSelectionModel().getSelectedItem(); if(sel==null){ infoDialog("提示","先在商品页选择一行"); return;} formUuid.setText(sel.uuid); formName.setText(sel.itemName); formPrice.setText(sel.priceYuan); formCategory.setText(sel.category); formStock.setText(String.valueOf(sel.stock)); formBarcode.setText(Optional.ofNullable(sel.barcode).orElse("")); formPicture.setText(Optional.ofNullable(sel.pictureLink).orElse("")); formDescription.setText(Optional.ofNullable(sel.description).orElse("")); formSalesVolume.setText(sel.salesVolume==null?"":String.valueOf(sel.salesVolume)); }
+    private void clearForm(){ Arrays.asList(formUuid,formName,formPrice,formCategory,formStock,formBarcode,formPicture,formDescription,formSalesVolume).forEach(tf->tf.setText("")); }
 
     private Integer parsePriceFen(String yuanStr){ if(yuanStr==null||yuanStr.trim().isEmpty()) return 0; double d = Double.parseDouble(yuanStr.trim()); return (int)Math.round(d*100); }
     private Integer parseIntSafe(String v,int def){ try { return Integer.parseInt(v.trim()); } catch (Exception e){ return def; } }
+    private Integer parseIntNullable(String v){ if(v==null||v.trim().isEmpty()) return null; try { return Integer.parseInt(v.trim()); } catch (Exception e){ return null; } }
 
     /* ==================== 通用请求 / 类别 ==================== */
-    private void fetchCategories(){ new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getAllCategories", new HashMap<>())); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(o.get("code").getAsInt()!=200) return; List<String> list = new ArrayList<>(); JsonArray arr = o.getAsJsonArray("data"); for(JsonElement e: arr) list.add(e.getAsString()); Platform.runLater(() -> { String sel = categoryCombo.getSelectionModel().getSelectedItem(); categoryCombo.getItems().setAll("全部"); categoryCombo.getItems().addAll(list); if(sel!=null && categoryCombo.getItems().contains(sel)) categoryCombo.getSelectionModel().select(sel); else categoryCombo.getSelectionModel().selectFirst(); }); } catch (Exception ignore){} }).start(); }
+    private void fetchCategories(){ new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request("getAllCategories", new HashMap<>())); JsonObject o = JsonParser.parseString(resp).getAsJsonObject(); if(!o.has("code") || o.get("code").getAsInt()!=200) return; List<String> list = new ArrayList<>(); JsonArray arr = o.getAsJsonArray("data"); for(JsonElement e: arr) list.add(e.getAsString()); Platform.runLater(() -> { String sel = categoryCombo.getSelectionModel().getSelectedItem(); categoryCombo.getItems().setAll("全部"); categoryCombo.getItems().addAll(list); if(sel!=null && categoryCombo.getItems().contains(sel)) categoryCombo.getSelectionModel().select(sel); else categoryCombo.getSelectionModel().selectFirst(); }); } catch (Exception ignore){} }).start(); }
 
     private void sendAsync(String type, Map<String,Object> data, Consumer<String> after){ new Thread(() -> { try { String resp = ClientNetworkHelper.send(new Request(type, data)); Platform.runLater(() -> after.accept(resp)); } catch (Exception ignored){} }).start(); }
 

@@ -40,7 +40,7 @@ public class MainFrame {
     private static final String DANGER_COLOR = "#ff6b6b";
     private static final String DANGER_HOVER_COLOR = "#ff5252";
     private static final String BACKGROUND_COLOR = "#f8fbff";
-    private static final String SIDEBAR_COLOR = "#e8f2ff";
+    private static final String SIDEBAR_COLOR = "#6EFF7E";
     private static final String TEXT_COLOR = "#2a4d7b";
     private static final String SECONDARY_TEXT_COLOR = "#666666";
 
