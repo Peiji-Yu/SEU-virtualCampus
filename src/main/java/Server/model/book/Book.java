@@ -3,9 +3,10 @@ package Server.model.book;
 import java.time.LocalDate;
 
 /**
- * 书籍实体类
+ * 书籍类
  */
 public class Book {
+    
     private String name;         // 书名
     private String isbn;         // ISBN
     private String author;       // 作者

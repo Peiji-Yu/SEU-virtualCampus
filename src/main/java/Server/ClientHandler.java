@@ -6,21 +6,13 @@ import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
-<<<<<<< HEAD
-import Server.service.UserService;
-import Server.service.StudentService;
-import Server.service.FinanceService;
-import Server.service.StoreService;
-import Server.dao.StoreMapper;
-import Server.service.BookService;
-=======
+
 import Server.service.login.UserService;
 import Server.service.student.StudentService;
 import Server.service.shop.FinanceService;
 import Server.service.shop.StoreService;
 import Server.dao.shop.StoreMapper;
 import Server.service.book.BookService;
->>>>>>> 7029b524014f313407fc505f68ab3c488fd53692
 import com.google.gson.Gson;
 
 import Server.model.course.Course;
@@ -47,12 +39,7 @@ public class ClientHandler implements Runnable {
     private final Gson gson = new Gson();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
-<<<<<<< HEAD
-    private final StoreService storeService = new StoreService();
-    private final FinanceService financeService = new FinanceService();
-    private final BookService bookService = new BookService();
 
-=======
     private final ClassStudentService classStudentService = new ClassStudentService();
     private final CourseService courseService = new CourseService();
     private final TeachingClassService teachingClassService = new TeachingClassService();
@@ -60,7 +47,6 @@ public class ClientHandler implements Runnable {
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
     private final BookService bookService = new BookService();
->>>>>>> 7029b524014f313407fc505f68ab3c488fd53692
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
@@ -181,9 +167,7 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除成功") :
                                 Response.error("删除失败");
                         break;
-<<<<<<< HEAD
-                
-=======
+
                         
                     // 获取所有课程
                     case "getAllCourses":
@@ -438,7 +422,7 @@ public class ClientHandler implements Runnable {
                             Response.success("删除教学班成功") : 
                             Response.error("删除教学班失败");
                         break;    
->>>>>>> 7029b524014f313407fc505f68ab3c488fd53692
+
 
                     case "getFinanceCard":
                         Integer cardNumber1 = ((Double) request.getData().get("cardNumber")).intValue();
@@ -650,10 +634,6 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7029b524014f313407fc505f68ab3c488fd53692
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
                         break;
