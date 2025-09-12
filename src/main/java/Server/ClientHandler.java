@@ -648,7 +648,7 @@ public class ClientHandler implements Runnable {
 
                     case "createOrder":
                         Map<String, Object> orderData = request.getData();
-                        Integer orderCardNumber = ((Double) orderData.get("cardNumber")).intValue();
+                        Integer orderCardNumber =  Integer.valueOf((String) orderData.get("cardNumber"));
                         String orderRemark = (String) orderData.get("remark");
 
                         // 解析订单商品项

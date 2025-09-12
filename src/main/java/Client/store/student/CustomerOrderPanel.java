@@ -250,7 +250,7 @@ public class CustomerOrderPanel extends BorderPane {
                 // 构建获取订单详情请求
                 Map<String, Object> data = new HashMap<>();
                 data.put("orderId", order.getUuid());
-                Request request = new Request("getOrderDetail", data);
+                Request request = new Request("getOrder", data);
 
                 // 使用ClientNetworkHelper发送请求
                 String response = ClientNetworkHelper.send(request);

@@ -35,8 +35,8 @@ public interface StoreMapper {
     /**
      * 添加新商品
      */
-    @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode) " +
-            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode})")
+    @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode, category) " +
+        "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode}, #{category})")
     int insertItem(StoreItem item);
 
     /**
@@ -69,7 +69,7 @@ public interface StoreMapper {
      * 增加商品销量
      */
     @Update("UPDATE store_item SET sales_volume = sales_volume + #{amount} WHERE uuid = #{itemUuid}")
-    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount" ) Integer amount);
+    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
 
     /**
      * 按类别搜索商品
@@ -107,11 +107,11 @@ public interface StoreMapper {
             "VALUES (#{uuid}, #{orderUuid}, #{itemUuid}, #{itemPrice}, #{amount})")
     int insertOrderItem(StoreOrderItem orderItem);
 
-    /**
-     * 根据ID查询订单
-     */
-    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
-    StoreOrder findOrderById(@Param("uuid") UUID uuid);
+//    /**
+//     * 根据ID查询订单
+//     */
+//    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
+//    StoreOrder findOrderById(@Param("uuid") UUID uuid);
 
 //    /**
 //     * 查询订单的所有商品项
@@ -167,20 +167,14 @@ public interface StoreMapper {
     @Update("UPDATE store_order SET status = #{status} WHERE uuid = #{uuid}")
     int updateOrderStatus(@Param("uuid") UUID uuid, @Param("status") String status);
 
-    /**
-     * 删除订单（同时删除关联的商品项）
-     */
-    @Delete("DELETE FROM store_order WHERE uuid = #{uuid}")
-    int deleteOrder(@Param("uuid") UUID uuid);
-
-    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
-    int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
-
-    /**
-     * 退款操作：更新订单状态为已退款
-     */
-    @Update("UPDATE store_order SET status = '已退款' WHERE uuid = #{orderUuid} AND status = '已支付'")
-    int refundOrder(@Param("orderUuid") UUID orderUuid);
+//    /**
+//     * 删除订单（同时删除关联的商品项）
+//     */
+//    @Delete("DELETE FROM store_order WHERE uuid = #{uuid}")
+//    int deleteOrder(@Param("uuid") UUID uuid);
+//
+//    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
+//    int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
 
     /**
      * 减少商品销量（退款时调用）

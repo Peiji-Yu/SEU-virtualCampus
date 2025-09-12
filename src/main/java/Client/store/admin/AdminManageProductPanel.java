@@ -343,7 +343,7 @@ public class AdminManageProductPanel extends BorderPane {
                 imageView.setImage(image);
             } catch (Exception e) {
                 // 使用默认图片
-                Image defaultImage = new Image(getClass().getResourceAsStream("/images/default-product.png"));
+                Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
                 if (defaultImage.isError()) {
                     // 如果默认图片加载失败，使用纯色背景
                     imageView.setStyle("-fx-background-color: #e0e0e0;");
@@ -353,7 +353,7 @@ public class AdminManageProductPanel extends BorderPane {
             }
         } else {
             // 使用默认图片
-            Image defaultImage = new Image(getClass().getResourceAsStream("/images/default-product.png"));
+            Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
             if (defaultImage.isError()) {
                 // 如果默认图片加载失败，使用纯色背景
                 imageView.setStyle("-fx-background-color: #e0e0e0;");
