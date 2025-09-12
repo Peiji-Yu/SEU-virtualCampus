@@ -1,8 +1,10 @@
 package Server.service.student;
 
 import Server.dao.student.StudentMapper;
+import Server.model.login.User;
 import Server.model.student.SearchType;
 import Server.model.student.Student;
+import Server.service.login.UserService;
 import Server.util.DatabaseUtil;
 import org.apache.ibatis.session.SqlSession;
 
@@ -78,6 +80,17 @@ public class StudentService {
             student.setCardNumber(newCardNumber);
 
             int result = studentMapper.insertStudent(student);
+
+            // 自动创建用户账号
+            if (result > 0) {
+                String identity = student.getIdentity();
+                String password = String.format("%06d", newCardNumber % 1000000);
+
+                UserService userService = new UserService();
+                User user = new User(identity, newCardNumber, password);
+                userService.addUser(user);
+            }
+
             sqlSession.commit();
             return result > 0;
         }

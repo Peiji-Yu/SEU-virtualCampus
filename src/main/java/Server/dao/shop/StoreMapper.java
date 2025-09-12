@@ -36,14 +36,14 @@ public interface StoreMapper {
      * 添加新商品
      */
     @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode) " +
-            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, #{salesVolume}, #{description}, #{barcode})")
+            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode})")
     int insertItem(StoreItem item);
 
     /**
      * 更新商品信息
      */
     @Update("UPDATE store_item SET item_name = #{itemName}, price = #{price}, picture_link = #{pictureLink}, " +
-            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode} " +
+            "stock = #{stock}, sales_volume = #{salesVolume}, description = #{description}, barcode = #{barcode}, category = #{category} " +
             "WHERE uuid = #{uuid}")
     int updateItem(StoreItem item);
 
@@ -60,16 +60,28 @@ public interface StoreMapper {
     int updateItemStock(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
 
     /**
+     * 增加商品库存（取消或退款回补）
+     */
+    @Update("UPDATE store_item SET stock = stock + #{amount} WHERE uuid = #{itemUuid}")
+    int increaseItemStock(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
+
+    /**
      * 增加商品销量
      */
     @Update("UPDATE store_item SET sales_volume = sales_volume + #{amount} WHERE uuid = #{itemUuid}")
-    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
+    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount" ) Integer amount);
 
     /**
      * 按类别搜索商品
      */
     @Select("SELECT * FROM store_item WHERE category = #{category}")
     List<StoreItem> findItemsByCategory(@Param("category") String category);
+
+    /**
+     * 获取所有商品类别
+     */
+    @Select("SELECT DISTINCT category FROM store_item")
+    List<String> findAllCategories();
 
     /**
      * 按类别和关键词搜索商品
@@ -96,21 +108,58 @@ public interface StoreMapper {
     int insertOrderItem(StoreOrderItem orderItem);
 
     /**
-     * 根据ID查询订单（包含商品项）
+     * 根据ID查询订单
      */
     @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
-    @Results({
-            @Result(property = "uuid", column = "uuid"),
-            @Result(property = "items", column = "uuid",
-                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsByOrderId"))
-    })
     StoreOrder findOrderById(@Param("uuid") UUID uuid);
 
+//    /**
+//     * 查询订单的所有商品项
+//     */
+//    @Select("SELECT * FROM store_order_item WHERE order_uuid = #{orderUuid}")
+//    List<StoreOrderItem> findOrderItemsByOrderId(@Param("orderUuid") UUID orderUuid);
+
     /**
-     * 查询订单的所有商品项
+     * 根据ID查询订单（包含商品项和商品详细信息）
      */
-    @Select("SELECT * FROM store_order_item WHERE order_uuid = #{orderUuid}")
-    List<StoreOrderItem> findOrderItemsByOrderId(@Param("orderUuid") UUID orderUuid);
+    @Select("SELECT so.*, soi.uuid as item_id, soi.item_uuid, soi.item_price, soi.amount, " +
+            "si.item_name, si.picture_link, si.description, si.barcode " +
+            "FROM store_order so " +
+            "LEFT JOIN store_order_item soi ON so.uuid = soi.order_uuid " +
+            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "WHERE so.uuid = #{uuid}")
+    @Results({
+            @Result(property = "uuid", column = "uuid"),
+            @Result(property = "cardNumber", column = "card_number"),
+            @Result(property = "totalAmount", column = "total_amount"),
+            @Result(property = "time", column = "time"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "remark", column = "remark"),
+            @Result(property = "items", column = "uuid",
+                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsWithDetailsByOrderId"))
+    })
+    StoreOrder findOrderWithDetailsById(@Param("uuid") UUID uuid);
+
+    /**
+     * 查询订单的所有商品项（包含商品详细信息）
+     */
+    @Select("SELECT soi.*, si.item_name, si.picture_link, si.description, si.barcode " +
+            "FROM store_order_item soi " +
+            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "WHERE soi.order_uuid = #{orderUuid}")
+    @Results({
+            @Result(property = "uuid", column = "uuid"),
+            @Result(property = "orderUuid", column = "order_uuid"),
+            @Result(property = "itemUuid", column = "item_uuid"),
+            @Result(property = "itemPrice", column = "item_price"),
+            @Result(property = "amount", column = "amount"),
+            @Result(property = "item.itemName", column = "item_name"),
+            @Result(property = "item.pictureLink", column = "picture_link"),
+            @Result(property = "item.description", column = "description"),
+            @Result(property = "item.category", column = "category"),
+            @Result(property = "item.barcode", column = "barcode")
+    })
+    List<StoreOrderItem> findOrderItemsWithDetailsByOrderId(@Param("orderUuid") UUID orderUuid);
 
     /**
      * 更新订单状态
@@ -142,14 +191,20 @@ public interface StoreMapper {
     /**
      * 查询用户的所有订单
      */
-    @Select("SELECT * FROM store_transaction WHERE card_number = #{cardNumber} ORDER BY time DESC")
+    @Select("SELECT * FROM store_order WHERE card_number = #{cardNumber} ORDER BY time DESC")
     List<StoreOrder> findOrdersByUser(@Param("cardNumber") Integer cardNumber);
 
     /**
      * 查询所有订单
      */
-    @Select("SELECT * FROM store_transaction ORDER BY time DESC")
+    @Select("SELECT * FROM store_order ORDER BY time DESC")
     List<StoreOrder> findAllOrders();
+
+    /**
+     * 更新订单状态和备注
+     */
+    @Update("UPDATE store_order SET status = #{status}, remark = #{remark} WHERE uuid = #{uuid} AND status = '已支付'")
+    int updateOrderStatusAndRemark(@Param("uuid") UUID uuid, @Param("status") String status, @Param("remark") String remark);
 
     // 销售统计相关操作
 

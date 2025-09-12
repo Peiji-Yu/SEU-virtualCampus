@@ -1,9 +1,14 @@
 package Server.dao.book;
 
-import Server.model.book.BookItem;
-import org.apache.ibatis.annotations.*;
-
 import java.util.List;
+
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+import Server.model.book.BookItem;
 
 public interface BookItemMapper {
 
@@ -12,6 +17,10 @@ public interface BookItemMapper {
 
     @Select("SELECT * FROM book_item WHERE isbn = #{isbn}")
     List<BookItem> findByIsbn(@Param("isbn") String isbn);
+
+    // 查询可借副本
+    @Select("SELECT * FROM book_item WHERE isbn = #{isbn} AND book_status='INLIBRARY' LIMIT 1")
+    BookItem findAvailableByIsbn(@Param("isbn") String isbn);
 
     @Insert("INSERT INTO book_item(uuid, isbn, place, book_status) VALUES(#{uuid}, #{isbn}, #{place}, #{bookStatus})")
     int insertBookItem(BookItem bookItem);

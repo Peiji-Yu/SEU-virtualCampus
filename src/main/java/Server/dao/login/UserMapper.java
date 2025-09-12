@@ -1,6 +1,7 @@
 package Server.dao.login;
 
 import Server.model.login.User;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -38,5 +39,13 @@ public interface UserMapper {
     @Update("UPDATE user SET password = #{newPassword} WHERE card_number = #{cardNumber}")
     int updatePassword(@Param("cardNumber") Integer cardNumber,
                        @Param("newPassword") String newPassword);
+
+    /**
+     * 插入新用户
+     * @param user 用户对象
+     * @return 插入影响的行数
+     */
+    @Insert("INSERT INTO user (id, card_number, password) VALUES (#{identity}, #{cardNumber}, #{password})")
+    int insertUser(User user);
 }
 

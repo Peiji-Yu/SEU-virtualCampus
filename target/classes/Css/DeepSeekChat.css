@@ -170,22 +170,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
 }
 
-/*.typing-dot:nth-child(1) {*/
-/*    -fx-animation: blink 1.4s infinite;*/
-/*    -fx-animation-delay: 0s;*/
-/*}*/
 
-/*.typing-dot:nth-child(2) {*/
-/*    -fx-animation: blink 1.4s infinite;*/
-/*    -fx-animation-delay: 0.2s;*/
-/*}*/
-
-/*.typing-dot:nth-child(3) {*/
-/*    -fx-animation: blink 1.4s infinite;*/
-/*    -fx-animation-delay: 0.4s;*/
-/*}*/
-
-/* 消息时间戳样式 */
 .message-time {
     -fx-text-fill: #94a3b8;
     -fx-font-size: 10px;

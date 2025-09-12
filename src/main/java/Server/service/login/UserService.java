@@ -10,11 +10,27 @@ import org.apache.ibatis.session.SqlSession;
 
 import java.util.Map;
 
+import static Server.model.shop.FinanceCard.STATUS_NORMAL;
+
 /**
  * 用户服务类
  * 处理用户相关的业务逻辑
  */
 public class UserService {
+    /**
+     * 添加用户
+     * @param user User对象
+     * @return 添加用户结果
+     */
+    public boolean addUser(User user) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+            int result = userMapper.insertUser(user);
+            sqlSession.commit();
+            return result > 0;
+        }
+    }
+
     /**
      * 创建一卡通账户
      */
@@ -29,7 +45,7 @@ public class UserService {
             }
 
             // 创建新账户
-            FinanceCard newCard = new FinanceCard(cardNumber, 0, "正常");
+            FinanceCard newCard = new FinanceCard(cardNumber, 0, STATUS_NORMAL);
             int result = financeMapper.insertFinanceCard(newCard);
             sqlSession.commit();
             return result > 0;
@@ -56,12 +72,12 @@ public class UserService {
             User user = userMapper.findByCardNumberAndPassword(cardNumber, password);
 
             if (user != null) {
-//                // 检查一卡通账户是否存在
-//                FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
-//                if (card == null) {
-//                    // 如果账户不存在，先创建
-//                    createFinanceCard(cardNumber);
-//                }
+                // 检查一卡通账户是否存在
+                FinanceCard card = financeMapper.findFinanceCardByCardNumber(cardNumber);
+                if (card == null) {
+                    // 如果账户不存在，先创建
+                    createFinanceCard(cardNumber);
+                }
 
                 // 登录成功，返回用户信息（不包含密码）
                 user.setPassword(null); // 清除密码

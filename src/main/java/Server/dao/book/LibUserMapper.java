@@ -1,31 +1,31 @@
 package Server.dao.book;
-import Server.model.book.LibUser;
-import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+import Server.model.book.LibUser;
+
 public interface LibUserMapper {
-    // 根据 userId 查询用户
+
     @Select("SELECT * FROM lib_user WHERE user_id = #{userId}")
-    LibUser findByUserId(@Param("userId") int userId);
+    LibUser findById(@Param("userId") int userId);
 
-    // 查询所有用户
     @Select("SELECT * FROM lib_user")
-    List<LibUser> findAllUsers();
+    List<LibUser> findAll();
 
-    // 插入新用户
     @Insert("INSERT INTO lib_user(user_id, borrowed, max_borrowed, user_status) " +
             "VALUES(#{userId}, #{borrowed}, #{maxBorrowed}, #{userStatus})")
-    int insertLibUser(LibUser libUser);
+    int insert(LibUser libUser);
 
-    // 更新用户信息（如借书数量、状态）
     @Update("UPDATE lib_user SET borrowed=#{borrowed}, max_borrowed=#{maxBorrowed}, user_status=#{userStatus} " +
             "WHERE user_id=#{userId}")
-    int updateLibUser(LibUser libUser);
+    int update(LibUser libUser);
 
-    // 删除用户
     @Delete("DELETE FROM lib_user WHERE user_id = #{userId}")
-    int deleteLibUser(@Param("userId") int userId);
+    int delete(@Param("userId") int userId);
 }
-
-
