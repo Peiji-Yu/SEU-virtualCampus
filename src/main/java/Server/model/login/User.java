@@ -8,14 +8,16 @@ public class User {
     private String identity;
     private Integer cardNumber;
     private String password; // 加密后的密码
+    private String name;
 
     // 构造方法
     public User() {}
 
-    public User(String identity, Integer cardNumber, String password) {
+    public User(String identity, Integer cardNumber, String password, String name) {
         this.identity = identity;
         this.cardNumber = cardNumber;
         this.password = password;
+        this.name = name;
     }
 
     // Getter和Setter方法
@@ -36,6 +38,10 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public String getName() { return name; }
+
+    public void setName(String name) { this.name = name; }
 
     @Override
     public String toString() {
