@@ -5,6 +5,7 @@ import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,7 +13,10 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.lang.reflect.Type;
 
 /**
  * 通用客户端网络工具。
@@ -56,6 +60,51 @@ public final class ClientNetworkHelper {
             safeClose(dis);
             safeClose(dos);
             safeClose(socket);
+        }
+    }
+
+    /**
+     * 一卡通挂失请求
+     * @param cardNumber 一卡通号
+     * @return 服务器返回结果
+     */
+    public static String reportLoss(String cardNumber) throws IOException {
+        // 构造 JSON 请求
+        String json = "{\"type\":\"reportLoss\",\"data\":{\"cardNumber\":" + cardNumber + "}}";
+        Request req = GSON.fromJson(json, Request.class);
+        return send(req);
+    }
+
+    /**
+     * 查询所有挂失一卡通账号
+     * @return 服务器返回结果Map
+     */
+    public static Map<String, Object> findAllLostCards() {
+        try {
+            String json = "{\"type\":\"findAllLostCards\",\"data\":null}";
+            Request req = GSON.fromJson(json, Request.class);
+            String resp = send(req);
+            Type type = new TypeToken<HashMap<String, Object>>(){}.getType();
+            return (Map<String, Object>) GSON.fromJson(resp, type);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 管理员解除挂失
+     * @param targetCardNumber 要解除挂失的一卡通号
+     * @return 服务器返回结果Map
+     */
+    public static Map<String, Object> cancelReportLoss(long targetCardNumber) {
+        try {
+            String json = String.format("{\"type\":\"cancelReportLoss\",\"data\":{\"targetCardNumber\":%d}}", targetCardNumber);
+            Request req = GSON.fromJson(json, Request.class);
+            String resp = send(req);
+            Type type = new TypeToken<HashMap<String, Object>>(){}.getType();
+            return (Map<String, Object>) GSON.fromJson(resp, type);
+        } catch (Exception e) {
+            return null;
         }
     }
 
