@@ -38,13 +38,27 @@ public class LostCardAdminPanel extends VBox {
         tableView.setPrefHeight(480);
 
         TableColumn<Map<String, Object>, String> cardCol = new TableColumn<>("一卡通号");
-        cardCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("cardNumber"))));
+        cardCol.setCellValueFactory(data -> {
+            Object value = data.getValue().get("cardNumber");
+            if (value instanceof Number) {
+                // 使用不带科学计数法的字符串显示
+                return new SimpleStringProperty(String.format("%d", ((Number) value).longValue()));
+            }
+            return new SimpleStringProperty(String.valueOf(value));
+        });
         cardCol.setPrefWidth(120);
         TableColumn<Map<String, Object>, String> nameCol = new TableColumn<>("姓名");
         nameCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("name"))));
         nameCol.setPrefWidth(80);
         TableColumn<Map<String, Object>, String> balanceCol = new TableColumn<>("余额");
-        balanceCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("balance"))));
+        balanceCol.setCellValueFactory(data -> {
+            Object value = data.getValue().get("balance");
+            if (value instanceof Number) {
+                double yuan = ((Number) value).doubleValue() / 100.0;
+                return new SimpleStringProperty(String.format("%.2f元", yuan));
+            }
+            return new SimpleStringProperty("0.00元");
+        });
         balanceCol.setPrefWidth(80);
         TableColumn<Map<String, Object>, String> statusCol = new TableColumn<>("状态");
         statusCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("status"))));
@@ -58,7 +72,13 @@ public class LostCardAdminPanel extends VBox {
                 btn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 14px;");
                 btn.setOnAction(e -> {
                     Map<String, Object> item = getTableView().getItems().get(getIndex());
-                    long cardNumber = Long.parseLong(item.get("cardNumber").toString());
+                    Object cardObj = item.get("cardNumber");
+                    long cardNumber;
+                    if (cardObj instanceof Number) {
+                        cardNumber = ((Number) cardObj).longValue();
+                    } else {
+                        cardNumber = Long.parseLong(cardObj.toString());
+                    }
                     cancelReportLoss(cardNumber);
                 });
             }
@@ -124,17 +144,27 @@ public class LostCardAdminPanel extends VBox {
     private void cancelReportLoss(long cardNumber) {
         statusLabel.setText("正在解除挂失...");
         new Thread(() -> {
-            var resp = ClientNetworkHelper.cancelReportLoss(cardNumber);
-            Platform.runLater(() -> {
-                if (resp != null && resp.get("code") != null && (int)resp.get("code") == 200) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "解除挂失成功", ButtonType.OK);
+            try {
+                var resp = ClientNetworkHelper.cancelReportLoss(cardNumber);
+                Platform.runLater(() -> {
+                    Alert alert;
+                    Object codeObj = resp != null ? resp.get("code") : null;
+                    int code = (codeObj instanceof Number) ? ((Number) codeObj).intValue() : -1;
+                    if (code == 200) {
+                        alert = new Alert(Alert.AlertType.INFORMATION, "解除挂失成功", ButtonType.OK);
+                    } else {
+                        alert = new Alert(Alert.AlertType.ERROR, "解除挂失失败", ButtonType.OK);
+                    }
                     alert.showAndWait();
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "解除挂失失败", ButtonType.OK);
+                    refreshList();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "网络异常，解除挂失失败", ButtonType.OK);
                     alert.showAndWait();
-                }
-                refreshList();
-            });
+                    refreshList();
+                });
+            }
         }).start();
     }
 }
