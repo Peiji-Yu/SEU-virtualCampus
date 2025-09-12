@@ -3,9 +3,6 @@
 教师：1开头，9位数
 管理员/教务：1000以内
 
-在user表中添加name字段：
-ALTER TABLE user ADD COLUMN name VARCHAR(50) NOT NULL;
-
 -- user表：存储用户（包括学生、教师、管理员）信息
 CREATE TABLE user (
     card_number INT PRIMARY KEY,
@@ -28,8 +25,6 @@ CREATE TABLE student (
     gender ENUM('MALE', 'FEMALE') NOT NULL,-- 性别
     name VARCHAR(50) NOT NULL             -- 姓名
 );
-<<<<<<< HEAD
-=======
 
 -- finance_card表：存储一卡通账户信息
 CREATE TABLE finance_card (
@@ -88,41 +83,42 @@ CREATE TABLE store_order_item (
 
 -- 书籍信息表
 CREATE TABLE book (
-    isbn VARCHAR(20) PRIMARY KEY,        -- ISBN 作为主键
-    name VARCHAR(200) NOT NULL,          -- 书名
-    author VARCHAR(100),                 -- 作者
-    publisher VARCHAR(100),              -- 出版社
-    publish_date DATE,                   -- 出版日期
-    description TEXT,                    -- 简介
-    inventory INT DEFAULT 0,             -- 库存量
-    category VARCHAR(50)                 -- 类别
+    isbn VARCHAR(20) PRIMARY KEY,         -- ISBN作为主键
+    name VARCHAR(255) NOT NULL,           -- 书名
+    author VARCHAR(255),                  -- 作者
+    publisher VARCHAR(255),               -- 出版社
+    publish_date DATE,                    -- 出版日期
+    description TEXT,                     -- 简介
+    inventory INT NOT NULL DEFAULT 0,     -- 库存量
+    category VARCHAR(50)                  -- 类别 (SCIENCE, LITERATURE...)
 );
 
 -- 书籍副本表
 CREATE TABLE book_item (
-    uuid VARCHAR(64) PRIMARY KEY,        -- 副本唯一ID
-    isbn VARCHAR(20) NOT NULL,           -- 对应 book.isbn
-    place VARCHAR(100),                  -- 馆藏位置
-    book_status VARCHAR(20),             -- 状态（在馆/借出/丢失）
-    FOREIGN KEY (isbn) REFERENCES book(isbn) -- 外键约束
+    uuid CHAR(36) PRIMARY KEY,            -- 每本副本的唯一ID（UUID）
+    isbn VARCHAR(20) NOT NULL,            -- 外键，对应书籍ISBN
+    place VARCHAR(255),                   -- 馆藏位置
+    book_status VARCHAR(20) NOT NULL,     -- 状态（INLIBRARY, LEND...）
+    CONSTRAINT fk_book_item_book FOREIGN KEY (isbn) REFERENCES book(isbn)
 );
+
 
 -- 用户表
 CREATE TABLE lib_user (
-    user_id INT PRIMARY KEY,             -- 用户一卡通号
-    borrowed INT DEFAULT 0,              -- 已借书数量
-    max_borrowed INT DEFAULT 5,          -- 最大可借书数量
-    user_status VARCHAR(20)              -- 用户状态
+    user_id INT PRIMARY KEY,              -- 用户一卡通号
+    borrowed INT NOT NULL DEFAULT 0,      -- 当前已借书数量
+    max_borrowed INT NOT NULL,            -- 最大可借书数量
+    user_status VARCHAR(20) NOT NULL      -- 用户状态 (BORROWING, FREE, OVERDUE, TRUSTBREAK)
 );
 
 -- 借阅记录表
 CREATE TABLE book_record (
-    id INT AUTO_INCREMENT PRIMARY KEY,   -- 借阅记录ID
-    uuid VARCHAR(64) NOT NULL,           -- 对应 book_item.uuid
-    user_id INT NOT NULL,                -- 对应 lib_user.user_id
-    borrow_time DATE,                    -- 借书时间
-    due_time DATE,                       -- 应还时间
-    FOREIGN KEY (uuid) REFERENCES book_item(uuid),
-    FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
+    uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
+    user_id INT NOT NULL,                 -- 用户一卡通号
+    book_item_uuid CHAR(36) NOT NULL,     -- 借阅的书本副本UUID
+    borrow_time DATE NOT NULL,            -- 借书时间
+    due_time DATE NOT NULL,               -- 到期时间
+    return_time DATE,                     -- 归还时间（可为空）
+    CONSTRAINT fk_book_record_item FOREIGN KEY (book_item_uuid) REFERENCES book_item(uuid)
 );
->>>>>>> bbf8bd6fbecd8e4a9a27cc46c72cee5db528fa47
+

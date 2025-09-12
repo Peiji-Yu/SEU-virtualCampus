@@ -1,18 +1,19 @@
 package Server;
 
 import Server.model.*;
+import Server.model.book.BookRecord;
 import Server.model.shop.*;
 import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
-
 import Server.service.login.UserService;
 import Server.service.student.StudentService;
 import Server.service.shop.FinanceService;
 import Server.service.shop.StoreService;
 import Server.dao.shop.StoreMapper;
 import com.google.gson.Gson;
+import Server.model.book.*;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -30,7 +31,7 @@ import Server.service.course.ClassStudentService;
 import Server.service.course.CourseService;
 import Server.service.course.TeachingClassService;
 import Server.service.course.StudentTeachingClassService;
-
+import Server.service.book.BookService;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -109,13 +110,13 @@ public class ClientHandler implements Runnable {
             .create();
     private final UserService userService = new UserService();
     private final StudentService studentService = new StudentService();
-
     private final ClassStudentService classStudentService = new ClassStudentService();
     private final CourseService courseService = new CourseService();
     private final TeachingClassService teachingClassService = new TeachingClassService();
     private final StudentTeachingClassService studentTeachingClassService = new StudentTeachingClassService();
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
+    private final BookService bookService = new BookService();
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
@@ -237,10 +238,6 @@ public class ClientHandler implements Runnable {
                                 Response.error("删除失败");
                         break;
 
-<<<<<<< HEAD
-                        
-=======
->>>>>>> bbf8bd6fbecd8e4a9a27cc46c72cee5db528fa47
                     // 获取所有课程
                     case "getAllCourses":
                         List<Course> courses = courseService.getAllCourses();
@@ -494,7 +491,6 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除教学班成功") :
                                 Response.error("删除教学班失败");
                         break;
-
 
                     case "getFinanceCard":
                         Object cardNumberObj = request.getData().get("cardNumber");
@@ -776,6 +772,109 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
+                        // 🔍 搜索书籍（通过书名）
+                    case "searchBooks": 
+                        String searchBookText = (String) request.getData().get("searchText");
+                        if (searchBookText == null) {
+                            response = Response.error("搜索参数不完整");
+                            break;
+                        }
+                        try {
+                                List<Book> books = bookService.searchBooks(searchBookText);
+                                response = Response.success("搜索完成", books);
+                            } catch (Exception e) {
+                                response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
+                            }
+                        break;
+            
+
+                        // 📖 获取个人借阅记录（通过 userId）
+                        case "getOwnRecords": {
+                            Integer userId = ((Double) request.getData().get("userId")).intValue();
+                            if (userId == null) {
+                                response = Response.error("缺少 userId 参数");
+                                break;
+                            }
+                            try {
+                                List<BookRecord> records = bookService.userRecords(userId);
+                                response = Response.success("查询成功", records);
+                            } catch (Exception e) {
+                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
+                            }
+                            break;
+                        }
+
+                        // 🔄 续借图书
+                        case "renewBook": {
+                            String uuid = (String) request.getData().get("uuid");
+                            if (uuid == null) {
+                                response = Response.error("缺少图书 uuid 参数");
+                                break;
+                            }
+                            try {
+                                boolean result = bookService.renewBook(uuid);
+                                response = result ? Response.success("续借成功") : Response.error("续借失败");
+                            } catch (Exception e) {
+                                response = Response.error(500, "续借过程中发生错误: " + e.getMessage());
+                            }
+                            break;
+                        }
+
+                        // ✏ 更新书籍信息
+                        case "updateBook": {
+                            Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
+                            Book bookUpdate = createBookFromMap(bookData);
+                            boolean result = bookService.updateBook(bookUpdate);
+                            response = result ? Response.success("更新成功") : Response.error("更新失败");
+                            break;
+                        }
+
+                        // ❌ 删除书籍（根据 ISBN）
+                        case "deleteBook": {
+                            String isbn = (String) request.getData().get("isbn");
+                            if (isbn == null) {
+                                response = Response.error("缺少 ISBN 参数");
+                                break;
+                            }
+                            boolean result = bookService.deleteBook(isbn);
+                            response = result ? Response.success("删除成功") : Response.error("删除失败");
+                            break;
+                        }
+
+                        // ➕ 添加书籍
+                        case "addBook": {
+                            Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
+                            Book newBook = createBookFromMap(bookData);
+                            boolean result = bookService.addBook(newBook);
+                            response = result ? Response.success("添加成功", newBook.getIsbn()) : Response.error("添加失败");
+                            break;
+                        }
+
+                        // 📚 借书
+                        case "borrowBook": {
+                            String isbn = (String) request.getData().get("isbn");
+                            Integer userId = ((Double) request.getData().get("userId")).intValue();
+                            if (isbn == null || userId == null) {
+                                response = Response.error("缺少 uuid 或 userId 参数");
+                                break;
+                            }
+                            boolean result = bookService.borrowBook(userId, isbn);
+                            response = result ? Response.success("借书成功") : Response.error("借书失败");
+                            break;
+                        }
+
+                        // 🔙 还书
+                        case "returnBook": {
+                            String uuid = (String) request.getData().get("uuid");
+                            if (uuid == null) {
+                                response = Response.error("缺少 uuid 参数");
+                                break;
+                            }
+                            boolean result = bookService.returnBook(uuid);
+                            response = result ? Response.success("还书成功") : Response.error("还书失败");
+                            break;
+                        }
+
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
                         break;
@@ -881,4 +980,52 @@ public class ClientHandler implements Runnable {
 
         return item;
     }
+    // 添加到 ClientHandler 或者单独写一个工具类
+    private Book createBookFromMap(Map<String, Object> data) {
+        Book book = new Book();
+
+        if (data.containsKey("name")) {
+            book.setName((String) data.get("name"));
+        }
+        if (data.containsKey("isbn")) {
+            book.setIsbn((String) data.get("isbn"));
+        }
+        if (data.containsKey("author")) {
+            book.setAuthor((String) data.get("author"));
+        }
+        if (data.containsKey("publisher")) {
+            book.setPublisher((String) data.get("publisher"));
+        }
+        if (data.containsKey("publishDate")) {
+            // 前端传的可能是 "2025-09-12" 这样的字符串
+            String dateStr = (String) data.get("publishDate");
+            if (dateStr != null && !dateStr.isEmpty()) {
+                book.setPublishDate(LocalDate.parse(dateStr));
+            }
+        }
+        if (data.containsKey("description")) {
+            book.setDescription((String) data.get("description"));
+        }
+        if (data.containsKey("inventory")) {
+            // JSON 里数字会被 GSON 转成 Double，这里要转 int
+            Object invObj = data.get("inventory");
+            if (invObj instanceof Number) {
+                book.setInventory(((Number) invObj).intValue());
+            }
+        }
+        if (data.containsKey("category")) {
+            // 前端传过来的值是枚举名，比如 "SCIENCE"
+            String categoryStr = (String) data.get("category");
+            if (categoryStr != null) {
+                try {
+                    book.setCategory(Category.valueOf(categoryStr));
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("无效的类别: " + categoryStr);
+                }
+            }
+        }
+
+        return book;
+    }
+
 }

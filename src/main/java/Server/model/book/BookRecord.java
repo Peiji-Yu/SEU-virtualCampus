@@ -11,18 +11,16 @@ public class BookRecord {
     private int userId;            // 借书人一卡通号
     private LocalDate borrowTime;  // 借书时间
     private LocalDate dueTime;     // 应还时间
-    private BookItem bookItem;     // 借阅的书籍副本
 
     // 无参构造
     public BookRecord() {}
 
     // 全参构造
-    public BookRecord(String uuid, int userId, LocalDate borrowTime, LocalDate dueTime, BookItem bookItem) {
+    public BookRecord(String uuid, int userId, LocalDate borrowTime, LocalDate dueTime) {
         this.uuid = uuid;
         this.userId = userId;
         this.borrowTime = borrowTime;
         this.dueTime = dueTime;
-        this.bookItem = bookItem;
     }
 
     // Getter 和 Setter
@@ -57,15 +55,6 @@ public class BookRecord {
     public void setDueTime(LocalDate dueTime) {
         this.dueTime = dueTime;
     }
-
-    public BookItem getBookItem() {
-        return bookItem;
-    }
-
-    public void setBookItem(BookItem bookItem) {
-        this.bookItem = bookItem;
-    }
-
     // toString 方法
     @Override
     public String toString() {
@@ -74,7 +63,6 @@ public class BookRecord {
                 ", userId=" + userId +
                 ", borrowTime=" + (borrowTime != null ? borrowTime.toString() : "未记录") +
                 ", dueTime=" + (dueTime != null ? dueTime.toString() : "未设定") +
-                ", bookItem=" + (bookItem != null ? bookItem.toString() : "无书籍信息") +
                 '}';
     }
 }

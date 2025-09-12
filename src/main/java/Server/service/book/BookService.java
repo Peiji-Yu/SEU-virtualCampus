@@ -1,16 +1,21 @@
 package Server.service.book;
 
-import Server.dao.book.BookMapper;
-import Server.dao.book.BookItemMapper;
-import Server.dao.book.BookRecordMapper;
-import Server.dao.book.LibUserMapper;
-import Server.model.book.*;
-import Server.util.DatabaseUtil;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+
 import org.apache.ibatis.session.SqlSession;
 
+import Server.dao.book.BookItemMapper;
+import Server.dao.book.BookMapper;
+import Server.dao.book.BookRecordMapper;
+import Server.dao.book.LibUserMapper;
+import Server.model.book.Book;
+import Server.model.book.BookItem;
+import Server.model.book.BookRecord;
+import Server.model.book.BookStatus;
+import Server.model.book.LibUser;
+import Server.util.DatabaseUtil;
 public class BookService {
 
     // 根据ISBN检索书籍信息
@@ -66,11 +71,9 @@ public class BookService {
     }
 
     // 管理员添加书籍
-    public boolean addBook(Book book, BookItem bookItem) {
+    public boolean addBook(Book book) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
-
             // 1. 查询是否已存在该 ISBN
             Book existingBook = bookMapper.findByIsbn(book.getIsbn());
 
@@ -85,14 +88,11 @@ public class BookService {
                 resBook = bookMapper.updateBook(existingBook);
             }
 
-            // 2. 插入 book_item 记录
-            int resItem = bookItemMapper.insertBookItem(bookItem);
-
+    
             sqlSession.commit();
-            return resBook > 0 && resItem > 0;
+            return resBook > 0;
         }
     }
-
     // 管理员删除书籍
     public boolean deleteBook(String isbn) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
@@ -161,10 +161,10 @@ public class BookService {
             BookRecord record = new BookRecord();
             record.setUuid(UUID.randomUUID().toString());
             record.setUserId(userId);
-            record.setBookItemUuid(bookItem.getUuid());
-            record.setBorrowTime(new Date());
-            record.setDueTime(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)); // 默认30天
-            bookRecordMapper.insert(record);
+            record.setUuid(bookItem.getUuid());
+            record.setBorrowTime(LocalDate.now());
+            record.setDueTime(LocalDate.now().plusDays(30)); // 默认30天
+            bookRecordMapper.insertBookRecord(record);
 
             sqlSession.commit();
             return true;
@@ -184,16 +184,14 @@ public class BookService {
 
             // 1. 查询借阅记录
             BookRecord record = bookRecordMapper.findByUuid(recordUuid);
-            if (record == null || record.getReturnTime() != null) {
+            if (record == null ) {
                 return false; // 记录不存在或已归还
             }
 
-            // 2. 更新归还时间
-            record.setReturnTime(new Date());
-            bookRecordMapper.update(record);
+
 
             // 3. 更新副本状态为在馆
-            BookItem item = bookItemMapper.findByUuid(record.getBookItemUuid());
+            BookItem item = bookItemMapper.findByUuid(record.getUuid());
             if (item != null) {
                 item.setBookStatus(BookStatus.INLIBRARY);
                 bookItemMapper.updateBookItem(item);
@@ -212,7 +210,7 @@ public class BookService {
                 user.setBorrowed(user.getBorrowed() - 1);
                 libUserMapper.update(user);
             }
-
+            bookRecordMapper.deleteBookRecord(record.getUuid());
             sqlSession.commit();
             return true;
         } catch (Exception e) {
@@ -228,13 +226,13 @@ public class BookService {
 
             // 1. 查询借阅记录
             BookRecord record = bookRecordMapper.findByUuid(recordUuid);
-            if (record == null || record.getReturnTime() != null) {
+            if (record == null) {
                 return false; // 记录不存在或已归还，不能续借
             }
 
             // 2. 延长到期时间 30 天
-            record.setDueTime(new Date(record.getDueTime().getTime() + 30L * 24 * 60 * 60 * 1000));
-            bookRecordMapper.update(record);
+            record.setDueTime(record.getDueTime().plusDays(30));
+            bookRecordMapper.updateBookRecord(record);
 
             sqlSession.commit();
             return true;
