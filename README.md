@@ -1,9 +1,10 @@
 根据一卡通号判断用户类型：
-学生：2开头，9位数
-教师：1开头，9位数
-管理员/教务：1000以内
+- 学生：2开头，9位数
+- 教师：1开头，9位数
+- 管理员/教务：1000以内
 
 user表：存储用户（包括学生、教师、管理员）信息
+
         CREATE TABLE user (
             card_number INT PRIMARY KEY,
             password VARCHAR(255) NOT NULL, -- 存储加密后的密码
@@ -11,6 +12,7 @@ user表：存储用户（包括学生、教师、管理员）信息
         );
 
 student表：存储学生学籍信息
+
         CREATE TABLE student (
             identity VARCHAR(18) UNIQUE NOT NULL,      -- 身份证号，唯一，非空
             card_number INT PRIMARY KEY,       -- 一卡通号，主键
@@ -27,6 +29,7 @@ student表：存储学生学籍信息
         );
 
 finance_card表：存储一卡通账户信息
+
         CREATE TABLE finance_card (
             card_number INT PRIMARY KEY,        -- 一卡通号，与user表中的card_number关联
             balance INT NOT NULL DEFAULT 0,     -- 余额（以分为单位）
@@ -35,6 +38,7 @@ finance_card表：存储一卡通账户信息
         );
 
 card_transaction表：存储一卡通交易记录
+
         CREATE TABLE card_transaction (
             uuid VARCHAR(36) PRIMARY KEY,       -- 交易记录ID
             card_number INT NOT NULL,           -- 一卡通号
@@ -47,6 +51,7 @@ card_transaction表：存储一卡通交易记录
         );
 
 store_item表：存储商品信息
+
         CREATE TABLE store_item (
             uuid VARCHAR(36) PRIMARY KEY,      -- 商品编号
             item_name VARCHAR(100) NOT NULL,   -- 商品名称
@@ -60,6 +65,7 @@ store_item表：存储商品信息
         );
 
 store_order表：订单主表
+
         CREATE TABLE store_order (
             uuid VARCHAR(36) PRIMARY KEY,       -- 订单编号
             card_number INT NOT NULL,           -- 用户一卡通号
@@ -71,6 +77,7 @@ store_order表：订单主表
         );
 
 store_order_item表：订单商品明细表
+
         CREATE TABLE store_order_item (
             uuid VARCHAR(36) PRIMARY KEY,       -- 订单项ID
             order_uuid VARCHAR(36) NOT NULL,    -- 订单ID
@@ -82,6 +89,7 @@ store_order_item表：订单商品明细表
         );
 
 书籍信息表
+
         CREATE TABLE book (
             isbn VARCHAR(20) PRIMARY KEY,         -- ISBN作为主键
             name VARCHAR(255) NOT NULL,           -- 书名
@@ -94,6 +102,7 @@ store_order_item表：订单商品明细表
         );
 
 书籍副本表
+
         CREATE TABLE book_item (
             uuid CHAR(36) PRIMARY KEY,            -- 每本副本的唯一ID（UUID）
             isbn VARCHAR(20) NOT NULL,            -- 外键，对应书籍ISBN
@@ -104,6 +113,7 @@ store_order_item表：订单商品明细表
 
 
 用户表
+
         CREATE TABLE lib_user (
             user_id INT PRIMARY KEY,              -- 用户一卡通号
             borrowed INT NOT NULL DEFAULT 0,      -- 当前已借书数量
@@ -112,6 +122,7 @@ store_order_item表：订单商品明细表
         );
 
 借阅记录表
+
         CREATE TABLE book_record (
             uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
             user_id INT NOT NULL,                 -- 用户一卡通号
