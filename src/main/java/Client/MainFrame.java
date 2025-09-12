@@ -153,6 +153,7 @@ public class MainFrame {
         Image iconTimetable = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/表格.png")));
         Image iconCourseSelect = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/选课.png")));
         Image iconLibrary = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/图书馆.png"))); // 新增图书馆图标
+        Image iconLostCardAdmin = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/解挂挂失.png")));
 
         Button stuManageBtn = new Button();
         stuManageBtn.setPrefWidth(40);
@@ -254,6 +255,36 @@ public class MainFrame {
         libraryBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         libraryBtn.setAlignment(Pos.CENTER);
 
+        // 新增：一卡通挂失按钮
+        Button reportLossBtn = new Button();
+        reportLossBtn.setPrefWidth(40);
+        reportLossBtn.setPrefHeight(40);
+        reportLossBtn.setMinWidth(40);
+        reportLossBtn.setMinHeight(40);
+        reportLossBtn.setMaxWidth(40);
+        reportLossBtn.setMaxHeight(40);
+        resetButtonStyle(reportLossBtn);
+        reportLossBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        reportLossBtn.setAlignment(Pos.CENTER);
+        Image iconReportLoss = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/挂失.png")));
+        attachIconAndRememberText(reportLossBtn, iconReportLoss);
+        setRightTooltip(reportLossBtn, "一卡通挂失");
+
+        // 新增：挂失管理按钮
+        Button lostCardAdminBtn = new Button();
+        lostCardAdminBtn.setPrefWidth(40);
+        lostCardAdminBtn.setPrefHeight(40);
+        lostCardAdminBtn.setMinWidth(40);
+        lostCardAdminBtn.setMinHeight(40);
+        lostCardAdminBtn.setMaxWidth(40);
+        lostCardAdminBtn.setMaxHeight(40);
+        resetButtonStyle(lostCardAdminBtn);
+        lostCardAdminBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        lostCardAdminBtn.setAlignment(Pos.CENTER);
+        attachIconAndRememberText(lostCardAdminBtn, iconLostCardAdmin);
+        setRightTooltip(lostCardAdminBtn, "挂失管理");
+
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -265,6 +296,9 @@ public class MainFrame {
         navButtons.add(storeBtn);   // 校园商店
         navButtons.add(aiAssistBtn); // AI 助手
         navButtons.add(libraryBtn);  // 新增：图书馆
+        navButtons.add(lostCardAdminBtn);
+        navButtons.add(reportLossBtn); // 新增：一卡通挂失按钮
+        navButtons.add(lostCardAdminBtn); // 新增：挂失管理按钮
 
         // 为每个按钮添加图标与保存原文案
         attachIconAndRememberText(stuManageBtn, iconStudent);
@@ -312,6 +346,7 @@ public class MainFrame {
             }
             if ("admin".equals(userType)) {
                 leftBar.getChildren().add(courseMgmtBtn);
+                leftBar.getChildren().add(lostCardAdminBtn); // 新增：挂失管理
             }
             if ("student".equals(userType)) {
                 leftBar.getChildren().addAll(timetableBtn, courseSelectBtn);
@@ -328,6 +363,7 @@ public class MainFrame {
             leftBar.getChildren().add(aiAssistBtn);
             // 新增：图书馆按钮添加（对所有用户类型开放）
             leftBar.getChildren().add(libraryBtn);
+
 
             // 初次默认选中
             if ("student".equals(userType) || "admin".equals(userType)) {
@@ -450,6 +486,48 @@ public class MainFrame {
                 setCenterContent(new LibraryMainPanel(cardNumber));
             });
 
+            // 新增：一卡通挂失事件
+            reportLossBtn.setOnAction(e -> {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("一卡通挂失");
+                alert.setHeaderText(null);
+                alert.setContentText("确定要挂失您的一卡通吗？");
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent() && result.get() == ButtonType.OK) {
+                    // 发送挂失请求
+                    new Thread(() -> {
+                        try {
+                            String resp = ClientNetworkHelper.reportLoss(cardNumber);
+                            // 可根据resp弹窗提示
+                            javafx.application.Platform.runLater(() -> {
+                                Alert info = new Alert(Alert.AlertType.INFORMATION);
+                                info.setTitle("挂失结果");
+                                info.setHeaderText(null);
+                                info.setContentText(resp);
+                                info.showAndWait();
+                            });
+                        } catch (Exception ex) {
+                            javafx.application.Platform.runLater(() -> {
+                                Alert err = new Alert(Alert.AlertType.ERROR);
+                                err.setTitle("挂失失败");
+                                err.setHeaderText(null);
+                                err.setContentText("网络异常或服务器无响应");
+                                err.showAndWait();
+                            });
+                        }
+                    }).start();
+                }
+            });
+
+            // 管理员-挂失管理
+            lostCardAdminBtn.setOnAction(e -> {
+                if (currentSelectedButton == lostCardAdminBtn) return;
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
+                setSelectedButtonStyle(lostCardAdminBtn);
+                currentSelectedButton = lostCardAdminBtn;
+                setCenterContent(new Client.finance.LostCardAdminPanel());
+            });
+
             // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
             Region functionSpacer = new Region();
             VBox.setVgrow(functionSpacer, Priority.ALWAYS);
@@ -481,6 +559,9 @@ public class MainFrame {
             changePwdSidebarBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
             // Tooltip
             setRightTooltip(changePwdSidebarBtn, "修改密码");
+            // 新增：一卡通挂失按钮添加
+            leftBar.getChildren().add(reportLossBtn);
+
             // 添加到左侧底部（退出登录按钮之上）
             leftBar.getChildren().add(changePwdSidebarBtn);
 
@@ -982,3 +1063,4 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
+

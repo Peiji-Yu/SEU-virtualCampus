@@ -85,9 +85,10 @@ public class StudentService {
             if (result > 0) {
                 String identity = student.getIdentity();
                 String password = String.format("%06d", newCardNumber % 1000000);
+                String name = student.getName();
 
                 UserService userService = new UserService();
-                User user = new User(identity, newCardNumber, password);
+                User user = new User(identity, newCardNumber, password, name);
                 userService.addUser(user);
             }
 

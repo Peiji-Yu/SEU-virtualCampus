@@ -1,5 +1,6 @@
 package Client.courseselect;
 
+import Client.ClientNetworkHelper;
 import javafx.geometry.Insets;
 import javafx.geometry.HPos;
 import javafx.scene.Node;
@@ -45,19 +46,63 @@ public class CourseSelectPanel extends BorderPane {
         this.cardNumber = cardNumber;
         setStyle("-fx-background-color: " + BG + ";");
         setPadding(new Insets(10));
+        loadCoursesFromServer();
+    }
 
-        // 先填充演示数据，再构建列表
-        seedDemo();
-
-        VBox container = new VBox(12);
-        container.setFillWidth(true);
-        container.getChildren().add(buildHeader());
-        container.getChildren().add(buildListCard());
-
-        ScrollPane sp = new ScrollPane(container);
-        sp.setFitToWidth(true);
-        sp.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-        setCenter(sp);
+    private void loadCoursesFromServer() {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.getAllCourses();
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    List<Map<String, Object>> courseList = (List<Map<String, Object>>) result.get("data");
+                    courses.clear();
+                    for (Map<String, Object> course : courseList) {
+                        String courseId = (String) course.get("courseId");
+                        String courseName = (String) course.get("courseName");
+                        String school = (String) course.get("school");
+                        double credit = (double) course.get("credit");
+                        // 获取教学班
+                        String tcResp = ClientNetworkHelper.getTeachingClassesByCourseId(courseId);
+                        Map<String, Object> tcResult = new com.google.gson.Gson().fromJson(tcResp, Map.class);
+                        if (Boolean.TRUE.equals(tcResult.get("success"))) {
+                            Map<String, Object> tc = (Map<String, Object>) tcResult.get("data");
+                            String place = (String) tc.get("place");
+                            int selectedCount = ((Double) tc.get("selectedCount")).intValue();
+                            int capacity = ((Double) tc.get("capacity")).intValue();
+                            courses.add(new Course(courseId, courseName, place, selectedCount, capacity));
+                        }
+                    }
+                    // 查询已选课程
+                    String selResp = ClientNetworkHelper.getStudentSelectedCourses(cardNumber);
+                    Map<String, Object> selResult = new com.google.gson.Gson().fromJson(selResp, Map.class);
+                    if (Boolean.TRUE.equals(selResult.get("success"))) {
+                        List<Map<String, Object>> selected = (List<Map<String, Object>>) selResult.get("data");
+                        mySelected.clear();
+                        for (Map<String, Object> tc : selected) {
+                            mySelected.add((String) tc.get("uuid"));
+                        }
+                    }
+                    // 刷新UI
+                    javafx.application.Platform.runLater(() -> {
+                        getChildren().clear();
+                        VBox container = new VBox(12);
+                        container.setFillWidth(true);
+                        container.getChildren().add(buildHeader());
+                        container.getChildren().add(buildListCard());
+                        ScrollPane sp = new ScrollPane(container);
+                        sp.setFitToWidth(true);
+                        sp.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+                        setCenter(sp);
+                    });
+                }
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "课程数据加载失败: " + e.getMessage());
+                    alert.showAndWait();
+                });
+            }
+        }).start();
     }
 
     private Node buildHeader() {
@@ -108,66 +153,47 @@ public class CourseSelectPanel extends BorderPane {
         GridPane row = rowGrid();
         row.setMaxWidth(Double.MAX_VALUE);
         row.setStyle(baseRowStyle());
-
         Label name = colLabel(c.name, false);
         Label room = colLabel(c.room, false);
         Label sel = colLabel(String.valueOf(c.selected), false);
         Label cap = colLabel(String.valueOf(c.capacity), false);
-
-        // 避免在缩放时被压缩到看不见
         name.setMaxWidth(Double.MAX_VALUE);
         room.setMaxWidth(Double.MAX_VALUE);
         sel.setMaxWidth(Double.MAX_VALUE);
-        cap.setMaxWidth(Double.MAX_VALUE);
-
-        Button action = new Button();
-        action.setMinWidth(90);
-        GridPane.setHalignment(action, HPos.RIGHT);
-        action.setOnAction(e -> onToggle(c, sel));
-        refreshButton(c, action);
-
+        Button actionBtn = new Button();
+        boolean isSelected = mySelected.contains(c.id);
+        actionBtn.setText(isSelected ? "退课" : "选课");
+        actionBtn.setStyle("-fx-background-color: " + (isSelected ? DANGER_COLOR : PRIMARY_COLOR) + "; -fx-text-fill: white;");
+        actionBtn.setOnAction(e -> {
+            new Thread(() -> {
+                try {
+                    String resp;
+                    if (isSelected) {
+                        resp = ClientNetworkHelper.dropCourse(cardNumber, c.id);
+                    } else {
+                        resp = ClientNetworkHelper.selectCourse(cardNumber, c.id);
+                    }
+                    Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                    javafx.application.Platform.runLater(() -> {
+                        Alert alert = new Alert(result.get("success").equals(Boolean.TRUE) ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
+                                (String) result.get("message"));
+                        alert.showAndWait();
+                        loadCoursesFromServer();
+                    });
+                } catch (Exception ex) {
+                    javafx.application.Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "操作失败: " + ex.getMessage());
+                        alert.showAndWait();
+                    });
+                }
+            }).start();
+        });
         row.add(name, 0, 0);
         row.add(room, 1, 0);
         row.add(sel, 2, 0);
         row.add(cap, 3, 0);
-        row.add(action, 4, 0);
-
+        row.add(actionBtn, 4, 0);
         return row;
-    }
-
-    private void onToggle(Course c, Label selLabel) {
-        boolean selected = mySelected.contains(c.id);
-        if (!selected) {
-            if (c.selected >= c.capacity) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "该课程已满");
-                alert.setHeaderText(null);
-                alert.showAndWait();
-                return;
-            }
-            mySelected.add(c.id);
-            c.selected++;
-        } else {
-            mySelected.remove(c.id);
-            if (c.selected > 0) c.selected--;
-        }
-        selLabel.setText(String.valueOf(c.selected));
-        // 更新当前行按钮样式
-        GridPane row = (GridPane) selLabel.getParent();
-        Button btn = (Button) row.getChildren().get(row.getChildren().size() - 1);
-        refreshButton(c, btn);
-    }
-
-    private void refreshButton(Course c, Button action) {
-        boolean selected = mySelected.contains(c.id);
-        if (selected) {
-            action.setText("退选");
-            action.setStyle("-fx-background-color: " + DANGER_COLOR + "; -fx-text-fill: white; -fx-background-radius: 6;");
-            action.setDisable(false);
-        } else {
-            action.setText("选课");
-            action.setStyle("-fx-background-color: " + PRIMARY_COLOR + "; -fx-text-fill: white; -fx-background-radius: 6;");
-            action.setDisable(c.selected >= c.capacity);
-        }
     }
 
     private GridPane rowGrid() {
@@ -202,22 +228,5 @@ public class CourseSelectPanel extends BorderPane {
         lb.setTextFill(Color.web(header ? TEXT : SUB));
         lb.setStyle(header ? "-fx-font-weight: bold;" : "");
         return lb;
-    }
-
-    private void seedDemo() {
-        // 演示数据（增加更多课程）
-        courses.clear();
-        courses.addAll(Arrays.asList(
-                new Course("C001", "高等数学（上）", "教四-201", 45, 50),
-                new Course("C002", "大学英语（II）", "教二-105", 50, 50),
-                new Course("C003", "数据结构", "机房-A301", 32, 40),
-                new Course("C004", "线性代数", "教一-308", 28, 40),
-                new Course("C005", "计算机网络", "实验-204", 18, 30),
-                new Course("C006", "操作系统", "教三-207", 27, 40),
-                new Course("C007", "数据库系统", "教五-110", 36, 40),
-                new Course("C008", "概率论与数理统计", "教四-305", 22, 50),
-                new Course("C009", "软件工程", "教二-209", 19, 40),
-                new Course("C010", "马克思主义基本原理", "文科楼-402", 41, 50)
-        ));
     }
 }
