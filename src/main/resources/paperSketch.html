@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术文献统一搜索平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .search-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .database-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .database-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #34495e;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .database-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .database-btn.active {
+            background: #3498db;
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px 0 0 12px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .search-btn {
+            padding: 0 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 0 12px 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #2980b9;
+        }
+
+        .advanced-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .trending-section {
+            margin-top: 40px;
+        }
+
+        .history-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #34495e;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .trending-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .topic {
+            background: #e3f2fd;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #1565c0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .topic:hover {
+            background: #bbdefb;
+            transform: translateY(-2px);
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .database-selector {
+                flex-direction: column;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-input {
+                border-radius: 12px;
+                margin-bottom: 10px;
+            }
+
+            .search-btn {
+                border-radius: 12px;
+                padding: 12px;
+            }
+        }
+
+        .database-icon {
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>学术文献统一搜索平台</h1>
+        <p>一站式检索各大学术数据库的科研文献</p>
+    </header>
+
+    <div class="search-card">
+        <div class="database-selector">
+            <button class="database-btn" data-db="scholar">
+                <i class="database-icon fab fa-google"></i> Google Scholar
+            </button>
+            <button class="database-btn active" data-db="ieee">
+                <i class="database-icon fas fa-bolt"></i> IEEE Xplore
+            </button>
+            <button class="database-btn" data-db="acm">
+                <i class="database-icon fas fa-laptop-code"></i> ACM Digital Library
+            </button>
+            <button class="database-btn" data-db="arxiv">
+                <i class="database-icon fas fa-atom"></i> arXiv
+            </button>
+            <button class="database-btn" data-db="dblp">
+                <i class="database-icon fas fa-database"></i> dblp
+            </button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="输入论文标题、关键词或作者...">
+            <button class="search-btn">搜索</button>
+        </div>
+
+        <div class="advanced-options">
+            <div class="filter-group">
+            </div>
+            <div class="filter-group">
+            </div>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <h2 class="section-title">最近搜索</h2>
+        <div class="history-items">
+        </div>
+
+        <div class="trending-section">
+            <h2 class="section-title">热门研究主题</h2>
+            <div class="trending-topics">
+                <div class="topic">人工智能</div>
+                <div class="topic">大数据</div>
+                <div class="topic">物联网</div>
+                <div class="topic">网络安全</div>
+                <div class="topic">云计算</div>
+                <div class="topic">自然语言处理</div>
+                <div class="topic">计算机视觉</div>
+                <div class="topic">增强现实</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 学术文献统一搜索平台 | 一站式检索科研文献</p>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 数据库选择功能
+        const databaseButtons = document.querySelectorAll('.database-btn');
+        let currentDatabase = 'ieee'; // 默认IEEE Xplore
+
+        databaseButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                databaseButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                currentDatabase = this.getAttribute('data-db');
+                updateSearchPlaceholder();
+            });
+        });
+
+        // 更新搜索框占位符
+        function updateSearchPlaceholder() {
+            const searchInput = document.querySelector('.search-input');
+            const placeholders = {
+                'ieee': '在 IEEE Xplore 中搜索论文标题、关键词或作者...',
+                'acm': '在 ACM Digital Library 中搜索论文标题、关键词或作者...',
+                'dblp': '在 dblp 中搜索计算机科学文献...',
+                'scholar': '在 Google Scholar 中搜索学术文献...',
+                'arxiv': '在 arXiv 中搜索预印本论文...'
+            };
+
+            searchInput.placeholder = placeholders[currentDatabase];
+        }
+
+        // 搜索功能
+        const searchBtn = document.querySelector('.search-btn');
+        const searchInput = document.querySelector('.search-input');
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            if (query === '') return;
+
+            // 构建搜索URL
+            const searchUrls = {
+                'ieee': `https://ieeexplore.ieee.org/search/searchresult.jsp?newsearch=true&queryText=${encodeURIComponent(query)}`,
+                'acm': `https://dl.acm.org/action/doSearch?AllField=${encodeURIComponent(query)}`,
+                'dblp': `https://dblp.org/search?q=${encodeURIComponent(query)}`,
+                'scholar': `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`,
+                'arxiv': `https://arxiv.org/search/?query=${encodeURIComponent(query)}&searchtype=all`
+            };
+
+            // 打开新窗口进行搜索
+            window.open(searchUrls[currentDatabase], '_blank');
+
+            // 添加到搜索历史（简化版，实际应用中需要持久化存储）
+            addToHistory(query);
+        }
+
+        // 添加到搜索历史
+        function addToHistory(query) {
+            const historyItems = document.querySelector('.history-items');
+            const newItem = document.createElement('div');
+            newItem.className = 'history-item';
+            newItem.textContent = query;
+
+            // 添加点击事件
+            newItem.addEventListener('click', function() {
+                searchInput.value = this.textContent;
+                performSearch();
+            });
+
+            historyItems.prepend(newItem);
+        }
+
+        // 热门主题点击事件
+        document.querySelectorAll('.topic').forEach(topic => {
+            topic.addEventListener('click', function() {
+                searchInput.value = this.textContent;
+                performSearch();
+            });
+        });
+
+        // 历史记录点击事件
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', function() {
+                searchInput.value = this.textContent;
+                performSearch();
+            });
+        });
+    });
+</script>
+</body>
+</html>
