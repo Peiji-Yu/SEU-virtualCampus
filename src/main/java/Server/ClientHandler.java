@@ -541,6 +541,12 @@ public class ClientHandler implements Runnable {
                         response = financeService.cancelReportLoss(targetCardNumber);
                         break;
 
+                    case "findAllLostCards":
+                        // 管理员查询所有挂失的一卡通账号
+                        Response lostCardsResult = financeService.findAllLostCards();
+                        response = lostCardsResult;
+                        break;
+
                     case "getTransactions":
                         Integer transactionCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
                         String transactionType = (String) request.getData().get("type");

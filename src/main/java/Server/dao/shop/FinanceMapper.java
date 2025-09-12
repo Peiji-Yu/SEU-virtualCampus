@@ -36,6 +36,16 @@ public interface FinanceMapper {
     @Update("UPDATE finance_card SET status = #{status} WHERE card_number = #{cardNumber}")
     int updateFinanceCardStatus(@Param("cardNumber") Integer cardNumber, @Param("status") String status);
 
+    /**
+     * 查询所有挂失的一卡通账号信息（包含用户姓名）
+     */
+    @Select("SELECT fc.card_number, fc.balance, fc.status, u.name " +
+            "FROM finance_card fc " +
+            "JOIN user u ON fc.card_number = u.card_number " +
+            "WHERE fc.status = '挂失' " +
+            "ORDER BY fc.card_number")
+    List<LostCardInfo> findAllLostCards();
+
     // 交易记录操作
 
     /**
@@ -63,4 +73,67 @@ public interface FinanceMapper {
      */
     @Select("SELECT * FROM card_transaction WHERE card_number = #{cardNumber} AND type = #{type} ORDER BY time DESC")
     List<CardTransaction> findTransactionsByType(@Param("cardNumber") Integer cardNumber, @Param("type") String type);
+
+    /**
+     * 挂失一卡通信息DTO（包含用户姓名）
+     */
+    class LostCardInfo {
+        private Integer cardNumber;  // 一卡通号
+        private Integer balance;     // 余额
+        private String status;       // 状态
+        private String name;         // 用户姓名
+
+        // 构造方法
+        public LostCardInfo() {}
+
+        public LostCardInfo(Integer cardNumber, Integer balance, String status, String name) {
+            this.cardNumber = cardNumber;
+            this.balance = balance;
+            this.status = status;
+            this.name = name;
+        }
+
+        // Getter和Setter方法
+        public Integer getCardNumber() {
+            return cardNumber;
+        }
+
+        public void setCardNumber(Integer cardNumber) {
+            this.cardNumber = cardNumber;
+        }
+
+        public Integer getBalance() {
+            return balance;
+        }
+
+        public void setBalance(Integer balance) {
+            this.balance = balance;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return "LostCardInfo{" +
+                    "cardNumber=" + cardNumber +
+                    ", balance=" + balance +
+                    ", status='" + status + '\'' +
+                    ", name='" + name + '\'' +
+                    '}';
+        }
+    }
 }
