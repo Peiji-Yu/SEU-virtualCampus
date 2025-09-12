@@ -103,7 +103,8 @@ public class LostCardAdminPanel extends VBox {
         new Thread(() -> {
             var result = ClientNetworkHelper.findAllLostCards();
             Platform.runLater(() -> {
-                if (result == null || result.get("code") == null || (int)result.get("code") != 200) {
+                Number code = (Number) result.get("code");
+                if (result == null || code == null || code.intValue() != 200) {
                     statusLabel.setText("加载失败，请重试。");
                     tableView.getItems().clear();
                     return;
