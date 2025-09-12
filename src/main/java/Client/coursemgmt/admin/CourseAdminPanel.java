@@ -1,5 +1,6 @@
 package Client.coursemgmt.admin;
 
+import Client.ClientNetworkHelper;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -41,6 +42,7 @@ public class CourseAdminPanel extends VBox {
         setPadding(new Insets(18));
         setSpacing(10);
         init();
+        loadAll(); // 初始化时加载后端数据
     }
 
     private void init() {
@@ -102,7 +104,37 @@ public class CourseAdminPanel extends VBox {
         return box;
     }
 
-    private void loadAll() { doSearch("all","", true); }
+    private void loadAll() {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.getAllCourses();
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    List<Map<String, Object>> courseList = (List<Map<String, Object>>) result.get("data");
+                    Platform.runLater(() -> {
+                        allData.clear();
+                        for (Map<String, Object> course : courseList) {
+                            Course c = new Course();
+                            c.id = (String) course.get("courseId");
+                            c.name = (String) course.get("courseName");
+                            c.teacher = ""; // 可扩展为后端返回
+                            c.clazz = "";   // 可扩展为后端返回
+                            c.room = "";    // 可扩展为后端返回
+                            c.capacity = ((Double) course.get("credit")).intValue(); // 或用capacity字段
+                            c.schedule = ""; // 可扩展为后端返回
+                            allData.add(c);
+                        }
+                        table.getItems().setAll(allData);
+                    });
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "课程数据加载失败: " + e.getMessage());
+                    alert.showAndWait();
+                });
+            }
+        }).start();
+    }
 
     private void doSearch(String type, String value, boolean fuzzy){
         // 前端过滤演示

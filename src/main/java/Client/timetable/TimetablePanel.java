@@ -1,5 +1,6 @@
 package Client.timetable;
 
+import Client.ClientNetworkHelper;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -75,20 +76,58 @@ public class TimetablePanel extends BorderPane {
     }
 
     private final String cardNumber;
+    private final List<Map<String, Object>> selectedCourses = new ArrayList<>();
+    private final Map<String, List<Map<String, Object>>> scheduleMap = new HashMap<>();
 
     public TimetablePanel(String cardNumber) {
         this.cardNumber = cardNumber;
         setStyle("-fx-background-color: " + BG_COLOR + ";");
         setPadding(new Insets(10));
+        loadTimetableFromServer();
+    }
 
+    private void loadTimetableFromServer() {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.getStudentSelectedCourses(cardNumber);
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    List<Map<String, Object>> courseList = (List<Map<String, Object>>) result.get("data");
+                    selectedCourses.clear();
+                    scheduleMap.clear();
+                    for (Map<String, Object> tc : courseList) {
+                        String courseName = (String) tc.get("courseId");
+                        String place = (String) tc.get("place");
+                        String scheduleJson = (String) tc.get("schedule");
+                        Map<String, String> schedule = new com.google.gson.Gson().fromJson(scheduleJson, Map.class);
+                        for (Map.Entry<String, String> entry : schedule.entrySet()) {
+                            String day = entry.getKey();
+                            String time = entry.getValue();
+                            Map<String, Object> courseInfo = new HashMap<>();
+                            courseInfo.put("courseName", courseName);
+                            courseInfo.put("place", place);
+                            courseInfo.put("time", time);
+                            if (!scheduleMap.containsKey(day)) scheduleMap.put(day, new ArrayList<>());
+                            scheduleMap.get(day).add(courseInfo);
+                        }
+                    }
+                    javafx.application.Platform.runLater(this::renderTimetable);
+                }
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    Label error = new Label("课表加载失败: " + e.getMessage());
+                    setCenter(error);
+                });
+            }
+        }).start();
+    }
+
+    private void renderTimetable() {
+        // 构建课表UI，按scheduleMap渲染
         VBox container = new VBox(12);
         container.setFillWidth(true);
-
-        Node header = buildHeader();
-        Region table = buildTable();
-
-        container.getChildren().addAll(header, table);
-
+        container.getChildren().add(buildHeader());
+        container.getChildren().add(buildTable());
         ScrollPane sp = new ScrollPane(container);
         sp.setFitToWidth(true);
         sp.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
@@ -96,80 +135,43 @@ public class TimetablePanel extends BorderPane {
     }
 
     private Node buildHeader() {
-        VBox header = new VBox(4);
-        header.setPadding(new Insets(6));
-
         Label title = new Label("我的课表");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
-
-        LocalDate monday = getCurrentMonday(LocalDate.now());
-        LocalDate sunday = monday.plusDays(6);
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("MM-dd");
-        Label sub = new Label("本周（" + monday.format(df) + " ~ " + sunday.format(df) + "）");
-        sub.setStyle("-fx-text-fill: " + SUB_TEXT + "; -fx-font-size: 13px;");
-
-        header.getChildren().addAll(title, sub);
-        return header;
+        return title;
     }
 
     private Region buildTable() {
         GridPane grid = new GridPane();
-        grid.setHgap(0);
-        grid.setVgap(0);
-        grid.setStyle("-fx-background-color: " + CARD_BG + "; -fx-background-radius: 10; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 10, 0, 0, 3);");
-
-        // 列/行约束：首列（时间）更窄，后面7列等分
-        ColumnConstraints timeCol = new ColumnConstraints();
-        timeCol.setPercentWidth(12);
-        timeCol.setMinWidth(96);
-        grid.getColumnConstraints().add(timeCol);
-        for (int i = 0; i < 7; i++) {
-            ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth( (88.0 / 7) );
-            grid.getColumnConstraints().add(cc);
+        grid.setStyle("-fx-background-color: " + CARD_BG + "; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 10, 0, 0, 3);");
+        grid.setPadding(new Insets(10));
+        grid.setHgap(8);
+        grid.setVgap(8);
+        // 表头
+        for (int i = 0; i < DAY_TITLES.length; i++) {
+            Label dayLabel = new Label(DAY_TITLES[i]);
+            dayLabel.setStyle("-fx-background-color: " + HEADER_BG + "; -fx-text-fill: " + HEADER_TEXT + "; -fx-font-weight: bold;");
+            grid.add(dayLabel, i + 1, 0);
         }
-        for (int r = 0; r < TIME_SLOTS.length + 1; r++) {
-            RowConstraints rc = new RowConstraints();
-            rc.setMinHeight(r == 0 ? 56 : 64);
-            grid.getRowConstraints().add(rc);
-        }
-
-        // 顶部头部：空白 + 周一..周日（含日期）
-        addCell(grid, 0, 0, headerCell("时间"));
-        LocalDate monday = getCurrentMonday(LocalDate.now());
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("MM-dd");
-        for (int d = 0; d < 7; d++) {
-            LocalDate day = monday.plusDays(d);
-            String txt = DAY_TITLES[d] + "\n" + day.format(df);
-            addCell(grid, d + 1, 0, headerCell(txt));
-        }
-
-        // 左侧时间列（两行：第N节 + 时间）
         for (int i = 0; i < TIME_SLOTS.length; i++) {
-            addCell(grid, 0, i + 1, timeCell(i + 1, TIME_SLOTS[i]));
+            Label timeLabel = new Label((i+1) + "节 " + TIME_SLOTS[i]);
+            timeLabel.setStyle("-fx-text-fill: " + SUB_TEXT + ";");
+            grid.add(timeLabel, 0, i + 1);
         }
-
-        // 生成演示课程（可替换为后端数据）
-        List<Course> demo = demoCourses(monday);
-
-        // 填充网格：逐格渲染，简单重复显示（不做单元格合并）
-        Map<String, Course> slotMap = toSlotMap(demo);
-        for (int d = 0; d < 7; d++) {
-            for (int s = 1; s <= 13; s++) {
-                String key = (d + 1) + "-" + s;
-                Course c = slotMap.get(key);
-                if (c == null) {
-                    addCell(grid, d + 1, s, emptyCell());
-                } else {
-                    addCell(grid, d + 1, s, courseCell(c));
-                }
+        // 课程块
+        for (int dayIdx = 0; dayIdx < DAY_TITLES.length; dayIdx++) {
+            String day = DAY_TITLES[dayIdx];
+            List<Map<String, Object>> courses = scheduleMap.getOrDefault(day, Collections.emptyList());
+            for (Map<String, Object> course : courses) {
+                String courseName = (String) course.get("courseName");
+                String place = (String) course.get("place");
+                String time = (String) course.get("time");
+                Label courseLabel = new Label(courseName + "\n" + place + "\n" + time);
+                courseLabel.setStyle("-fx-background-color: " + COURSE_BG + "; -fx-background-radius: 6; -fx-text-fill: " + TEXT_COLOR + ";");
+                // 简单放在第1节，实际可根据time解析节次
+                grid.add(courseLabel, dayIdx + 1, 1);
             }
         }
-
-        VBox wrap = new VBox(grid);
-        wrap.setPadding(new Insets(8));
-        return wrap;
+        return grid;
     }
 
     private LocalDate getCurrentMonday(LocalDate date) {
