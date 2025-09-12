@@ -10,7 +10,7 @@ import Client.teacherclass.MyClassroomPanel;
 import Client.coursemgmt.admin.CourseAdminPanel;
 import Client.finance.FinancePanel; // 新增导入
 import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
-import Client.store.StorePanel; // 新增：校园商店面板
+import Client.store.StoreMainPanel; // 新增：校园商店面板
 import Client.library.LibraryMainPanel; // 新增：导入图书馆面板
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -420,7 +420,7 @@ public class MainFrame {
                 if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
                 setSelectedButtonStyle(storeBtn);
                 currentSelectedButton = storeBtn;
-                setCenterContent(new StorePanel(cardNumber, userType));
+                setCenterContent(new StoreMainPanel(cardNumber, userType));
             });
 
             // 新增：AI 助手
