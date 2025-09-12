@@ -36,8 +36,8 @@ public class LibrarySearchPanel extends BorderPane {
     private ScrollPane scrollPane;
     private Label statusLabel;
 
-    // 当前展开的卡片
-    private BookCard expandedCard;
+    // 当前展开的卡片 - 修改为使用BookCard类型
+    private BookCard currentExpandedCard;
 
     // JSON处理 - 使用配置了适配器的Gson实例
     private Gson gson;
@@ -231,6 +231,8 @@ public class LibrarySearchPanel extends BorderPane {
                     // 在UI线程中更新界面
                     Platform.runLater(() -> {
                         booksContainer.getChildren().clear();
+                        // 重置当前展开的卡片
+                        currentExpandedCard = null;
 
                         if (books.isEmpty()) {
                             Label noResults = new Label("未找到相关图书");
@@ -243,10 +245,26 @@ public class LibrarySearchPanel extends BorderPane {
 
                                 // 设置卡片点击事件，实现每次只展开一个
                                 card.setOnMouseClicked(event -> {
-                                    if (expandedCard != null && expandedCard != card && expandedCard.isExpanded()) {
-                                        expandedCard.collapse();
+                                    // 阻止事件冒泡
+                                    event.consume();
+
+                                    // 如果已经有展开的卡片且不是当前卡片，则先关闭它
+                                    if (currentExpandedCard != null && currentExpandedCard != card && currentExpandedCard.isExpanded()) {
+                                        currentExpandedCard.collapse();
                                     }
-                                    expandedCard = card.isExpanded() ? card : null;
+
+                                    // 切换当前卡片的展开状态
+                                    card.toggleExpand();
+
+                                    // 更新当前展开的卡片引用
+                                    if (card.isExpanded()) {
+                                        currentExpandedCard = card;
+                                    } else {
+                                        // 如果当前卡片被折叠了，且它是之前展开的卡片，则清空引用
+                                        if (currentExpandedCard == card) {
+                                            currentExpandedCard = null;
+                                        }
+                                    }
                                 });
 
                                 booksContainer.getChildren().add(card);
