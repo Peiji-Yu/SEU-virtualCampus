@@ -79,6 +79,23 @@ public class FinanceService {
     }
 
     /**
+     * 查询所有挂失的一卡通账号信息（管理员功能）
+     */
+    public Response findAllLostCards() {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            FinanceMapper financeMapper = sqlSession.getMapper(FinanceMapper.class);
+
+            // 查询所有挂失的一卡通账号
+            List<FinanceMapper.LostCardInfo> lostCards = financeMapper.findAllLostCards();
+
+            return Response.success("查询挂失一卡通成功", lostCards);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error(500, "查询挂失一卡通失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 查询一卡通余额
      */
     public FinanceCard getFinanceCard(Integer cardNumber) {
