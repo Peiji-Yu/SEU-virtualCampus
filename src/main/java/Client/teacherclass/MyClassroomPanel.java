@@ -1,6 +1,6 @@
 package Client.teacherclass;
 
-import javafx.beans.property.SimpleIntegerProperty;
+import Client.ClientNetworkHelper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,8 +9,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-
 import java.util.*;
 
 /**
@@ -23,7 +21,6 @@ public class MyClassroomPanel extends BorderPane {
     private static final String CARD = "#ffffff";
     private static final String TEXT = "#2a4d7b";
     private static final String SUB = "#555b66";
-    private static final String BORDER = "#c0c9da";
 
     // 课程模型
     public static class Course {
@@ -58,29 +55,87 @@ public class MyClassroomPanel extends BorderPane {
     private final Label courseStats = new Label();
     private final TableView<Student> studentTable = new TableView<>();
 
-    public MyClassroomPanel(String teacherCardNumber) {
-        this.teacherCardNumber = teacherCardNumber;
+    public MyClassroomPanel(String teacherId) {
+        this.teacherCardNumber = teacherId;
         setStyle("-fx-background-color: " + BG + ";");
         setPadding(new Insets(10));
-
-        // 数据
-        seedDemo();
-
-        // 布局
-        Node left = buildLeft();
-        Node right = buildRight();
-        SplitPane sp = new SplitPane(left, right);
-        sp.setDividerPositions(0.28);
-        setCenter(sp);
-
-        // 默认选中第一门课
-        if (!myCourses.isEmpty()) {
-            courseListView.getSelectionModel().select(0);
-            updateRight(myCourses.get(0));
+        setPrefSize(900, 600);
+        setLeft(buildCourseListPane());
+        setCenter(buildCourseDetailPane());
+        try {
+            loadMyCoursesFromServer();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "加载课程失败: " + e.getMessage());
+            alert.showAndWait();
         }
     }
 
-    private Node buildLeft() {
+    private void loadMyCoursesFromServer() throws Exception {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.getTeachingClassesByTeacherId(teacherCardNumber);
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    List<Map<String, Object>> classList = (List<Map<String, Object>>) result.get("data");
+                    javafx.application.Platform.runLater(() -> {
+                        myCourses.clear();
+                        for (Map<String, Object> tc : classList) {
+                            String uuid = (String) tc.get("uuid");
+                            String courseId = (String) tc.get("courseId");
+                            String place = (String) tc.get("place");
+                            int capacity = ((Double) tc.get("capacity")).intValue();
+                            Course course = new Course(uuid, courseId, place, capacity, new ArrayList<>());
+                            myCourses.add(course);
+                        }
+                        courseListView.setItems(myCourses);
+                    });
+                }
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "教学班加载失败: " + e.getMessage());
+                    alert.showAndWait();
+                });
+            }
+        }).start();
+        courseListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                loadStudentsForClass(newVal.id);
+                courseTitle.setText(newVal.name);
+                courseMeta.setText("教室: " + newVal.room + "  容量: " + newVal.capacity);
+            }
+        });
+    }
+
+    private void loadStudentsForClass(String teachingClassUuid) {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.getTeachingClassStudents(teachingClassUuid);
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                if (Boolean.TRUE.equals(result.get("success"))) {
+                    List<Map<String, Object>> students = (List<Map<String, Object>>) result.get("data");
+                    javafx.application.Platform.runLater(() -> {
+                        ObservableList<Student> studentList = FXCollections.observableArrayList();
+                        for (Map<String, Object> stu : students) {
+                            String sid = String.valueOf(stu.get("studentNumber"));
+                            String sname = (String) stu.get("name");
+                            String major = (String) stu.get("major");
+                            String clazz = (String) stu.get("school");
+                            studentList.add(new Student(sid, sname, major, clazz));
+                        }
+                        studentTable.setItems(studentList);
+                        courseStats.setText("已选人数: " + studentList.size());
+                    });
+                }
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "学生列表加载失败: " + e.getMessage());
+                    alert.showAndWait();
+                });
+            }
+        }).start();
+    }
+
+    private Node buildCourseListPane() {
         VBox box = new VBox(10);
         box.setPadding(new Insets(8));
         box.setStyle("-fx-background-color: " + CARD + "; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 10, 0, 0, 3);");
@@ -103,7 +158,9 @@ public class MyClassroomPanel extends BorderPane {
             }
         });
         courseListView.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> {
-            if (n != null) updateRight(n);
+            if (n != null) {
+                updateRight(n);
+            }
         });
 
         VBox.setVgrow(courseListView, Priority.ALWAYS);
@@ -111,7 +168,7 @@ public class MyClassroomPanel extends BorderPane {
         return box;
     }
 
-    private Node buildRight() {
+    private Node buildCourseDetailPane() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(12));
         card.setStyle("-fx-background-color: " + CARD + "; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 10, 0, 0, 3);");
@@ -179,31 +236,4 @@ public class MyClassroomPanel extends BorderPane {
         courseStats.setText("已选人数：" + c.students.size() + " / 容量：" + c.capacity);
         studentTable.setItems(c.students);
     }
-
-    private void seedDemo() {
-        // 根据教师卡号简单区分不同演示数据（无需真实关联）
-        List<Student> s1 = Arrays.asList(
-                new Student("220300001", "张三", "计算机科学与技术", "计科2101"),
-                new Student("220300002", "李四", "计算机科学与技术", "计科2101"),
-                new Student("220300103", "王五", "人工智能", "人工2102")
-        );
-        List<Student> s2 = Arrays.asList(
-                new Student("220311001", "赵六", "信息安全", "信安2103"),
-                new Student("220311045", "钱七", "信息安全", "信安2101")
-        );
-        List<Student> s3 = Arrays.asList(
-                new Student("220322010", "周八", "软件工程", "软工2102"),
-                new Student("220322066", "吴九", "软件工程", "软工2103"),
-                new Student("220322099", "郑十", "软件工程", "软工2101"),
-                new Student("220322120", "冯十一", "软件工程", "软工2101")
-        );
-
-        myCourses.clear();
-        myCourses.addAll(FXCollections.observableArrayList(
-                new Course("T001", "数据结构", "教四-201", 60, s1),
-                new Course("T002", "计算机网络", "实验中心-204", 48, s2),
-                new Course("T003", "操作系统", "教三-207", 56, s3)
-        ));
-    }
 }
-

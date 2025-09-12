@@ -1,5 +1,6 @@
 package Client.coursemgmt.admin;
 
+import Client.ClientNetworkHelper;
 import Client.util.UIUtil;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -59,49 +60,55 @@ public class CourseEditDialog {
         gp.addRow(6, new Label("时间"), schedule);
         gp.addRow(7, new Label("已选学生"), students);
 
-        Button ok = new Button("保存");
+        Button save = new Button("保存");
         Button cancel = new Button("取消");
-        ok.setDefaultButton(true);
+        save.setDefaultButton(true);
         cancel.setCancelButton(true);
-        gp.add(ok, 0, 8);
+        gp.add(save, 0, 8, 2, 1);
         gp.add(cancel, 1, 8);
 
-        ok.setOnAction(e -> {
-            try {
-                int cap = Integer.parseInt(capacity.getText().trim());
-                if (origin == null){
-                    CourseAdminPanel.Course c = new CourseAdminPanel.Course();
-                    c.id = id.getText().trim();
-                    c.name = name.getText().trim();
-                    c.teacher = teacher.getText().trim();
-                    c.clazz = clazz.getText().trim();
-                    c.room = room.getText().trim();
-                    c.capacity = cap;
-                    c.schedule = schedule.getText().trim();
-                    if (!students.getText().trim().isEmpty()){
-                        c.students = Arrays.asList(students.getText().trim().split(","));
-                    }
-                    onSave.accept(c);
-                } else {
-                    origin.id = id.getText().trim();
-                    origin.name = name.getText().trim();
-                    origin.teacher = teacher.getText().trim();
-                    origin.clazz = clazz.getText().trim();
-                    origin.room = room.getText().trim();
-                    origin.capacity = cap;
-                    origin.schedule = schedule.getText().trim();
-                    if (!students.getText().trim().isEmpty()){
-                        origin.students = Arrays.asList(students.getText().trim().split(","));
+        save.setOnAction(e -> {
+            final String courseId = id.getText().trim();
+            final String courseName = name.getText().trim();
+            final String school = "计算机学院"; // 可扩展为输入项
+            final double credit;
+            try { credit = Double.parseDouble(capacity.getText().trim()); } catch (Exception ex) { return; }
+            // 构造课程对象
+            java.util.Map<String, Object> course = new java.util.HashMap<>();
+            course.put("courseId", courseId);
+            course.put("courseName", courseName);
+            course.put("school", school);
+            course.put("credit", credit);
+            new Thread(() -> {
+                try {
+                    String resp;
+                    if (origin == null) {
+                        // 新增课程
+                        resp = ClientNetworkHelper.addCourse(course);
                     } else {
-                        origin.students = new java.util.ArrayList<>();
+                        // 编辑课程
+                        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                        updates.put("courseName", courseName);
+                        updates.put("credit", credit);
+                        resp = ClientNetworkHelper.updateCourse(courseId, updates);
                     }
-                    onSave.accept(origin);
+                    java.util.Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, java.util.Map.class);
+                    javafx.application.Platform.runLater(() -> {
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(result.get("success").equals(Boolean.TRUE) ? javafx.scene.control.Alert.AlertType.INFORMATION : javafx.scene.control.Alert.AlertType.ERROR,
+                                (String) result.get("message"));
+                        alert.showAndWait();
+                        if (result.get("success").equals(Boolean.TRUE)) {
+                            stage.close();
+                            if (onSave != null) onSave.accept(origin);
+                        }
+                    });
+                } catch (Exception ex) {
+                    javafx.application.Platform.runLater(() -> {
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR, "操作失败: " + ex.getMessage());
+                        alert.showAndWait();
+                    });
                 }
-                stage.close();
-            } catch (Exception ex){
-                // 简化：容量解析失败等异常直接忽略或可弹窗
-                stage.close();
-            }
+            }).start();
         });
         cancel.setOnAction(e -> stage.close());
 
