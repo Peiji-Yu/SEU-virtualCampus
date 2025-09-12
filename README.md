@@ -3,6 +3,9 @@
 教师：1开头，9位数
 管理员/教务：1000以内
 
+在user表中添加name字段：
+ALTER TABLE user ADD COLUMN name VARCHAR(50) NOT NULL;
+
 -- user表：存储用户（包括学生、教师、管理员）信息
 CREATE TABLE user (
     card_number INT PRIMARY KEY,
