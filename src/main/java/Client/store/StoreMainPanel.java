@@ -70,8 +70,8 @@ public class StoreMainPanel extends BorderPane {
         }
 
         // 顶部标题
-        Label titleLabel = new Label("校园超市系统" + (isAdmin ? " (管理员)" : ""));
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-padding: 15;");
+        Label titleLabel = new Label("超市");
+        titleLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-padding: 15;");
         setTop(titleLabel);
     }
 
