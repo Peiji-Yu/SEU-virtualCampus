@@ -30,8 +30,7 @@ public class AdminManageProductPanel extends BorderPane {
     private TextField searchField;
     private Label statusLabel;
     private Gson gson;
-    private ToggleGroup viewToggleGroup;
-    private Map<String, Accordion> productAccordions = new HashMap<>();
+    private Map<String, Boolean> expandedProducts = new HashMap<>();
 
     public AdminManageProductPanel() {
         // 创建配置了LocalDate和UUID适配器的Gson实例
@@ -54,7 +53,7 @@ public class AdminManageProductPanel extends BorderPane {
         topContainer.setPadding(new Insets(0, 0, 20, 0));
 
         // 标题
-        Label titleLabel = new Label("商品管理");
+        Label titleLabel = new Label("管理商品");
         titleLabel.setFont(Font.font(24));
         titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
@@ -180,6 +179,9 @@ public class AdminManageProductPanel extends BorderPane {
                     // 提取商品列表
                     Type itemListType = new TypeToken<List<Item>>(){}.getType();
                     List<Item> items = gson.fromJson(gson.toJson(responseMap.get("data")), itemListType);
+
+                    // 更新类别
+                    loadCategories();
 
                     // 在UI线程中更新界面
                     Platform.runLater(() -> {
@@ -328,7 +330,7 @@ public class AdminManageProductPanel extends BorderPane {
 
     private void displayProducts(List<Item> productList) {
         productsContainer.getChildren().clear();
-        productAccordions.clear();
+        expandedProducts.clear();
 
         if (productList.isEmpty()) {
             Label emptyLabel = new Label("没有找到商品");
@@ -339,27 +341,32 @@ public class AdminManageProductPanel extends BorderPane {
         }
 
         for (Item product : productList) {
-            TitledPane productPane = createProductPane(product);
-            productsContainer.getChildren().add(productPane);
+            VBox productCard = createProductCard(product);
+            productsContainer.getChildren().add(productCard);
         }
     }
 
-    private TitledPane createProductPane(Item product) {
-        // 创建折叠面板
-        TitledPane pane = new TitledPane();
-        pane.setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
-                "-fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-border-width: 1;");
-        pane.setExpanded(false);
+    private VBox createProductCard(Item product) {
+        VBox card = new VBox();
+        card.setPadding(new Insets(15));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                "-fx-border-color: #e0e0e0; -fx-border-radius: 10; -fx-border-width: 1; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
+        card.setSpacing(10);
 
-        // 标题部分 - 只显示商品名和库存
-        HBox titleBox = new HBox(10);
-        titleBox.setAlignment(Pos.CENTER_LEFT);
-        titleBox.setPadding(new Insets(10));
+        // 存储商品ID和展开状态
+        String productId = product.getUuid();
+        boolean isExpanded = expandedProducts.getOrDefault(productId, false);
+
+        // 商品基本信息区域（始终显示）
+        HBox summaryBox = new HBox();
+        summaryBox.setAlignment(Pos.CENTER_LEFT);
+        summaryBox.setSpacing(15);
 
         // 商品图片
         ImageView imageView = new ImageView();
-        imageView.setFitWidth(40);
-        imageView.setFitHeight(40);
+        imageView.setFitWidth(60);
+        imageView.setFitHeight(60);
         imageView.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 5;");
 
         if (product.getPictureLink() != null && !product.getPictureLink().isEmpty()) {
@@ -387,74 +394,127 @@ public class AdminManageProductPanel extends BorderPane {
             }
         }
 
+        // 商品基本信息
+        VBox infoBox = new VBox(5);
         Label nameLabel = new Label(product.getItemName());
         nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+
+        Label categoryLabel = new Label("类别: " + product.getCategory());
+        categoryLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+
+        infoBox.getChildren().addAll(nameLabel, categoryLabel);
+
+        // 库存和价格信息
+        VBox statusBox = new VBox(5);
+        statusBox.setAlignment(Pos.CENTER_RIGHT);
+        HBox.setHgrow(statusBox, Priority.ALWAYS);
+
+        Label priceLabel = new Label(product.getPriceYuan() + "元");
+        priceLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #e74c3c;");
 
         Label stockLabel = new Label("库存: " + product.getStock());
         stockLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        statusBox.getChildren().addAll(priceLabel, stockLabel);
 
-        titleBox.getChildren().addAll(imageView, nameLabel, spacer, stockLabel);
-        pane.setGraphic(titleBox);
+        summaryBox.getChildren().addAll(imageView, infoBox, statusBox);
 
-        // 内容部分 - 显示详细信息
-        VBox contentBox = new VBox(15);
-        contentBox.setPadding(new Insets(15));
-        contentBox.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 0 0 8 8;");
+        // 详细信息区域（默认折叠）
+        VBox detailBox = new VBox(10);
+        detailBox.setVisible(isExpanded);
+        detailBox.setManaged(isExpanded);
 
-        // 商品详细信息
-        GridPane infoGrid = new GridPane();
-        infoGrid.setHgap(15);
-        infoGrid.setVgap(10);
-        infoGrid.setPadding(new Insets(0, 0, 15, 0));
+        if (isExpanded) {
+            // 添加详细信息
+            addProductDetails(detailBox, product);
+        }
 
-        Label priceLabel = new Label("价格: " + product.getPriceYuan() + "元");
-        priceLabel.setStyle("-fx-font-size: 14px;");
+        // 操作按钮区域（仅在展开时显示）
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.setVisible(isExpanded);
+        buttonBox.setManaged(isExpanded);
 
-        Label salesLabel = new Label("销量: " + product.getSalesVolume());
-        salesLabel.setStyle("-fx-font-size: 14px;");
+        if (isExpanded) {
+            Button editBtn = new Button("修改");
+            editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; " +
+                    "-fx-padding: 8 16; -fx-background-radius: 5;");
+            editBtn.setOnAction(e -> editProduct(product));
 
-        Label categoryLabel = new Label("类别: " + product.getCategory());
-        categoryLabel.setStyle("-fx-font-size: 14px;");
+            Button deleteBtn = new Button("删除");
+            deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
+                    "-fx-padding: 8 16; -fx-background-radius: 5;");
+            deleteBtn.setOnAction(e -> deleteProduct(product.getUuid()));
 
-        Label idLabel = new Label("ID: " + product.getUuid());
-        idLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #95a5a6;");
+            buttonBox.getChildren().addAll(editBtn, deleteBtn);
+        }
 
-        infoGrid.add(priceLabel, 0, 0);
-        infoGrid.add(salesLabel, 1, 0);
-        infoGrid.add(categoryLabel, 0, 1);
-        infoGrid.add(idLabel, 1, 1);
+        card.getChildren().addAll(summaryBox, detailBox, buttonBox);
+
+        // 点击卡片切换展开状态
+        card.setOnMouseClicked(e -> {
+            if (e.getClickCount() == 1) {
+                boolean newExpandedState = !expandedProducts.getOrDefault(productId, false);
+                expandedProducts.put(productId, newExpandedState);
+
+                detailBox.setVisible(newExpandedState);
+                detailBox.setManaged(newExpandedState);
+                buttonBox.setVisible(newExpandedState);
+                buttonBox.setManaged(newExpandedState);
+
+                if (newExpandedState) {
+                    addProductDetails(detailBox, product);
+
+                    // 添加操作按钮
+                    Button editBtn = new Button("修改");
+                    editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; " +
+                            "-fx-padding: 8 16; -fx-background-radius: 5;");
+                    editBtn.setOnAction(event -> editProduct(product));
+
+                    Button deleteBtn = new Button("删除");
+                    deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
+                            "-fx-padding: 8 16; -fx-background-radius: 5;");
+                    deleteBtn.setOnAction(event -> deleteProduct(product.getUuid()));
+
+                    buttonBox.getChildren().setAll(editBtn, deleteBtn);
+                } else {
+                    buttonBox.getChildren().clear();
+                }
+            }
+        });
+
+        return card;
+    }
+
+    private void addProductDetails(VBox detailBox, Item product) {
+        detailBox.getChildren().clear();
+
+        // 创建详细信息网格
+        GridPane detailGrid = new GridPane();
+        detailGrid.setHgap(15);
+        detailGrid.setVgap(10);
+        detailGrid.setPadding(new Insets(10, 0, 0, 0));
+
+        // 添加详细信息
+        detailGrid.add(new Label("商品ID:"), 0, 0);
+        detailGrid.add(new Label(product.getUuid()), 1, 0);
+
+        detailGrid.add(new Label("条形码:"), 0, 1);
+        detailGrid.add(new Label(product.getBarcode()), 1, 1);
+
+        detailGrid.add(new Label("销量:"), 0, 2);
+        detailGrid.add(new Label(String.valueOf(product.getSalesVolume())), 1, 2);
 
         // 商品描述
         if (product.getDescription() != null && !product.getDescription().isEmpty()) {
-            Label descLabel = new Label("描述: " + product.getDescription());
-            descLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
-            descLabel.setMaxWidth(Double.MAX_VALUE);
-            infoGrid.add(descLabel, 0, 2, 2, 1);
+            detailGrid.add(new Label("描述:"), 0, 3);
+            Label descLabel = new Label(product.getDescription());
+            descLabel.setStyle("-fx-wrap-text: true;");
+            descLabel.setMaxWidth(300);
+            detailGrid.add(descLabel, 1, 3);
         }
 
-        // 操作按钮
-        HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
-
-        Button editBtn = new Button("修改");
-        editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5; -fx-font-size: 14px;");
-        editBtn.setPrefSize(80, 35);
-        editBtn.setOnAction(e -> editProduct(product));
-
-        Button deleteBtn = new Button("删除");
-        deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5; -fx-font-size: 14px;");
-        deleteBtn.setPrefSize(80, 35);
-        deleteBtn.setOnAction(e -> deleteProduct(product.getUuid()));
-
-        buttonBox.getChildren().addAll(editBtn, deleteBtn);
-
-        contentBox.getChildren().addAll(infoGrid, buttonBox);
-        pane.setContent(contentBox);
-
-        return pane;
+        detailBox.getChildren().add(detailGrid);
     }
 
     private void editProduct(Item product) {
