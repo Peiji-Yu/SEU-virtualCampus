@@ -11,6 +11,7 @@ public class StoreOrderItem {
     private UUID itemUuid;       // 商品ID
     private Integer itemPrice;   // 商品单价（以分为单位）
     private Integer amount;      // 商品数量
+    private StoreItem item;  // 商品
 
     // 构造方法
     public StoreOrderItem() {}
@@ -63,6 +64,10 @@ public class StoreOrderItem {
     public void setAmount(Integer amount) {
         this.amount = amount;
     }
+
+    public StoreItem getItem() { return item; }
+
+    public void setItem(StoreItem item) { this.item = item; }
 
     @Override
     public String toString() {

@@ -157,6 +157,11 @@ public class StoreService {
                 }
             }
 
+            for (StoreOrderItem item : order.getItems()) {
+                StoreItem storeItem = storeMapper.findItemById(item.getItemUuid());
+                item.setItem(storeItem); // 设置关联的商品信息
+            }
+
             sqlSession.commit();
             return order;
         }
