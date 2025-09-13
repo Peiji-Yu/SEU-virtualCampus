@@ -976,10 +976,12 @@ public class ClientHandler implements Runnable {
         if (data.containsKey("stock")) item.setStock(((Double) data.get("stock")).intValue());
         if (data.containsKey("salesVolume")) item.setSalesVolume(((Double) data.get("salesVolume")).intValue());
         if (data.containsKey("description")) item.setDescription((String) data.get("description"));
+        if (data.containsKey("category")) item.setCategory((String) data.get("category"));
         if (data.containsKey("barcode")) item.setBarcode((String) data.get("barcode"));
 
         return item;
     }
+
     // 添加到 ClientHandler 或者单独写一个工具类
     private Book createBookFromMap(Map<String, Object> data) {
         Book book = new Book();
