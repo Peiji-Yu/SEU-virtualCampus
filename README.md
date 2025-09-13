@@ -8,7 +8,8 @@ user表：存储用户（包括学生、教师、管理员）信息
         CREATE TABLE user (
             card_number INT PRIMARY KEY,
             password VARCHAR(255) NOT NULL, -- 存储加密后的密码
-            id VARCHAR(18) UNIQUE NOT NULL
+            id VARCHAR(18) UNIQUE NOT NULL,
+            name VARCHAR(50) NOT NULL
         );
 
 student表：存储学生学籍信息
@@ -88,7 +89,7 @@ store_order_item表：订单商品明细表
             FOREIGN KEY (item_uuid) REFERENCES store_item(uuid)
         );
 
-书籍信息表
+book表：书籍信息表
 
         CREATE TABLE book (
             isbn VARCHAR(20) PRIMARY KEY,         -- ISBN作为主键
@@ -101,7 +102,7 @@ store_order_item表：订单商品明细表
             category VARCHAR(50)                  -- 类别 (SCIENCE, LITERATURE...)
         );
 
-书籍副本表
+book_item表：书籍副本表
 
         CREATE TABLE book_item (
             uuid CHAR(36) PRIMARY KEY,            -- 每本副本的唯一ID（UUID）
@@ -112,7 +113,7 @@ store_order_item表：订单商品明细表
         );
 
 
-用户表
+lib_user表：用户表
 
         CREATE TABLE lib_user (
             user_id INT PRIMARY KEY,              -- 用户一卡通号
@@ -121,7 +122,7 @@ store_order_item表：订单商品明细表
             user_status VARCHAR(20) NOT NULL      -- 用户状态 (BORROWING, FREE, OVERDUE, TRUSTBREAK)
         );
 
-借阅记录表
+book_record表：借阅记录表
 
         CREATE TABLE book_record (
             uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
