@@ -134,3 +134,93 @@ book_record表：借阅记录表
             CONSTRAINT fk_book_record_item FOREIGN KEY (book_item_uuid) REFERENCES book_item(uuid)
         );
 
+students表: 学生表
+
+        CREATE TABLE students (
+            card_number INT(9) UNSIGNED ZEROFILL PRIMARY KEY,   --一卡通号
+            student_number INT(8) UNSIGNED ZEROFILL UNIQUE NOT NULL,  --学号
+            name VARCHAR(50) NOT NULL,     --姓名
+            major VARCHAR(100) NOT NULL,    --专业
+            school VARCHAR(100) NOT NULL,    --学院
+            status ENUM('在校', '休学', '退学', '毕业') DEFAULT '在校',  --学籍状态
+            -- 添加检查约束确保卡号和学号长度正确
+    CONSTRAINT chk_card_number_length CHECK (LENGTH(card_number) = 9),
+    CONSTRAINT chk_student_number_length CHECK (LENGTH(student_number) = 8)
+    );
+
+courses表: 课程表
+
+        CREATE TABLE courses (
+            course_id VARCHAR(20) PRIMARY KEY,   --课程编号
+            course_name VARCHAR(100) NOT NULL,   --课程名
+            school VARCHAR(100) NOT NULL,    --开设学院
+            credit FLOAT NOT NULL,   --学分
+        );
+
+teachers表: 教师表
+
+        CREATE TABLE teachers (
+            teacher_id INT PRIMARY KEY,  --教师id
+            name VARCHAR(100) NOT NULL,  --教师姓名
+            school VARCHAR(100) NOT NULL,  --所属学院
+            title VARCHAR(50),   --职称
+        );
+
+teaching_classes表: 教学班表
+
+        CREATE TABLE teaching_classes (
+            uuid VARCHAR(36) PRIMARY KEY,  --标识符
+            course_id VARCHAR(20) NOT NULL,   --课程id
+            teacher_name VARCHAR(100) NOT NULL, -- 教师姓名
+            schedule JSON,  --上课信息
+            place VARCHAR(100),  --上课地点
+            capacity INT NOT NULL DEFAULT 0, --课容量
+            selected_count INT NOT NULL DEFAULT 0,  --已选人数
+            FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE
+        );
+
+student_teaching_class表: 选课关系表
+
+        CREATE TABLE student_teaching_class (
+            id INT AUTO_INCREMENT PRIMARY KEY,  
+            student_card_number INT(9) UNSIGNED ZEROFILL NOT NULL,  --学生一卡通号
+            teaching_class_uuid VARCHAR(36) NOT NULL,   --教学班uuid
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_student_class (student_card_number, teaching_class_uuid),
+            FOREIGN KEY (student_card_number) REFERENCES students(card_number) ON DELETE CASCADE,
+            FOREIGN KEY (teaching_class_uuid) REFERENCES teaching_classes(uuid) ON DELETE CASCADE
+        );
+
+teaching_class_students图: 教学班学生列表视图
+
+        CREATE VIEW teaching_class_students AS
+        SELECT 
+            stc.teaching_class_uuid,
+            s.card_number,
+            s.student_number,
+            s.name,
+            s.major,
+            s.school,
+            s.status
+        FROM student_teaching_class stc
+        JOIN students s ON stc.student_card_number = s.card_number;
+
+student_selected_courses图：学生已选课程视图
+
+        CREATE VIEW student_selected_courses AS
+        SELECT 
+            stc.student_card_number,
+            tc.uuid as teaching_class_uuid,
+            tc.course_id,
+            c.course_name,
+            c.school as course_school,
+            c.credit,
+            tc.teacher_name,
+            tc.schedule,
+            tc.place,
+            tc.capacity,
+            tc.selected_count
+        FROM student_teaching_class stc
+        JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
+        JOIN courses c ON tc.course_id = c.course_id;
+
