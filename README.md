@@ -211,5 +211,3 @@ student_selected_courses图：学生已选课程视图
         FROM student_teaching_class stc
         JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
         JOIN courses c ON tc.course_id = c.course_id;
->>>>>>> c1da06908c511561928644c67328bfb1ebe3a60c
-
