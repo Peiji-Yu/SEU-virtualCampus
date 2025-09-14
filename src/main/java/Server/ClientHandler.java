@@ -660,10 +660,10 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取类别商品成功", categoryItems);
                         break;
 
-                    case "getAllCategories":
-                        List<String> categories = storeService.getAllCategories();
-                        response = Response.success("获取所有类别成功", categories);
-                        break;
+//                    case "getAllCategories":
+//                        List<String> categories = storeService.getAllCategories();
+//                        response = Response.success("获取所有类别成功", categories);
+//                        break;
 
                     case "searchItemsByCategory":
                         String searchCategory = (String) request.getData().get("category");
