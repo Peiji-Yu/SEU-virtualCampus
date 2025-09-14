@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.beans.binding.Bindings;
 
 import Client.util.EventBus;
 
@@ -354,11 +355,14 @@ public class TimetablePanel extends BorderPane {
         GridPane timetableGrid = createTimetableGrid();
         // 精确计算 GridPane 高度并去掉额外顶部空白
         double estimatedRowHeight = 50;
-        // 减小 GridPane 内边距，以便表格更靠上
         double gridPadTop = 4, gridPadBottom = 4;
         timetableGrid.setPadding(new Insets(gridPadTop, 10, gridPadBottom, 10));
         double gridMinH = (TIME_SLOTS.length + 1) * estimatedRowHeight + gridPadTop + gridPadBottom;
         timetableGrid.setMinHeight(gridMinH);
+        // 绑定 GridPane 的首选高度为：在可用高度不足时为 gridMinH，足够时扩展到可用高度
+        timetableGrid.prefHeightProperty().bind(
+                Bindings.createDoubleBinding(() -> Math.max(gridMinH, this.getHeight()), this.heightProperty())
+        );
         this.timetableGrid = timetableGrid;
         populateTimetable();
 
@@ -371,11 +375,35 @@ public class TimetablePanel extends BorderPane {
         scrollPane.setFitToHeight(false);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
         scrollPane.setPadding(new Insets(0));
-        // 让视口高度与表格最小高度一致（包含 GridPane 内边距），确保表格顶部无额外空白
-        scrollPane.setPrefViewportHeight(gridMinH);
+        // 视口高度绑定为面板可用高度，这样当有额外空间时表格可以扩展并占用下方空余
+        scrollPane.prefViewportHeightProperty().bind(this.heightProperty());
+
+        // 若可用高度大于 gridMinH，则把每行高度改为百分比分配，使行按比例拉伸占满高度
+        // 否则恢复为固定高度
+        scrollPane.viewportBoundsProperty().addListener((obs, oldB, newB) -> {
+            double avail = this.getHeight();
+            List<RowConstraints> rows = timetableGrid.getRowConstraints();
+            if (avail > gridMinH) {
+                double percent = 100.0 / rows.size();
+                for (RowConstraints rc : rows) {
+                    rc.setPercentHeight(percent);
+                    rc.setVgrow(Priority.ALWAYS);
+                    rc.setMinHeight(0);
+                    rc.setPrefHeight(-1);
+                }
+            } else {
+                for (RowConstraints rc : rows) {
+                    rc.setPercentHeight(0);
+                    rc.setVgrow(Priority.NEVER);
+                    rc.setPrefHeight(50);
+                }
+            }
+        });
 
         // 标题已固定在 top，center 只放置滚动区域
         mainContainer.getChildren().add(scrollPane);
+        // 确保滚动条始终定位到顶部，避免刷新后滚动位置不在顶部
+        Platform.runLater(() -> scrollPane.setVvalue(0.0));
         setCenter(mainContainer);
     }
 

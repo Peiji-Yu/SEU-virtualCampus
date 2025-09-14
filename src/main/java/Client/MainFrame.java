@@ -990,7 +990,8 @@ public class MainFrame {
     private void setCenterContent(Node node) {
         if (centerContainer == null || node == null) return;
         centerContainer.getChildren().setAll(node);
-        StackPane.setAlignment(node, Pos.CENTER);
+        // 将内容置顶（避免子面板在垂直方向居中产生上方空白）
+        StackPane.setAlignment(node, Pos.TOP_CENTER);
     }
 
     // 判断鼠标是否在窗口边缘
