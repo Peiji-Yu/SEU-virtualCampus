@@ -2,6 +2,7 @@ package Client.store.student;
 
 import Client.ClientNetworkHelper;
 import Client.store.util.StoreUtils;
+import Client.store.util.model.CartItem;
 import Client.store.util.model.Item;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
@@ -48,7 +49,6 @@ public class CustomerProductPanel extends BorderPane {
         gson = gsonBuilder.create();
 
         initializeUI();
-        loadCategories();
         loadAllItems();
     }
 
@@ -101,10 +101,15 @@ public class CustomerProductPanel extends BorderPane {
         categoryLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #34495e;");
 
         categoryCombo = new ComboBox<>();
-        categoryCombo.setPromptText("所有类别");
         categoryCombo.setPrefWidth(200);
         categoryCombo.setPrefHeight(35);
         categoryCombo.setStyle("-fx-font-size: 14px; -fx-background-radius: 5;");
+
+        List<String> categories =  Arrays.asList("书籍", "文具", "食品", "日用品", "电子产品", "其他");
+        categoryCombo.getItems().clear();
+        categoryCombo.getItems().add("所有类别");
+        categoryCombo.getItems().addAll(categories);
+        categoryCombo.getSelectionModel().selectFirst();
 
         categoryBox.getChildren().addAll(categoryLabel, categoryCombo);
 
@@ -324,42 +329,6 @@ public class CustomerProductPanel extends BorderPane {
             total += (long) item.getPriceFen() * item.getQuantity();
         }
         cartTotalLabel.setText("合计: " + StoreUtils.fenToYuan(total) + " 元");
-    }
-
-    private void loadCategories() {
-        new Thread(() -> {
-            try {
-                Platform.runLater(() -> setStatus("加载类别中..."));
-
-                Request request = new Request("getAllCategories", new HashMap<>());
-                String response = ClientNetworkHelper.send(request);
-
-                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                int code = ((Double) responseMap.get("code")).intValue();
-
-                if (code == 200) {
-                    Type categoryListType = new TypeToken<List<String>>(){}.getType();
-                    List<String> categories = gson.fromJson(gson.toJson(responseMap.get("data")), categoryListType);
-
-                    Platform.runLater(() -> {
-                        categoryCombo.getItems().clear();
-                        categoryCombo.getItems().add("所有类别");
-                        categoryCombo.getItems().addAll(categories);
-                        categoryCombo.getSelectionModel().selectFirst();
-                        setStatus("类别加载完成");
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        setStatus("获取类别失败: " + responseMap.get("message"));
-                    });
-                }
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    setStatus("获取类别时发生异常: " + e.getMessage());
-                });
-                e.printStackTrace();
-            }
-        }).start();
     }
 
     private void loadAllItems() {
@@ -695,39 +664,5 @@ public class CustomerProductPanel extends BorderPane {
 
     private void setStatus(String message) {
         statusLabel.setText("状态: " + message);
-    }
-
-    // 内部类：购物车项
-    public static class CartItem {
-        private String uuid;
-        private String itemName;
-        private int priceFen;
-        private String pictureLink;
-        private int quantity;
-
-        public CartItem() {}
-
-        public String getUuid() { return uuid; }
-        public void setUuid(String uuid) { this.uuid = uuid; }
-
-        public String getItemName() { return itemName; }
-        public void setItemName(String itemName) { this.itemName = itemName; }
-
-        public int getPriceFen() { return priceFen; }
-        public void setPriceFen(int priceFen) { this.priceFen = priceFen; }
-
-        public String getPictureLink() { return pictureLink; }
-        public void setPictureLink(String pictureLink) { this.pictureLink = pictureLink; }
-
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
-
-        public String getSubtotalYuan() {
-            return StoreUtils.fenToYuan((long) priceFen * quantity);
-        }
-
-        public String getPriceYuan() {
-            return StoreUtils.fenToYuan(priceFen);
-        }
     }
 }
