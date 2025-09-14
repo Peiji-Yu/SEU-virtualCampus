@@ -420,6 +420,35 @@ public class AdminManageOrderPanel extends BorderPane {
 
         detailBox.getChildren().add(detailGrid);
 
+        try {
+            // 构建获取订单详细信息请求
+            Map<String, Object> data = new HashMap<>();
+            data.put("orderId", order.getUuid().toString());
+            Request request = new Request("getOrder", data);
+
+            // 使用ClientNetworkHelper发送请求
+            String response = ClientNetworkHelper.send(request);
+
+            // 解析响应
+            Map<String, Object> responseMap = gson.fromJson(response, Map.class);
+            int code = ((Double) responseMap.get("code")).intValue();
+
+            if (code == 200) {
+                // 提取订单详情
+                Order detail_order = gson.fromJson(gson.toJson(responseMap.get("data")), Order.class);
+                order.setItems(detail_order.getItems());
+            } else {
+                Platform.runLater(() -> {
+                    setStatus("加载失败: " + responseMap.get("message"), "error");
+                });
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                setStatus("通信错误: " + e.getMessage(), "error");
+            });
+            e.printStackTrace();
+        }
+
         // 添加订单项列表
         if (order.getItems() != null && !order.getItems().isEmpty()) {
             Label itemsLabel = new Label("订单项:");
@@ -435,7 +464,7 @@ public class AdminManageOrderPanel extends BorderPane {
                 VBox itemInfo = new VBox(5);
                 itemInfo.getChildren().addAll(
                         new Label("商品: " + item.getItem().getItemName()),
-                        new Label("价格: " + (item.getPrice() / 100.0) + "元"),
+                        new Label("价格: " + (item.getItemPrice() / 100.0) + "元"),
                         new Label("数量: " + item.getAmount()),
                         new Label("条形码: " + item.getItem().getBarcode())
                 );

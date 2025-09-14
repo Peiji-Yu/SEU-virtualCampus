@@ -5,14 +5,13 @@ public class OrderItem {
     private String uuid;
     private String orderUuid;
     private String itemUuid;
-    private int price; // 单价(分)
+    private int itemPrice; // 总价(分)
     private int amount;
     private Item item;
 
     public String getUuid() {
         return uuid;
     }
-
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
@@ -20,7 +19,6 @@ public class OrderItem {
     public String getOrderUuid() {
         return orderUuid;
     }
-
     public void setOrderUuid(String orderUuid) {
         this.orderUuid = orderUuid;
     }
@@ -28,23 +26,20 @@ public class OrderItem {
     public String getItemUuid() {
         return itemUuid;
     }
-
     public void setItemUuid(String itemUuid) {
         this.itemUuid = itemUuid;
     }
 
-    public int getPrice() {
-        return price;
+    public int getItemPrice() {
+        return itemPrice;
     }
-
-    public void setPrice(int price) {
-        this.price = price;
+    public void setItemPrice(int price) {
+        this.itemPrice = price;
     }
 
     public int getAmount() {
         return amount;
     }
-
     public void setAmount(int amount) {
         this.amount = amount;
     }
@@ -52,12 +47,7 @@ public class OrderItem {
     public Item getItem() {
         return item;
     }
-
     public void setItem(Item item) {
         this.item = item;
-    }
-
-    public String getItemName() {
-        return item != null ? item.getItemName() : "未知商品";
     }
 }

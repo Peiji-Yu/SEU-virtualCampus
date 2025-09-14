@@ -77,11 +77,11 @@ public interface StoreMapper {
     @Select("SELECT * FROM store_item WHERE category = #{category}")
     List<StoreItem> findItemsByCategory(@Param("category") String category);
 
-    /**
-     * 获取所有商品类别
-     */
-    @Select("SELECT DISTINCT category FROM store_item")
-    List<String> findAllCategories();
+//    /**
+//     * 获取所有商品类别
+//     */
+//    @Select("SELECT DISTINCT category FROM store_item")
+//    List<String> findAllCategories();
 
     /**
      * 按类别和关键词搜索商品
@@ -219,20 +219,37 @@ public interface StoreMapper {
     // 销售统计相关操作
 
     /**
-     * 获取商品销售统计
+     * 获取商品销售统计（总的）
      */
     @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
             "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
-            "WHERE st.status = true " +
+            "WHERE st.status = '已支付' " +
             "GROUP BY si.uuid, si.item_name " +
             "ORDER BY total_revenue DESC")
     List<SalesStats> getSalesStatistics();
 
     /**
+     * 获取商品销售统计（总的）
+     */
+    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
+            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
+            "WHERE st.status = '已支付' AND DATE(time) = CURDATE()" +
+            "GROUP BY si.uuid, si.item_name " +
+            "ORDER BY total_revenue DESC")
+    List<SalesStats> getTodaySalesStatistics();
+
+    /**
+     * 获取销售总额
+     */
+    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
+            "WHERE status = '已支付'")
+    Integer getSalesRevenue();
+
+    /**
      * 获取今日销售总额
      */
     @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
-            "WHERE status = true AND DATE(time) = CURDATE()")
+            "WHERE status = '已支付' AND DATE(time) = CURDATE()")
     Integer getTodaySalesRevenue();
 
     // 销售统计结果映射类

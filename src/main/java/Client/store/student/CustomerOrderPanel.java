@@ -1,7 +1,6 @@
 package Client.store.student;
 
 import Client.ClientNetworkHelper;
-import Client.store.util.StoreUtils;
 import Client.store.util.model.Order;
 import Client.store.util.model.OrderItem;
 import Client.util.adapter.LocalDateAdapter;
@@ -29,8 +28,8 @@ public class CustomerOrderPanel extends BorderPane {
     private VBox ordersContainer;
     private TextField searchField;
     private Label statusLabel;
-    private Label resultsLabel;
     private Button refreshBtn;
+    private Map<String, Boolean> expandedOrders = new HashMap<>();
 
     private Gson gson;
 
@@ -99,10 +98,6 @@ public class CustomerOrderPanel extends BorderPane {
         topContainer.getChildren().addAll(titleLabel, searchBox);
         setTop(topContainer);
 
-        // 结果数量标签
-        resultsLabel = new Label("加载中...");
-        resultsLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
-
         // 中心订单展示区域
         ordersContainer = new VBox(15);
         ordersContainer.setPadding(new Insets(10));
@@ -112,7 +107,7 @@ public class CustomerOrderPanel extends BorderPane {
         scrollPane.setStyle("-fx-background-color: transparent;");
 
         VBox centerBox = new VBox(10);
-        centerBox.getChildren().addAll(resultsLabel, scrollPane);
+        centerBox.getChildren().addAll(scrollPane);
         setCenter(centerBox);
 
         // 底部状态栏
@@ -156,14 +151,12 @@ public class CustomerOrderPanel extends BorderPane {
                 } else {
                     Platform.runLater(() -> {
                         setStatus("加载失败: " + responseMap.get("message"), "error");
-                        resultsLabel.setText("加载失败");
                         refreshBtn.setDisable(false);
                     });
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     setStatus("通信错误: " + e.getMessage(), "error");
-                    resultsLabel.setText("通信错误");
                     refreshBtn.setDisable(false);
                 });
                 e.printStackTrace();
@@ -175,7 +168,6 @@ public class CustomerOrderPanel extends BorderPane {
         String keyword = searchField.getText().trim().toLowerCase();
         if (keyword.isEmpty()) {
             displayOrders(orders);
-            resultsLabel.setText("显示全部 " + orders.size() + " 个订单");
             return;
         }
 
@@ -187,7 +179,6 @@ public class CustomerOrderPanel extends BorderPane {
         }
 
         displayOrders(filteredOrders);
-        resultsLabel.setText("找到 " + filteredOrders.size() + " 个订单");
     }
 
     private void displayOrders(List<Order> orderList) {
@@ -216,7 +207,11 @@ public class CustomerOrderPanel extends BorderPane {
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
         card.setSpacing(10);
 
-        // 订单基本信息区域
+        // 存储订单ID和展开状态
+        String orderId = order.getUuid().toString();
+        boolean isExpanded = expandedOrders.getOrDefault(orderId, false);
+
+        // 订单基本信息区域（始终显示）
         HBox summaryBox = new HBox();
         summaryBox.setAlignment(Pos.CENTER_LEFT);
         summaryBox.setSpacing(15);
@@ -251,42 +246,162 @@ public class CustomerOrderPanel extends BorderPane {
 
         summaryBox.getChildren().addAll(statusIndicator, infoBox, statusBox);
 
-        // 操作按钮区域
-        HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        // 详细信息区域（默认折叠）
+        VBox detailBox = new VBox(10);
+        detailBox.setVisible(isExpanded);
+        detailBox.setManaged(isExpanded);
 
-        Button detailBtn = new Button("详情");
-        detailBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; " +
-                "-fx-padding: 8 16; -fx-background-radius: 5;");
-        detailBtn.setOnAction(e -> showOrderDetail(order));
-
-        // 根据订单状态显示不同按钮
-        if ("待支付".equals(order.getStatus())) {
-            Button payBtn = new Button("支付");
-            payBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; " +
-                    "-fx-padding: 8 16; -fx-background-radius: 5;");
-            payBtn.setOnAction(e -> payOrder(order.getUuid().toString()));
-
-            Button cancelBtn = new Button("取消");
-            cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
-                    "-fx-padding: 8 16; -fx-background-radius: 5;");
-            cancelBtn.setOnAction(e -> cancelOrder(order.getUuid().toString()));
-
-            buttonBox.getChildren().addAll(detailBtn, payBtn, cancelBtn);
-        } else if ("已支付".equals(order.getStatus())) {
-            Button refundBtn = new Button("申请退款");
-            refundBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 14px; " +
-                    "-fx-padding: 8 16; -fx-background-radius: 5;");
-            refundBtn.setOnAction(e -> refundOrder(order.getUuid().toString()));
-
-            buttonBox.getChildren().addAll(detailBtn, refundBtn);
-        } else {
-            buttonBox.getChildren().add(detailBtn);
+        if (isExpanded) {
+            // 添加详细信息
+            addOrderDetails(detailBox, order);
         }
 
-        card.getChildren().addAll(summaryBox, buttonBox);
+        // 操作按钮区域（仅在展开时显示）
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.setVisible(isExpanded);
+        buttonBox.setManaged(isExpanded);
+
+        if (isExpanded) {
+            // 根据订单状态显示不同按钮
+            if ("待支付".equals(order.getStatus())) {
+                Button payBtn = new Button("支付");
+                payBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; " +
+                        "-fx-padding: 8 16; -fx-background-radius: 5;");
+                payBtn.setOnAction(e -> payOrder(order.getUuid().toString()));
+
+                Button cancelBtn = new Button("取消");
+                cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
+                        "-fx-padding: 8 16; -fx-background-radius: 5;");
+                cancelBtn.setOnAction(e -> cancelOrder(order.getUuid().toString()));
+
+                buttonBox.getChildren().addAll(payBtn, cancelBtn);
+            }
+        }
+
+        card.getChildren().addAll(summaryBox, detailBox, buttonBox);
+
+        // 点击卡片切换展开状态
+        card.setOnMouseClicked(e -> {
+            if (e.getClickCount() == 1) {
+                boolean newExpandedState = !expandedOrders.getOrDefault(orderId, false);
+                expandedOrders.put(orderId, newExpandedState);
+
+                detailBox.setVisible(newExpandedState);
+                detailBox.setManaged(newExpandedState);
+                buttonBox.setVisible(newExpandedState);
+                buttonBox.setManaged(newExpandedState);
+
+                if (newExpandedState) {
+                    addOrderDetails(detailBox, order);
+
+                    // 如果待支付，添加支付和取消按钮
+                    if ("待支付".equals(order.getStatus())) {
+                        Button payBtn = new Button("支付");
+                        payBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; " +
+                                "-fx-padding: 8 16; -fx-background-radius: 5;");
+                        payBtn.setOnAction(event -> payOrder(order.getUuid().toString()));
+
+                        Button cancelBtn = new Button("取消");
+                        cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
+                                "-fx-padding: 8 16; -fx-background-radius: 5;");
+                        cancelBtn.setOnAction(event -> cancelOrder(order.getUuid().toString()));
+
+                        buttonBox.getChildren().setAll(payBtn, cancelBtn);
+                    } else {
+                        buttonBox.getChildren().clear();
+                    }
+                }
+            }
+        });
 
         return card;
+    }
+
+    private void addOrderDetails(VBox detailBox, Order order) {
+        detailBox.getChildren().clear();
+
+        // 创建详细信息网格
+        GridPane detailGrid = new GridPane();
+        detailGrid.setHgap(15);
+        detailGrid.setVgap(10);
+        detailGrid.setPadding(new Insets(10, 0, 0, 0));
+
+        // 添加详细信息
+        detailGrid.add(new Label("订单号:"), 0, 0);
+        detailGrid.add(new Label(order.getUuid().toString()), 1, 0);
+
+        detailGrid.add(new Label("订单时间:"), 0, 1);
+        detailGrid.add(new Label(order.getTime()), 1, 1);
+
+        detailGrid.add(new Label("订单状态:"), 0, 2);
+        Label statusDetailLabel = new Label(order.getStatus());
+        statusDetailLabel.setStyle("-fx-text-fill: " + getStatusColor(order.getStatus()) + "; -fx-font-weight: bold;");
+        detailGrid.add(statusDetailLabel, 1, 2);
+
+        detailGrid.add(new Label("订单金额:"), 0, 3);
+        detailGrid.add(new Label(order.getTotalYuan() + "元"), 1, 3);
+
+        if (order.getRemark() != null && !order.getRemark().isEmpty()) {
+            detailGrid.add(new Label("备注:"), 0, 4);
+            detailGrid.add(new Label(order.getRemark()), 1, 4);
+        }
+
+        detailBox.getChildren().add(detailGrid);
+
+        try {
+            // 构建获取订单详细信息请求
+            Map<String, Object> data = new HashMap<>();
+            data.put("orderId", order.getUuid().toString());
+            Request request = new Request("getOrder", data);
+
+            // 使用ClientNetworkHelper发送请求
+            String response = ClientNetworkHelper.send(request);
+
+            // 解析响应
+            Map<String, Object> responseMap = gson.fromJson(response, Map.class);
+            int code = ((Double) responseMap.get("code")).intValue();
+
+            if (code == 200) {
+                // 提取订单详情
+                Order detail_order = gson.fromJson(gson.toJson(responseMap.get("data")), Order.class);
+                order.setItems(detail_order.getItems());
+            } else {
+                Platform.runLater(() -> {
+                    setStatus("加载失败: " + responseMap.get("message"), "error");
+                });
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                setStatus("通信错误: " + e.getMessage(), "error");
+            });
+            e.printStackTrace();
+        }
+
+        // 添加订单项列表
+        if (order.getItems() != null && !order.getItems().isEmpty()) {
+            Label itemsLabel = new Label("订单项:");
+            itemsLabel.setStyle("-fx-font-weight: bold; -fx-padding: 10 0 5 0;");
+            detailBox.getChildren().add(itemsLabel);
+
+            for (OrderItem item : order.getItems()) {
+                HBox itemBox = new HBox(15);
+                itemBox.setPadding(new Insets(10));
+                itemBox.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 8;");
+                itemBox.setAlignment(Pos.CENTER_LEFT);
+
+                VBox itemInfo = new VBox(5);
+                itemInfo.getChildren().addAll(
+                        new Label("商品: " + item.getItem().getItemName()),
+                        new Label("价格: " + (item.getItemPrice() / 100.0) + "元"),
+                        new Label("数量: " + item.getAmount()),
+                        new Label("条形码: " + item.getItem().getBarcode())
+                );
+
+                itemBox.getChildren().add(itemInfo);
+                detailBox.getChildren().add(itemBox);
+            }
+        }
     }
 
     private String getStatusColor(String status) {
@@ -297,115 +412,6 @@ public class CustomerOrderPanel extends BorderPane {
             case "已退款": return "#95a5a6";
             default: return "#34495e";
         }
-    }
-
-    private void showOrderDetail(Order order) {
-        new Thread(() -> {
-            try {
-                Platform.runLater(() -> setStatus("加载订单详情中...", "info"));
-
-                // 构建获取订单详情请求
-                Map<String, Object> data = new HashMap<>();
-                data.put("orderId", order.getUuid());
-                Request request = new Request("getOrder", data);
-
-                // 使用ClientNetworkHelper发送请求
-                String response = ClientNetworkHelper.send(request);
-
-                // 解析响应
-                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                int code = ((Double) responseMap.get("code")).intValue();
-
-                if (code == 200) {
-                    // 提取订单详情
-                    Order detailedOrder = gson.fromJson(gson.toJson(responseMap.get("data")), Order.class);
-
-                    Platform.runLater(() -> {
-                        // 创建并显示订单详情对话框
-                        Dialog<Void> dialog = new Dialog<>();
-                        dialog.setTitle("订单详情");
-                        dialog.setHeaderText("订单号: " + detailedOrder.getUuid());
-
-                        // 设置对话框样式
-                        DialogPane dialogPane = dialog.getDialogPane();
-                        dialogPane.setStyle("-fx-font-size: 14px;");
-
-                        // 创建详情内容
-                        VBox content = new VBox(10);
-                        content.setPadding(new Insets(10));
-
-                        GridPane detailGrid = new GridPane();
-                        detailGrid.setHgap(15);
-                        detailGrid.setVgap(10);
-                        detailGrid.setPadding(new Insets(10, 0, 0, 0));
-
-                        // 添加详细信息
-                        detailGrid.add(new Label("订单号:"), 0, 0);
-                        detailGrid.add(new Label(detailedOrder.getUuid().toString()), 1, 0);
-
-                        detailGrid.add(new Label("订单时间:"), 0, 1);
-                        detailGrid.add(new Label(detailedOrder.getTime()), 1, 1);
-
-                        detailGrid.add(new Label("订单状态:"), 0, 2);
-                        Label statusDetailLabel = new Label(detailedOrder.getStatus());
-                        statusDetailLabel.setStyle("-fx-text-fill: " + getStatusColor(detailedOrder.getStatus()) + "; -fx-font-weight: bold;");
-                        detailGrid.add(statusDetailLabel, 1, 2);
-
-                        detailGrid.add(new Label("订单金额:"), 0, 3);
-                        detailGrid.add(new Label(detailedOrder.getTotalYuan() + "元"), 1, 3);
-
-                        if (detailedOrder.getRemark() != null && !detailedOrder.getRemark().isEmpty()) {
-                            detailGrid.add(new Label("备注:"), 0, 4);
-                            detailGrid.add(new Label(detailedOrder.getRemark()), 1, 4);
-                        }
-
-                        content.getChildren().add(detailGrid);
-
-                        // 添加商品列表
-                        if (detailedOrder.getItems() != null && !detailedOrder.getItems().isEmpty()) {
-                            Label itemsLabel = new Label("商品列表:");
-                            itemsLabel.setStyle("-fx-font-weight: bold; -fx-padding: 10 0 5 0;");
-                            content.getChildren().add(itemsLabel);
-
-                            for (OrderItem item : detailedOrder.getItems()) {
-                                HBox itemBox = new HBox(15);
-                                itemBox.setPadding(new Insets(10));
-                                itemBox.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 8;");
-                                itemBox.setAlignment(Pos.CENTER_LEFT);
-
-                                VBox itemInfo = new VBox(5);
-                                itemInfo.getChildren().addAll(
-                                        new Label("商品: " + item.getItem().getItemName()),
-                                        new Label("价格: " + (item.getPrice() / 100.0) + "元"),
-                                        new Label("数量: " + item.getAmount()),
-                                        new Label("条形码: " + item.getItem().getBarcode())
-                                );
-
-                                itemBox.getChildren().add(itemInfo);
-                                content.getChildren().add(itemBox);
-                            }
-                        }
-
-                        dialog.getDialogPane().setContent(content);
-                        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-                        dialog.showAndWait();
-
-                        setStatus("订单详情加载完成", "success");
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        setStatus("加载订单详情失败: " + responseMap.get("message"), "error");
-                        showAlert("错误", "加载订单详情失败: " + responseMap.get("message"));
-                    });
-                }
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    setStatus("加载订单详情错误: " + e.getMessage(), "error");
-                    showAlert("错误", "加载订单详情时发生错误: " + e.getMessage());
-                });
-                e.printStackTrace();
-            }
-        }).start();
     }
 
     private void payOrder(String orderId) {
@@ -499,64 +505,6 @@ public class CustomerOrderPanel extends BorderPane {
                 }
             }).start();
         }
-    }
-
-    private void refundOrder(String orderId) {
-        // 创建退款确认对话框
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("申请退款");
-        dialog.setHeaderText("确认要对订单 " + orderId + " 申请退款吗？");
-        dialog.setContentText("退款原因(可选):");
-
-        // 设置对话框样式
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.setStyle("-fx-font-size: 14px;");
-
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(reason -> {
-            new Thread(() -> {
-                try {
-                    Platform.runLater(() -> setStatus("申请退款中...", "info"));
-
-                    // 构建退款请求
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("orderId", orderId);
-
-                    if (!reason.trim().isEmpty()) {
-                        data.put("reason", reason.trim());
-                    }
-
-                    Request request = new Request("refundOrder", data);
-
-                    // 使用ClientNetworkHelper发送请求
-                    String response = ClientNetworkHelper.send(request);
-
-                    // 解析响应
-                    Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                    int code = ((Double) responseMap.get("code")).intValue();
-
-                    if (code == 200) {
-                        Platform.runLater(() -> {
-                            setStatus("退款申请已提交", "success");
-                            showAlert("成功", "退款申请已提交，等待处理");
-                            // 刷新订单列表
-                            loadOrders();
-                        });
-                    } else {
-                        Platform.runLater(() -> {
-                            setStatus("退款申请失败: " + responseMap.get("message"), "error");
-                            showAlert("错误", "退款申请失败: " + responseMap.get("message"));
-                        });
-                    }
-                } catch (Exception e) {
-                    Platform.runLater(() -> {
-                        setStatus("退款申请错误: " + e.getMessage(), "error");
-                        showAlert("错误", "退款申请过程中发生错误: " + e.getMessage());
-                    });
-                    e.printStackTrace();
-                }
-            }).start();
-        });
     }
 
     private void showAlert(String title, String message) {

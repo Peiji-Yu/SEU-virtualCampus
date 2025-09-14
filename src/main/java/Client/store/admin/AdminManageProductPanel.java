@@ -40,7 +40,6 @@ public class AdminManageProductPanel extends BorderPane {
         gson = gsonBuilder.create();
 
         initializeUI();
-        loadCategories();
         loadAllItems();
     }
 
@@ -98,6 +97,12 @@ public class AdminManageProductPanel extends BorderPane {
         categoryCombo.setPrefHeight(35);
         categoryCombo.setStyle("-fx-font-size: 14px; -fx-background-radius: 5;");
 
+        List<String> categories =  Arrays.asList("书籍", "文具", "食品", "日用品", "电子产品", "其他");
+        categoryCombo.getItems().clear();
+        categoryCombo.getItems().add("所有类别");
+        categoryCombo.getItems().addAll(categories);
+        categoryCombo.getSelectionModel().selectFirst();
+
         categoryBox.getChildren().addAll(categoryLabel, categoryCombo);
 
         searchBox.getChildren().addAll(searchBar, categoryBox);
@@ -120,84 +125,11 @@ public class AdminManageProductPanel extends BorderPane {
         setBottom(statusLabel);
     }
 
-    private void loadCategories() {
-        new Thread(() -> {
-            try {
-                Platform.runLater(() -> setStatus("加载类别中..."));
-
-                // 构建获取类别请求
-                Request request = new Request("getAllCategories", new HashMap<>());
-
-                // 使用ClientNetworkHelper发送请求
-                String response = ClientNetworkHelper.send(request);
-
-                // 解析响应
-                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                int code = ((Double) responseMap.get("code")).intValue();
-
-                if (code == 200) {
-                    // 提取类别列表
-                    Type categoryListType = new TypeToken<List<String>>(){}.getType();
-                    List<String> categories = gson.fromJson(gson.toJson(responseMap.get("data")), categoryListType);
-
-                    // 在UI线程中更新下拉框
-                    Platform.runLater(() -> {
-                        categoryCombo.getItems().clear();
-                        categoryCombo.getItems().add("所有类别");
-                        categoryCombo.getItems().addAll(categories);
-                        categoryCombo.getSelectionModel().selectFirst();
-                        setStatus("类别加载完成");
-                    });
-                } else {
-                    Platform.runLater(() ->
-                            setStatus("加载类别失败: " + responseMap.get("message")));
-                }
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        setStatus("通信错误: " + e.getMessage()));
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
     private void loadAllItems() {
-        new Thread(() -> {
-            try {
-                Platform.runLater(() -> setStatus("加载商品中..."));
+        String keyword = searchField.getText().trim();
+        String category = categoryCombo.getValue();
 
-                // 构建获取所有商品请求
-                Request request = new Request("getAllItems", new HashMap<>());
-
-                // 使用ClientNetworkHelper发送请求
-                String response = ClientNetworkHelper.send(request);
-
-                // 解析响应
-                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                int code = ((Double) responseMap.get("code")).intValue();
-
-                if (code == 200) {
-                    // 提取商品列表
-                    Type itemListType = new TypeToken<List<Item>>(){}.getType();
-                    List<Item> items = gson.fromJson(gson.toJson(responseMap.get("data")), itemListType);
-
-                    // 更新类别
-                    loadCategories();
-
-                    // 在UI线程中更新界面
-                    Platform.runLater(() -> {
-                        displayProducts(items);
-                        setStatus("加载完成，共 " + items.size() + " 个商品");
-                    });
-                } else {
-                    Platform.runLater(() ->
-                            setStatus("加载商品失败: " + responseMap.get("message")));
-                }
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        setStatus("通信错误: " + e.getMessage()));
-                e.printStackTrace();
-            }
-        }).start();
+        searchByKeywordAndCategory(keyword, category);
     }
 
     private void performSearch() {
