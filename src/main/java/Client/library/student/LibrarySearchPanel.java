@@ -1,7 +1,10 @@
 package Client.library.student;
 
-import Client.library.util.component.BookCard;
+import Client.ClientNetworkHelper;
 import Client.library.util.model.Book;
+import Client.library.util.model.BookItem;
+import Client.library.util.model.BookClass;
+import Client.library.util.model.Category;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
@@ -11,13 +14,8 @@ import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 
 import java.lang.reflect.Type;
@@ -26,20 +24,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class LibrarySearchPanel extends BorderPane {
     // UI组件
-    private TextField searchTextField;
+    private TextField searchField;
+    private ComboBox<Category> categoryComboBox;
     private Button searchButton;
+    private Button refreshButton;
     private Label resultsLabel;
     private VBox booksContainer;
-    private ScrollPane scrollPane;
     private Label statusLabel;
 
-    // 当前展开的卡片 - 修改为使用BookCard类型
+    // 当前展开的卡片
     private BookCard currentExpandedCard;
 
-    // JSON处理 - 使用配置了适配器的Gson实例
+    // JSON处理
     private Gson gson;
 
     public LibrarySearchPanel() {
@@ -53,44 +54,66 @@ public class LibrarySearchPanel extends BorderPane {
     }
 
     private void initializeUI() {
-        setPadding(new Insets(15));
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: #f5f7fa;");
 
         // 顶部标题和搜索区域
-        VBox topBox = new VBox(15);
+        VBox topContainer = new VBox(20);
+        topContainer.setPadding(new Insets(0, 0, 20, 0));
 
-        Label titleLabel = new Label("查询图书");
-        titleLabel.setFont(Font.font(20));
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        // 标题
+        Label titleLabel = new Label("图书查询");
+        titleLabel.setFont(Font.font(24));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        HBox searchBox = new HBox(10);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
+        // 搜索区域
+        VBox searchBox = new VBox(15);
+        searchBox.setPadding(new Insets(20));
+        searchBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
 
-        searchTextField = new TextField();
-        searchTextField.setPromptText("输入书名、作者或ISBN进行搜索");
-        searchTextField.setPrefWidth(400);
-        searchTextField.setPrefHeight(40);
-        searchTextField.setStyle("-fx-font-size: 14px;");
+        // 搜索框和按钮
+        HBox searchBar = new HBox(10);
+        searchBar.setAlignment(Pos.CENTER_LEFT);
+
+        searchField = new TextField();
+        searchField.setPromptText("输入书名、作者或ISBN进行搜索");
+        searchField.setPrefHeight(40);
+        searchField.setStyle("-fx-font-size: 14px; -fx-background-radius: 5;");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+
+        // 类别下拉框
+        categoryComboBox = new ComboBox<>();
+        categoryComboBox.getItems().addAll(Category.values());
+        categoryComboBox.setPromptText("选择类别");
+        categoryComboBox.setPrefWidth(150);
+        categoryComboBox.setStyle("-fx-font-size: 14px;");
 
         searchButton = new Button("搜索");
-        searchButton.setPrefWidth(80);
-        searchButton.setPrefHeight(40);
-        searchButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
-        searchButton.setOnAction(event -> performSearch());
+        searchButton.setPrefSize(100, 40);
+        searchButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+        searchButton.setOnAction(e -> performSearch());
 
-        searchBox.getChildren().addAll(searchTextField, searchButton);
+        refreshButton = new Button("刷新");
+        refreshButton.setPrefSize(100, 40);
+        refreshButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+        refreshButton.setOnAction(e -> performSearch());
 
-        // 结果数量标签
+        searchBar.getChildren().addAll(searchField, categoryComboBox, searchButton, refreshButton);
+
+        // 结果标签
         resultsLabel = new Label("找到 0 本图书");
-        resultsLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+        resultsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #34495e;");
 
-        topBox.getChildren().addAll(titleLabel, searchBox, resultsLabel);
-        setTop(topBox);
+        searchBox.getChildren().addAll(searchBar, resultsLabel);
+        topContainer.getChildren().addAll(titleLabel, searchBox);
+        setTop(topContainer);
 
-        // 中心图书列表区域
+        // 中心图书展示区域
         booksContainer = new VBox(15);
-        booksContainer.setPadding(new Insets(10, 0, 10, 0));
+        booksContainer.setPadding(new Insets(10));
 
-        scrollPane = new ScrollPane(booksContainer);
+        ScrollPane scrollPane = new ScrollPane(booksContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
         setCenter(scrollPane);
@@ -98,12 +121,13 @@ public class LibrarySearchPanel extends BorderPane {
         // 底部状态栏
         statusLabel = new Label("就绪");
         statusLabel.setPadding(new Insets(10, 0, 0, 0));
-        statusLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
         setBottom(statusLabel);
     }
 
     private void performSearch() {
-        String searchText = searchTextField.getText().trim();
+        String searchText = searchField.getText().trim();
+        Category selectedCategory = categoryComboBox.getValue();
 
         new Thread(() -> {
             try {
@@ -112,166 +136,73 @@ public class LibrarySearchPanel extends BorderPane {
                 // 构建搜索请求
                 Map<String, Object> data = new HashMap<>();
                 data.put("searchText", searchText.isEmpty() ? "" : searchText);
+                data.put("category", selectedCategory != null ? selectedCategory.name() : null);
+
                 Request request = new Request("searchBooks", data);
 
-//                // 使用ClientNetworkHelper发送请求
-//                String response = ClientNetworkHelper.send(request);
-//                System.out.println("服务器响应: " + response);
-
-                // 模拟服务器响应
-                String response = "{\n" +
-                        "  \"code\": 200,\n" +
-                        "  \"message\": \"搜索成功\",\n" +
-                        "  \"data\": [\n" +
-                        "    {\n" +
-                        "      \"title\": \"Java编程思想\",\n" +
-                        "      \"author\": \"Bruce Eckel\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111213826\",\n" +
-                        "      \"description\": \"Java学习经典书籍，全面介绍Java编程语言特性和面向对象程序设计思想\",\n" +
-                        "      \"totalCopies\": 5,\n" +
-                        "      \"availableCopies\": 3,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"1987bb9a-e5d3-4a14-82d7-879e0e15c83c\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f30216a5-09f2-47e4-ad40-3cfdcdc9c0ea\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"10537680-9ae7-4d99-9ced-bcf8aa3e30ea\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"691df85d-7895-406e-bc75-20ca9f1f208f\",\n" +
-                        "          \"location\": \"B区1排5架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"36cab9d8-021a-474f-890a-d64e7e09880a\",\n" +
-                        "          \"location\": \"B区1排5架\",\n" +
-                        "          \"status\": \"已预约\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"title\": \"深入理解计算机系统\",\n" +
-                        "      \"author\": \"Randal E. Bryant, David R. O'Hallaron\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111544937\",\n" +
-                        "      \"description\": \"计算机系统经典教材，从程序员的视角深入理解计算机系统的工作原理\",\n" +
-                        "      \"totalCopies\": 3,\n" +
-                        "      \"availableCopies\": 1,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"ff85f69b-ff3a-4b8e-b490-e3956f567e5a\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"711bfcc6-99cd-42b5-89e6-930ede35dbc3\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"2ad1aee1-25ea-4777-a5de-8e7b144a99c0\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"title\": \"算法导论\",\n" +
-                        "      \"author\": \"Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111407010\",\n" +
-                        "      \"description\": \"算法领域的经典权威著作，全面深入地介绍了算法设计与分析\",\n" +
-                        "      \"totalCopies\": 4,\n" +
-                        "      \"availableCopies\": 2,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f77c0f64-8fd2-4153-9dc7-2bf7bcadb9bd\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"2854bb4f-5321-42eb-ba83-fcc4dbf580db\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"8555ebb3-6319-4e75-937c-989f19b5be92\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f0ae2ab2-a52c-45bb-aac6-26b9a49ac880\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}";
+                // 使用ClientNetworkHelper发送请求
+                String response = ClientNetworkHelper.send(request);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
                 int code = ((Double) responseMap.get("code")).intValue();
 
                 if (code == 200) {
-                    // 提取图书列表
-                    Type bookListType = new TypeToken<List<Book>>(){}.getType();
-                    List<Book> books = gson.fromJson(gson.toJson(responseMap.get("data")), bookListType);
+                    // 提取图书类别列表
+                    Type bookClassListType = new TypeToken<List<BookClass>>(){}.getType();
+                    List<BookClass> bookClasses = gson.fromJson(gson.toJson(responseMap.get("data")), bookClassListType);
+
+                    // 为每个图书类别获取对应的图书副本
+                    List<CompletableFuture<Book>> bookFutures = bookClasses.stream()
+                            .map(bookClass -> CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    // 请求获取该ISBN对应的所有图书副本
+                                    Map<String, Object> itemData = new HashMap<>();
+                                    itemData.put("isbn", bookClass.getIsbn());
+                                    Request itemRequest = new Request("searchBookItems", itemData);
+
+                                    String itemResponse = ClientNetworkHelper.send(itemRequest);
+                                    Map<String, Object> itemResponseMap = gson.fromJson(itemResponse, Map.class);
+                                    int itemCode = ((Double) itemResponseMap.get("code")).intValue();
+
+                                    if (itemCode == 200) {
+                                        Type itemListType = new TypeToken<List<BookItem>>(){}.getType();
+                                        List<BookItem> items = gson.fromJson(
+                                                gson.toJson(itemResponseMap.get("data")), itemListType);
+
+                                        // 创建Book对象并设置BookClass和BookItems
+                                        Book book = new Book();
+                                        book.setBookClass(bookClass);
+                                        book.setItems(items);
+                                        return book;
+                                    } else {
+                                        // 如果获取副本失败，创建一个只有BookClass的Book对象
+                                        Book book = new Book();
+                                        book.setBookClass(bookClass);
+                                        book.setItems(List.of());
+                                        return book;
+                                    }
+                                } catch (Exception e) {
+                                    // 发生异常时创建一个只有BookClass的Book对象
+                                    Book book = new Book();
+                                    book.setBookClass(bookClass);
+                                    book.setItems(List.of());
+                                    return book;
+                                }
+                            }))
+                            .collect(Collectors.toList());
+
+                    // 等待所有异步任务完成
+                    CompletableFuture.allOf(bookFutures.toArray(new CompletableFuture[0])).join();
+
+                    // 获取所有Book对象
+                    List<Book> books = bookFutures.stream()
+                            .map(CompletableFuture::join)
+                            .collect(Collectors.toList());
 
                     // 在UI线程中更新界面
                     Platform.runLater(() -> {
-                        booksContainer.getChildren().clear();
-                        // 重置当前展开的卡片
-                        currentExpandedCard = null;
-
-                        if (books.isEmpty()) {
-                            Label noResults = new Label("未找到相关图书");
-                            noResults.setStyle("-fx-text-fill: #666; -fx-font-size: 16px; -fx-padding: 20;");
-                            booksContainer.getChildren().add(noResults);
-                            resultsLabel.setText("找到 0 本图书");
-                        } else {
-                            for (Book book : books) {
-                                BookCard card = new BookCard(book);
-
-                                // 设置卡片点击事件，实现每次只展开一个
-                                card.setOnMouseClicked(event -> {
-                                    // 阻止事件冒泡
-                                    event.consume();
-
-                                    // 如果已经有展开的卡片且不是当前卡片，则先关闭它
-                                    if (currentExpandedCard != null && currentExpandedCard != card && currentExpandedCard.isExpanded()) {
-                                        currentExpandedCard.collapse();
-                                    }
-
-                                    // 切换当前卡片的展开状态
-                                    card.toggleExpand();
-
-                                    // 更新当前展开的卡片引用
-                                    if (card.isExpanded()) {
-                                        currentExpandedCard = card;
-                                    } else {
-                                        // 如果当前卡片被折叠了，且它是之前展开的卡片，则清空引用
-                                        if (currentExpandedCard == card) {
-                                            currentExpandedCard = null;
-                                        }
-                                    }
-                                });
-
-                                booksContainer.getChildren().add(card);
-                            }
-                            resultsLabel.setText("找到 " + books.size() + " 本图书");
-                        }
-
+                        displayBooks(books);
                         setStatus("搜索完成");
                     });
                 } else {
@@ -290,7 +221,214 @@ public class LibrarySearchPanel extends BorderPane {
         }).start();
     }
 
+    private void displayBooks(List<Book> books) {
+        booksContainer.getChildren().clear();
+        currentExpandedCard = null;
+
+        if (books.isEmpty()) {
+            Label emptyLabel = new Label("没有找到图书");
+            emptyLabel.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 16px; -fx-padding: 40;");
+            emptyLabel.setAlignment(Pos.CENTER);
+            booksContainer.getChildren().add(emptyLabel);
+            resultsLabel.setText("找到 0 本图书");
+            return;
+        }
+
+        for (Book book : books) {
+            BookCard card = new BookCard(book);
+
+            // 设置卡片点击事件，实现每次只展开一个
+            card.setOnMouseClicked(event -> {
+                // 如果已经有展开的卡片且不是当前卡片，则先关闭它
+                if (currentExpandedCard != null && currentExpandedCard != card && currentExpandedCard.isExpanded()) {
+                    currentExpandedCard.collapse();
+                }
+
+                // 切换当前卡片的展开状态
+                card.toggleExpand();
+
+                // 更新当前展开的卡片引用
+                if (card.isExpanded()) {
+                    currentExpandedCard = card;
+                } else {
+                    // 如果当前卡片被折叠了，且它是之前展开的卡片，则清空引用
+                    if (currentExpandedCard == card) {
+                        currentExpandedCard = null;
+                    }
+                }
+            });
+
+            booksContainer.getChildren().add(card);
+        }
+
+        resultsLabel.setText("找到 " + books.size() + " 本图书");
+    }
+
     private void setStatus(String message) {
-        statusLabel.setText(message);
+        statusLabel.setText("状态: " + message);
+    }
+
+    // 内部类：图书卡片
+    private static class BookCard extends VBox {
+        private final Book book;
+        private boolean expanded = false;
+        private VBox detailBox;
+
+        public BookCard(Book book) {
+            this.book = book;
+            initializeUI();
+        }
+
+        private void initializeUI() {
+            setPadding(new Insets(15));
+            setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                    "-fx-border-color: #e0e0e0; -fx-border-radius: 10; -fx-border-width: 1; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
+            setSpacing(10);
+
+            // 图书基本信息区域（始终显示）
+            HBox summaryBox = new HBox();
+            summaryBox.setAlignment(Pos.CENTER_LEFT);
+            summaryBox.setSpacing(15);
+
+            // 图书基本信息
+            VBox infoBox = new VBox(5);
+            infoBox.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+            BookClass bookClass = book.getBookClass();
+            Label nameLabel = new Label(bookClass.getName());
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+
+            Label authorLabel = new Label("作者: " + bookClass.getAuthor());
+            authorLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+
+            infoBox.getChildren().addAll(nameLabel, authorLabel);
+
+            // 图书状态信息
+            VBox statusBox = new VBox(5);
+            statusBox.setAlignment(Pos.CENTER_RIGHT);
+
+            Label isbnLabel = new Label("ISBN: " + bookClass.getIsbn());
+            isbnLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
+
+            // 计算可借数量（状态为INLIBRARY的图书副本数量）
+            long availableCount = book.getItems().stream()
+                    .filter(item -> item.getBookStatus().name().equals("INLIBRARY"))
+                    .count();
+
+            Label inventoryLabel = new Label("库存: " + bookClass.getInventory() + " | 可借: " + availableCount);
+            inventoryLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
+
+            statusBox.getChildren().addAll(isbnLabel, inventoryLabel);
+
+            summaryBox.getChildren().addAll(infoBox, statusBox);
+
+            // 详细信息区域（默认折叠）
+            detailBox = new VBox(10);
+            detailBox.setVisible(false);
+            detailBox.setManaged(false);
+
+            getChildren().addAll(summaryBox, detailBox);
+        }
+
+        public void toggleExpand() {
+            expanded = !expanded;
+            detailBox.setVisible(expanded);
+            detailBox.setManaged(expanded);
+
+            if (expanded) {
+                addBookDetails();
+            } else {
+                detailBox.getChildren().clear();
+            }
+        }
+
+        public void collapse() {
+            if (expanded) {
+                expanded = false;
+                detailBox.setVisible(false);
+                detailBox.setManaged(false);
+                detailBox.getChildren().clear();
+            }
+        }
+
+        public boolean isExpanded() {
+            return expanded;
+        }
+
+        private void addBookDetails() {
+            detailBox.getChildren().clear();
+
+            BookClass bookClass = book.getBookClass();
+
+            // 创建详细信息网格
+            GridPane detailGrid = new GridPane();
+            detailGrid.setHgap(15);
+            detailGrid.setVgap(10);
+            detailGrid.setPadding(new Insets(10, 0, 0, 0));
+
+            // 添加详细信息
+            detailGrid.add(new Label("出版社:"), 0, 0);
+            detailGrid.add(new Label(bookClass.getPublisher()), 1, 0);
+
+            detailGrid.add(new Label("出版日期:"), 0, 1);
+            detailGrid.add(new Label(bookClass.getPublishDate() != null ? bookClass.getPublishDate().toString() : "未知"), 1, 1);
+
+            detailGrid.add(new Label("类别:"), 0, 2);
+            detailGrid.add(new Label(bookClass.getCategory() != null ? bookClass.getCategory().toString() : "未分类"), 1, 2);
+
+            // 图书描述
+            if (bookClass.getDescription() != null && !bookClass.getDescription().isEmpty()) {
+                detailGrid.add(new Label("简介:"), 0, 3);
+                Label descLabel = new Label(bookClass.getDescription());
+                descLabel.setStyle("-fx-wrap-text: true;");
+                descLabel.setMaxWidth(400);
+                detailGrid.add(descLabel, 1, 3);
+            }
+
+            // 添加图书副本信息
+            if (!book.getItems().isEmpty()) {
+                detailGrid.add(new Label("副本信息:"), 0, 4);
+
+                VBox itemsBox = new VBox(5);
+                for (BookItem item : book.getItems()) {
+                    HBox itemBox = new HBox(10);
+                    itemBox.setAlignment(Pos.CENTER_LEFT);
+
+                    Label uuidLabel = new Label("条码: " + item.getUuid());
+                    uuidLabel.setStyle("-fx-font-size: 12px;");
+
+                    Label placeLabel = new Label("位置: " + item.getPlace());
+                    placeLabel.setStyle("-fx-font-size: 12px;");
+
+                    Label statusLabel = new Label("状态: " + item.getBookStatus().getDescription());
+                    statusLabel.setStyle("-fx-font-size: 12px;");
+
+                    // 根据状态设置颜色
+                    switch (item.getBookStatus()) {
+                        case INLIBRARY:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: green;");
+                            break;
+                        case LEND:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: orange;");
+                            break;
+                        case LOST:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: red;");
+                            break;
+                        case REPAIR:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: blue;");
+                            break;
+                    }
+
+                    itemBox.getChildren().addAll(uuidLabel, placeLabel, statusLabel);
+                    itemsBox.getChildren().add(itemBox);
+                }
+
+                detailGrid.add(itemsBox, 1, 4);
+            }
+
+            detailBox.getChildren().add(detailGrid);
+        }
     }
 }

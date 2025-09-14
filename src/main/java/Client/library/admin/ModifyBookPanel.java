@@ -1,7 +1,7 @@
 package Client.library.admin;
 
 import Client.ClientNetworkHelper;
-import Client.library.util.model.Book;
+import Client.library.util.model.*;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
@@ -9,16 +9,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 
 import java.lang.reflect.Type;
@@ -27,18 +21,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class ModifyBookPanel extends BorderPane {
+    // UI组件
     private TextField searchField;
+    private ComboBox<Category> categoryComboBox;
     private Button searchButton;
+    private Button refreshButton;
     private Label resultsLabel;
     private VBox booksContainer;
-    private ScrollPane scrollPane;
     private Label statusLabel;
 
-    // 添加一个变量来跟踪当前展开的卡片
+    // 当前展开的卡片
     private ExpandableBookCard currentExpandedCard;
 
+    // JSON处理
     private Gson gson;
 
     public ModifyBookPanel() {
@@ -52,44 +51,66 @@ public class ModifyBookPanel extends BorderPane {
     }
 
     private void initializeUI() {
-        setPadding(new Insets(15));
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: #f5f7fa;");
 
-        // 顶部搜索区域
-        VBox topBox = new VBox(15);
+        // 顶部标题和搜索区域
+        VBox topContainer = new VBox(20);
+        topContainer.setPadding(new Insets(0, 0, 20, 0));
 
-        Label titleLabel = new Label("修改书籍");
-        titleLabel.setFont(Font.font(20));
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        // 标题
+        Label titleLabel = new Label("图书管理");
+        titleLabel.setFont(Font.font(24));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        HBox searchBox = new HBox(10);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
+        // 搜索区域
+        VBox searchBox = new VBox(15);
+        searchBox.setPadding(new Insets(20));
+        searchBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
+
+        // 搜索框和按钮
+        HBox searchBar = new HBox(10);
+        searchBar.setAlignment(Pos.CENTER_LEFT);
 
         searchField = new TextField();
         searchField.setPromptText("输入书名、作者或ISBN进行搜索");
-        searchField.setPrefWidth(400);
         searchField.setPrefHeight(40);
-        searchField.setStyle("-fx-font-size: 14px;");
+        searchField.setStyle("-fx-font-size: 14px; -fx-background-radius: 5;");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+
+        // 类别下拉框
+        categoryComboBox = new ComboBox<>();
+        categoryComboBox.getItems().addAll(Category.values());
+        categoryComboBox.setPromptText("选择类别");
+        categoryComboBox.setPrefWidth(150);
+        categoryComboBox.setStyle("-fx-font-size: 14px;");
 
         searchButton = new Button("搜索");
-        searchButton.setPrefWidth(80);
-        searchButton.setPrefHeight(40);
-        searchButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
-        searchButton.setOnAction(event -> performSearch());
+        searchButton.setPrefSize(100, 40);
+        searchButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+        searchButton.setOnAction(e -> performSearch());
 
-        searchBox.getChildren().addAll(searchField, searchButton);
+        refreshButton = new Button("刷新");
+        refreshButton.setPrefSize(100, 40);
+        refreshButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+        refreshButton.setOnAction(e -> performSearch());
 
-        // 结果数量标签
-        resultsLabel = new Label("就绪");
-        resultsLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+        searchBar.getChildren().addAll(searchField, categoryComboBox, searchButton, refreshButton);
 
-        topBox.getChildren().addAll(titleLabel, searchBox, resultsLabel);
-        setTop(topBox);
+        // 结果标签
+        resultsLabel = new Label("找到 0 本图书");
+        resultsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #34495e;");
 
-        // 中心图书列表区域
+        searchBox.getChildren().addAll(searchBar, resultsLabel);
+        topContainer.getChildren().addAll(titleLabel, searchBox);
+        setTop(topContainer);
+
+        // 中心图书展示区域
         booksContainer = new VBox(15);
-        booksContainer.setPadding(new Insets(10, 0, 10, 0));
+        booksContainer.setPadding(new Insets(10));
 
-        scrollPane = new ScrollPane(booksContainer);
+        ScrollPane scrollPane = new ScrollPane(booksContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
         setCenter(scrollPane);
@@ -97,12 +118,13 @@ public class ModifyBookPanel extends BorderPane {
         // 底部状态栏
         statusLabel = new Label("就绪");
         statusLabel.setPadding(new Insets(10, 0, 0, 0));
-        statusLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
         setBottom(statusLabel);
     }
 
     private void performSearch() {
         String searchText = searchField.getText().trim();
+        Category selectedCategory = categoryComboBox.getValue();
 
         new Thread(() -> {
             try {
@@ -111,142 +133,73 @@ public class ModifyBookPanel extends BorderPane {
                 // 构建搜索请求
                 Map<String, Object> data = new HashMap<>();
                 data.put("searchText", searchText.isEmpty() ? "" : searchText);
+                data.put("category", selectedCategory != null ? selectedCategory.name() : null);
+
                 Request request = new Request("searchBooks", data);
 
-//                // 使用ClientNetworkHelper发送请求
-//                String response = ClientNetworkHelper.send(request);
-//                System.out.println("搜索响应: " + response);
-
-                // 模拟服务器响应
-                String response = "{\n" +
-                        "  \"code\": 200,\n" +
-                        "  \"message\": \"搜索成功\",\n" +
-                        "  \"data\": [\n" +
-                        "    {\n" +
-                        "      \"title\": \"Java编程思想\",\n" +
-                        "      \"author\": \"Bruce Eckel\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111213826\",\n" +
-                        "      \"description\": \"Java学习经典书籍，全面介绍Java编程语言特性和面向对象程序设计思想\",\n" +
-                        "      \"totalCopies\": 5,\n" +
-                        "      \"availableCopies\": 3,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"1987bb9a-e5d3-4a14-82d7-879e0e15c83c\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f30216a5-09f2-47e4-ad40-3cfdcdc9c0ea\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"10537680-9ae7-4d99-9ced-bcf8aa3e30ea\",\n" +
-                        "          \"location\": \"A区3排2架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"691df85d-7895-406e-bc75-20ca9f1f208f\",\n" +
-                        "          \"location\": \"B区1排5架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"36cab9d8-021a-474f-890a-d64e7e09880a\",\n" +
-                        "          \"location\": \"B区1排5架\",\n" +
-                        "          \"status\": \"已预约\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"title\": \"深入理解计算机系统\",\n" +
-                        "      \"author\": \"Randal E. Bryant, David R. O'Hallaron\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111544937\",\n" +
-                        "      \"description\": \"计算机系统经典教材，从程序员的视角深入理解计算机系统的工作原理\",\n" +
-                        "      \"totalCopies\": 3,\n" +
-                        "      \"availableCopies\": 1,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"ff85f69b-ff3a-4b8e-b490-e3956f567e5a\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"711bfcc6-99cd-42b5-89e6-930ede35dbc3\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"2ad1aee1-25ea-4777-a5de-8e7b144a99c0\",\n" +
-                        "          \"location\": \"C区2排3架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"title\": \"算法导论\",\n" +
-                        "      \"author\": \"Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein\",\n" +
-                        "      \"publisher\": \"机械工业出版社\",\n" +
-                        "      \"isbn\": \"9787111407010\",\n" +
-                        "      \"description\": \"算法领域的经典权威著作，全面深入地介绍了算法设计与分析\",\n" +
-                        "      \"totalCopies\": 4,\n" +
-                        "      \"availableCopies\": 2,\n" +
-                        "      \"copies\": [\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f77c0f64-8fd2-4153-9dc7-2bf7bcadb9bd\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"2854bb4f-5321-42eb-ba83-fcc4dbf580db\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"可借\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"8555ebb3-6319-4e75-937c-989f19b5be92\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        },\n" +
-                        "        {\n" +
-                        "          \"copyId\": \"f0ae2ab2-a52c-45bb-aac6-26b9a49ac880\",\n" +
-                        "          \"location\": \"D区4排1架\",\n" +
-                        "          \"status\": \"已借出\"\n" +
-                        "        }\n" +
-                        "      ]\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}";
+                // 使用ClientNetworkHelper发送请求
+                String response = ClientNetworkHelper.send(request);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
                 int code = ((Double) responseMap.get("code")).intValue();
 
                 if (code == 200) {
-                    // 提取图书列表
-                    Type bookListType = new TypeToken<List<Book>>(){}.getType();
-                    List<Book> books = gson.fromJson(gson.toJson(responseMap.get("data")), bookListType);
+                    // 提取图书类别列表
+                    Type bookClassListType = new TypeToken<List<BookClass>>(){}.getType();
+                    List<BookClass> bookClasses = gson.fromJson(gson.toJson(responseMap.get("data")), bookClassListType);
+
+                    // 为每个图书类别获取对应的图书副本
+                    List<CompletableFuture<Book>> bookFutures = bookClasses.stream()
+                            .map(bookClass -> CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    // 请求获取该ISBN对应的所有图书副本
+                                    Map<String, Object> itemData = new HashMap<>();
+                                    itemData.put("isbn", bookClass.getIsbn());
+                                    Request itemRequest = new Request("searchBookItems", itemData);
+
+                                    String itemResponse = ClientNetworkHelper.send(itemRequest);
+                                    Map<String, Object> itemResponseMap = gson.fromJson(itemResponse, Map.class);
+                                    int itemCode = ((Double) itemResponseMap.get("code")).intValue();
+
+                                    if (itemCode == 200) {
+                                        Type itemListType = new TypeToken<List<BookItem>>(){}.getType();
+                                        List<BookItem> items = gson.fromJson(
+                                                gson.toJson(itemResponseMap.get("data")), itemListType);
+
+                                        // 创建Book对象并设置BookClass和BookItems
+                                        Book book = new Book();
+                                        book.setBookClass(bookClass);
+                                        book.setItems(items);
+                                        return book;
+                                    } else {
+                                        // 如果获取副本失败，创建一个只有BookClass的Book对象
+                                        Book book = new Book();
+                                        book.setBookClass(bookClass);
+                                        book.setItems(List.of());
+                                        return book;
+                                    }
+                                } catch (Exception e) {
+                                    // 发生异常时创建一个只有BookClass的Book对象
+                                    Book book = new Book();
+                                    book.setBookClass(bookClass);
+                                    book.setItems(List.of());
+                                    return book;
+                                }
+                            }))
+                            .collect(Collectors.toList());
+
+                    // 等待所有异步任务完成
+                    CompletableFuture.allOf(bookFutures.toArray(new CompletableFuture[0])).join();
+
+                    // 获取所有Book对象
+                    List<Book> books = bookFutures.stream()
+                            .map(CompletableFuture::join)
+                            .collect(Collectors.toList());
 
                     // 在UI线程中更新界面
                     Platform.runLater(() -> {
-                        booksContainer.getChildren().clear();
-                        // 重置当前展开的卡片
-                        currentExpandedCard = null;
-
-                        if (books.isEmpty()) {
-                            Label noResults = new Label("未找到相关图书");
-                            noResults.setStyle("-fx-text-fill: #666; -fx-font-size: 16px; -fx-padding: 20;");
-                            booksContainer.getChildren().add(noResults);
-                            resultsLabel.setText("找到 0 本图书");
-                        } else {
-                            for (Book book : books) {
-                                // 创建可折叠的卡片
-                                ExpandableBookCard card = new ExpandableBookCard(book);
-                                booksContainer.getChildren().add(card);
-                            }
-                            resultsLabel.setText("找到 " + books.size() + " 本图书");
-                        }
-
+                        displayBooks(books);
                         setStatus("搜索完成");
                     });
                 } else {
@@ -265,153 +218,257 @@ public class ModifyBookPanel extends BorderPane {
         }).start();
     }
 
-    // 可折叠的图书卡片内部类
+    private void displayBooks(List<Book> books) {
+        booksContainer.getChildren().clear();
+        currentExpandedCard = null;
+
+        if (books.isEmpty()) {
+            Label emptyLabel = new Label("没有找到图书");
+            emptyLabel.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 16px; -fx-padding: 40;");
+            emptyLabel.setAlignment(Pos.CENTER);
+            booksContainer.getChildren().add(emptyLabel);
+            resultsLabel.setText("找到 0 本图书");
+            return;
+        }
+
+        for (Book book : books) {
+            ExpandableBookCard card = new ExpandableBookCard(book);
+
+            // 设置卡片点击事件，实现每次只展开一个
+            card.setOnMouseClicked(event -> {
+                // 如果已经有展开的卡片且不是当前卡片，则先关闭它
+                if (currentExpandedCard != null && currentExpandedCard != card && currentExpandedCard.isExpanded()) {
+                    currentExpandedCard.collapse();
+                }
+
+                // 切换当前卡片的展开状态
+                card.toggleExpand();
+
+                // 更新当前展开的卡片引用
+                if (card.isExpanded()) {
+                    currentExpandedCard = card;
+                } else {
+                    // 如果当前卡片被折叠了，且它是之前展开的卡片，则清空引用
+                    if (currentExpandedCard == card) {
+                        currentExpandedCard = null;
+                    }
+                }
+            });
+
+            booksContainer.getChildren().add(card);
+        }
+
+        resultsLabel.setText("找到 " + books.size() + " 本图书");
+    }
+
+    private void setStatus(String message) {
+        statusLabel.setText("状态: " + message);
+    }
+
+    // 内部类：可折叠的图书卡片
     private class ExpandableBookCard extends VBox {
         private final Book book;
-        private boolean isExpanded = false;
-        private VBox detailsBox;
+        private boolean expanded = false;
+        private VBox detailBox;
         private Button modifyButton;
 
         public ExpandableBookCard(Book book) {
             this.book = book;
             initializeUI();
-
-            // 设置点击事件
-            setOnMouseClicked(event -> {
-                // 阻止事件冒泡，避免被父容器处理
-                event.consume();
-                toggleExpand();
-            });
         }
 
         private void initializeUI() {
-            setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
-                    "-fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-border-width: 1; " +
-                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
             setPadding(new Insets(15));
+            setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                    "-fx-border-color: #e0e0e0; -fx-border-radius: 10; -fx-border-width: 1; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
             setSpacing(10);
 
-            // 基本信息区域
-            HBox basicInfoBox = new HBox(10);
-            basicInfoBox.setAlignment(Pos.CENTER_LEFT);
+            // 图书基本信息区域（始终显示）
+            HBox summaryBox = new HBox();
+            summaryBox.setAlignment(Pos.CENTER_LEFT);
+            summaryBox.setSpacing(15);
 
-            VBox titleAuthorBox = new VBox(5);
-            titleAuthorBox.setPrefWidth(400);
+            // 图书基本信息
+            VBox infoBox = new VBox(5);
+            infoBox.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(infoBox, Priority.ALWAYS);
 
-            Label titleLabel = new Label(book.getTitle());
-            titleLabel.setFont(Font.font(16));
-            titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+            BookClass bookClass = book.getBookClass();
+            Label nameLabel = new Label(bookClass.getName());
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
 
-            Label authorLabel = new Label(book.getAuthor() + " | " + book.getPublisher());
+            Label authorLabel = new Label("作者: " + bookClass.getAuthor());
             authorLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
 
-            titleAuthorBox.getChildren().addAll(titleLabel, authorLabel);
+            infoBox.getChildren().addAll(nameLabel, authorLabel);
 
-            HBox copiesBox = new HBox(10);
-            copiesBox.setAlignment(Pos.CENTER_RIGHT);
-            copiesBox.setPrefWidth(200);
+            // 图书状态信息
+            VBox statusBox = new VBox(5);
+            statusBox.setAlignment(Pos.CENTER_RIGHT);
 
-            Label totalLabel = new Label("馆藏: " + book.getTotalCopies());
-            totalLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+            Label isbnLabel = new Label("ISBN: " + bookClass.getIsbn());
+            isbnLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
 
-            Label availableLabel = new Label("可借: " + book.getAvailableCopies());
-            availableLabel.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 14px; -fx-font-weight: bold;");
+            // 计算可借数量（状态为INLIBRARY的图书副本数量）
+            long availableCount = book.getItems().stream()
+                    .filter(item -> item.getBookStatus().name().equals("INLIBRARY"))
+                    .count();
 
-            copiesBox.getChildren().addAll(totalLabel, availableLabel);
+            Label inventoryLabel = new Label("库存: " + bookClass.getInventory() + " | 可借: " + availableCount);
+            inventoryLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
 
-            basicInfoBox.getChildren().addAll(titleAuthorBox, copiesBox);
-            getChildren().add(basicInfoBox);
+            statusBox.getChildren().addAll(isbnLabel, inventoryLabel);
+
+            summaryBox.getChildren().addAll(infoBox, statusBox);
+
+            // 详细信息区域（默认折叠）
+            detailBox = new VBox(10);
+            detailBox.setVisible(false);
+            detailBox.setManaged(false);
+
+            getChildren().addAll(summaryBox, detailBox);
         }
 
         public void toggleExpand() {
-            // 如果已经有展开的卡片且不是当前卡片，则先关闭它
-            if (currentExpandedCard != null && currentExpandedCard != this) {
-                currentExpandedCard.collapse();
-            }
+            expanded = !expanded;
+            detailBox.setVisible(expanded);
+            detailBox.setManaged(expanded);
 
-            // 切换当前卡片的展开状态
-            if (isExpanded) {
-                collapse();
+            if (expanded) {
+                addBookDetails();
             } else {
-                expand();
+                detailBox.getChildren().clear();
             }
-        }
-
-        public void expand() {
-            isExpanded = true;
-            // 展开显示详细信息
-            showDetails();
-            setStyle("-fx-background-color: #f8fbff; -fx-background-radius: 8; " +
-                    "-fx-border-color: #4e8cff; -fx-border-radius: 8; -fx-border-width: 2; " +
-                    "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 10, 0, 0, 3);");
-            // 更新当前展开的卡片
-            currentExpandedCard = this;
         }
 
         public void collapse() {
-            if (isExpanded) {
-                isExpanded = false;
-                if (detailsBox != null) {
-                    getChildren().remove(detailsBox);
-                    detailsBox = null;
-                }
-                setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
-                        "-fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-border-width: 1; " +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
-                // 如果当前展开的卡片是这张卡片，则清除引用
-                if (currentExpandedCard == this) {
-                    currentExpandedCard = null;
-                }
+            if (expanded) {
+                expanded = false;
+                detailBox.setVisible(false);
+                detailBox.setManaged(false);
+                detailBox.getChildren().clear();
             }
         }
 
-        private void showDetails() {
-            if (detailsBox != null) {
-                getChildren().remove(detailsBox);
+        public boolean isExpanded() {
+            return expanded;
+        }
+
+        private void addBookDetails() {
+            detailBox.getChildren().clear();
+
+            BookClass bookClass = book.getBookClass();
+
+            // 创建详细信息网格
+            GridPane detailGrid = new GridPane();
+            detailGrid.setHgap(15);
+            detailGrid.setVgap(10);
+            detailGrid.setPadding(new Insets(10, 0, 0, 0));
+
+            // 添加详细信息
+            detailGrid.add(new Label("出版社:"), 0, 0);
+            detailGrid.add(new Label(bookClass.getPublisher()), 1, 0);
+
+            detailGrid.add(new Label("出版日期:"), 0, 1);
+            detailGrid.add(new Label(bookClass.getPublishDate() != null ? bookClass.getPublishDate().toString() : "未知"), 1, 1);
+
+            detailGrid.add(new Label("类别:"), 0, 2);
+            detailGrid.add(new Label(bookClass.getCategory() != null ? bookClass.getCategory().toString() : "未分类"), 1, 2);
+
+            // 图书描述
+            if (bookClass.getDescription() != null && !bookClass.getDescription().isEmpty()) {
+                detailGrid.add(new Label("简介:"), 0, 3);
+                Label descLabel = new Label(bookClass.getDescription());
+                descLabel.setStyle("-fx-wrap-text: true;");
+                descLabel.setMaxWidth(400);
+                detailGrid.add(descLabel, 1, 3);
             }
 
-            detailsBox = new VBox(10);
-            detailsBox.setStyle("-fx-padding: 10 0 0 0; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;");
+            // 添加图书副本信息
+            if (!book.getItems().isEmpty()) {
+                detailGrid.add(new Label("副本信息:"), 0, 4);
 
-            // ISBN和简介
-            if (book.getIsbn() != null && !book.getIsbn().isEmpty()) {
-                Label isbnLabel = new Label("ISBN: " + book.getIsbn());
-                isbnLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
-                detailsBox.getChildren().add(isbnLabel);
+                VBox itemsBox = new VBox(5);
+                for (BookItem item : book.getItems()) {
+                    HBox itemBox = new HBox(10);
+                    itemBox.setAlignment(Pos.CENTER_LEFT);
+
+                    Label uuidLabel = new Label("条码: " + item.getUuid());
+                    uuidLabel.setStyle("-fx-font-size: 12px;");
+
+                    Label placeLabel = new Label("位置: " + item.getPlace());
+                    placeLabel.setStyle("-fx-font-size: 12px;");
+
+                    Label statusLabel = new Label("状态: " + item.getBookStatus().getDescription());
+                    statusLabel.setStyle("-fx-font-size: 12px;");
+
+                    // 根据状态设置颜色
+                    switch (item.getBookStatus()) {
+                        case INLIBRARY:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: green;");
+                            break;
+                        case LEND:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: orange;");
+                            break;
+                        case LOST:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: red;");
+                            break;
+                        case REPAIR:
+                            statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: blue;");
+                            break;
+                    }
+
+                    // 添加编辑和删除按钮
+                    Button editItemButton = new Button("编辑");
+                    editItemButton.setStyle("-fx-font-size: 11px; -fx-padding: 3 6;");
+                    editItemButton.setOnAction(e -> openEditItemDialog(item));
+
+                    Button deleteItemButton = new Button("删除");
+                    deleteItemButton.setStyle("-fx-font-size: 11px; -fx-padding: 3 6; -fx-background-color: #e74c3c; -fx-text-fill: white;");
+                    deleteItemButton.setOnAction(e -> deleteBookItem(item));
+
+                    HBox buttonBox = new HBox(5);
+                    buttonBox.getChildren().addAll(editItemButton, deleteItemButton);
+
+                    itemBox.getChildren().addAll(uuidLabel, placeLabel, statusLabel, buttonBox);
+                    itemsBox.getChildren().add(itemBox);
+                }
+
+                detailGrid.add(itemsBox, 1, 4);
             }
 
-            Label descLabel = new Label("简介: " +
-                    (book.getDescription() != null && !book.getDescription().isEmpty() ?
-                            book.getDescription() : "暂无简介"));
-            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
-            descLabel.setWrapText(true);
-            detailsBox.getChildren().add(descLabel);
+            // 添加操作按钮
+            HBox actionBox = new HBox(10);
+            actionBox.setAlignment(Pos.CENTER_RIGHT);
+            actionBox.setPadding(new Insets(15, 0, 0, 0));
 
-            // 修改按钮
-            modifyButton = new Button("修改");
-            modifyButton.setPrefWidth(80);
-            modifyButton.setPrefHeight(30);
-            modifyButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-            modifyButton.setOnAction(e -> {
-                // 阻止事件冒泡，避免触发卡片的点击事件
-                e.consume();
-                openModifyDialog(book);
-            });
+            // 添加副本按钮
+            Button addItemButton = new Button("添加副本");
+            addItemButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+            addItemButton.setOnAction(e -> openAddItemDialog(bookClass));
 
-            HBox buttonBox = new HBox();
-            buttonBox.setAlignment(Pos.CENTER_RIGHT);
-            buttonBox.getChildren().add(modifyButton);
+            // 修改书籍按钮
+            modifyButton = new Button("修改书籍信息");
+            modifyButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+            modifyButton.setOnAction(e -> openModifyBookDialog(bookClass));
 
-            detailsBox.getChildren().add(buttonBox);
-            getChildren().add(detailsBox);
+            // 删除书籍按钮
+            Button deleteBookButton = new Button("删除书籍");
+            deleteBookButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+            deleteBookButton.setOnAction(e -> deleteBook(bookClass));
+
+            actionBox.getChildren().addAll(addItemButton, modifyButton, deleteBookButton);
+
+            detailBox.getChildren().addAll(detailGrid, actionBox);
         }
     }
 
-    private void openModifyDialog(Book book) {
+    private void openModifyBookDialog(BookClass bookClass) {
         // 创建修改对话框
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("修改书籍信息");
-        dialog.setHeaderText("修改《" + book.getTitle() + "》的信息");
+        dialog.setHeaderText("修改《" + bookClass.getName() + "》的信息");
 
         // 创建表单
         GridPane grid = new GridPane();
@@ -419,16 +476,19 @@ public class ModifyBookPanel extends BorderPane {
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
 
-        TextField titleField = new TextField(book.getTitle());
-        TextField authorField = new TextField(book.getAuthor());
-        TextField publisherField = new TextField(book.getPublisher());
-        DatePicker publishDatePicker = new DatePicker(book.getPublishDate());
-        TextArea descriptionArea = new TextArea(book.getDescription());
+        TextField nameField = new TextField(bookClass.getName());
+        TextField authorField = new TextField(bookClass.getAuthor());
+        TextField publisherField = new TextField(bookClass.getPublisher());
+        DatePicker publishDatePicker = new DatePicker(bookClass.getPublishDate());
+        TextArea descriptionArea = new TextArea(bookClass.getDescription());
         descriptionArea.setPrefRowCount(3);
-        TextField categoryField = new TextField(book.getCategory());
+
+        ComboBox<Category> categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().addAll(Category.values());
+        categoryCombo.setValue(bookClass.getCategory());
 
         grid.add(new Label("书名:"), 0, 0);
-        grid.add(titleField, 1, 0);
+        grid.add(nameField, 1, 0);
         grid.add(new Label("作者:"), 0, 1);
         grid.add(authorField, 1, 1);
         grid.add(new Label("出版社:"), 0, 2);
@@ -438,133 +498,7 @@ public class ModifyBookPanel extends BorderPane {
         grid.add(new Label("简介:"), 0, 4);
         grid.add(descriptionArea, 1, 4);
         grid.add(new Label("类别:"), 0, 5);
-        grid.add(categoryField, 1, 5);
-
-        // 副本管理区域
-        Label copiesLabel = new Label("副本管理:");
-        copiesLabel.setStyle("-fx-font-weight: bold; -fx-padding: 10 0 5 0;");
-        grid.add(copiesLabel, 0, 6, 2, 1);
-
-        // 副本表格
-        TableView<Book.BookCopy> copiesTable = new TableView<>();
-        ObservableList<Book.BookCopy> copiesData = FXCollections.observableArrayList(book.getCopies());
-        copiesTable.setItems(copiesData);
-        copiesTable.setPrefHeight(150);
-
-        TableColumn<Book.BookCopy, String> idColumn = new TableColumn<>("副本ID");
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("copyId"));
-        idColumn.setPrefWidth(100);
-
-        TableColumn<Book.BookCopy, String> locationColumn = new TableColumn<>("馆藏位置");
-        locationColumn.setCellValueFactory(new PropertyValueFactory<>("location"));
-        locationColumn.setPrefWidth(150);
-
-        TableColumn<Book.BookCopy, String> statusColumn = new TableColumn<>("状态");
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
-        statusColumn.setPrefWidth(100);
-
-        copiesTable.getColumns().addAll(idColumn, locationColumn, statusColumn);
-        grid.add(copiesTable, 0, 7, 2, 1);
-
-        // 添加和删除副本按钮
-        HBox copiesButtonBox = new HBox(10);
-        copiesButtonBox.setAlignment(Pos.CENTER_RIGHT);
-        copiesButtonBox.setPadding(new Insets(10, 0, 0, 0));
-
-        Button addCopyButton = new Button("添加副本");
-        addCopyButton.setOnAction(e -> {
-            // 弹出添加副本对话框
-            Dialog<Book.BookCopy> addCopyDialog = new Dialog<>();
-            addCopyDialog.setTitle("添加副本");
-            addCopyDialog.setHeaderText("添加新副本");
-
-            GridPane addCopyGrid = new GridPane();
-            addCopyGrid.setHgap(10);
-            addCopyGrid.setVgap(10);
-            addCopyGrid.setPadding(new Insets(20, 150, 10, 10));
-
-            TextField locationField = new TextField();
-            locationField.setPromptText("输入馆藏位置");
-
-            addCopyGrid.add(new Label("位置:"), 0, 0);
-            addCopyGrid.add(locationField, 1, 0);
-
-            addCopyDialog.getDialogPane().setContent(addCopyGrid);
-            addCopyDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-            addCopyDialog.setResultConverter(dialogButton -> {
-                if (dialogButton == ButtonType.OK) {
-                    Book.BookCopy newCopy = new Book.BookCopy();
-                    newCopy.setCopyId(UUID.randomUUID());
-                    newCopy.setLocation(locationField.getText());
-                    newCopy.setStatus("可借");
-                    return newCopy;
-                }
-                return null;
-            });
-
-            addCopyDialog.showAndWait().ifPresent(newCopy -> {
-                copiesData.add(newCopy);
-                book.setCopies(copiesData);
-                book.setTotalCopies(copiesData.size());
-                // 更新可借数量
-                long availableCount = copiesData.stream()
-                        .filter(copy -> "可借".equals(copy.getStatus()))
-                        .count();
-                book.setAvailableCopies((int) availableCount);
-            });
-        });
-
-        Button deleteCopyButton = new Button("删除选中副本");
-        deleteCopyButton.setOnAction(e -> {
-            Book.BookCopy selectedCopy = copiesTable.getSelectionModel().getSelectedItem();
-            if (selectedCopy != null) {
-                // 确认删除对话框
-                Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
-                confirmDialog.setTitle("确认删除");
-                confirmDialog.setHeaderText("确认删除副本");
-                confirmDialog.setContentText("确定要删除这个副本吗？");
-
-                confirmDialog.showAndWait().ifPresent(response -> {
-                    if (response == ButtonType.OK) {
-                        // 检查是否是最后一个副本
-                        if (copiesData.size() == 1) {
-                            // 确认删除整个书籍
-                            Alert deleteBookDialog = new Alert(Alert.AlertType.CONFIRMATION);
-                            deleteBookDialog.setTitle("确认删除书籍");
-                            deleteBookDialog.setHeaderText("这是最后一个副本");
-                            deleteBookDialog.setContentText("删除最后一个副本将同时删除整个书籍。确定要继续吗？");
-
-                            deleteBookDialog.showAndWait().ifPresent(bookResponse -> {
-                                if (bookResponse == ButtonType.OK) {
-                                    // 删除整个书籍
-                                    deleteBook(book);
-                                    dialog.close();
-                                }
-                            });
-                        } else {
-                            copiesData.remove(selectedCopy);
-                            book.setCopies(copiesData);
-                            book.setTotalCopies(copiesData.size());
-                            // 更新可借数量
-                            long availableCount = copiesData.stream()
-                                    .filter(copy -> "可借".equals(copy.getStatus()))
-                                    .count();
-                            book.setAvailableCopies((int) availableCount);
-                        }
-                    }
-                });
-            } else {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("警告");
-                alert.setHeaderText("未选择副本");
-                alert.setContentText("请先选择一个要删除的副本。");
-                alert.showAndWait();
-            }
-        });
-
-        copiesButtonBox.getChildren().addAll(addCopyButton, deleteCopyButton);
-        grid.add(copiesButtonBox, 0, 8, 2, 1);
+        grid.add(categoryCombo, 1, 5);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -573,36 +507,101 @@ public class ModifyBookPanel extends BorderPane {
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
                 // 更新书籍信息
-                book.setTitle(titleField.getText());
-                book.setAuthor(authorField.getText());
-                book.setPublisher(publisherField.getText());
-                book.setPublishDate(publishDatePicker.getValue());
-                book.setDescription(descriptionArea.getText());
-                book.setCategory(categoryField.getText());
+                bookClass.setName(nameField.getText());
+                bookClass.setAuthor(authorField.getText());
+                bookClass.setPublisher(publisherField.getText());
+                bookClass.setPublishDate(publishDatePicker.getValue());
+                bookClass.setDescription(descriptionArea.getText());
+                bookClass.setCategory(categoryCombo.getValue());
 
                 // 发送更新请求
-                updateBook(book);
-            }
-            // 对话框关闭后，确保当前展开的卡片状态正确
-            if (currentExpandedCard != null) {
-                currentExpandedCard.expand(); // 重新展开以刷新内容
+                updateBook(bookClass);
             }
         });
     }
 
-    private void updateBook(Book book) {
+    private void openAddItemDialog(BookClass bookClass) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("添加副本");
+        dialog.setHeaderText("为《" + bookClass.getName() + "》添加新副本");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField placeField = new TextField();
+        placeField.setPromptText("输入副本位置");
+
+        grid.add(new Label("位置:"), 0, 0);
+        grid.add(placeField, 1, 0);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK && !placeField.getText().trim().isEmpty()) {
+                // 创建新副本
+                BookItem newItem = new BookItem();
+                newItem.setUuid(UUID.randomUUID().toString());
+                newItem.setIsbn(bookClass.getIsbn());
+                newItem.setPlace(placeField.getText().trim());
+                newItem.setBookStatus(String.valueOf(BookStatus.INLIBRARY));
+
+                // 发送添加副本请求
+                addBookItem(newItem);
+            }
+        });
+    }
+
+    private void openEditItemDialog(BookItem bookItem) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("修改副本信息");
+        dialog.setHeaderText("修改图书副本信息");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField placeField = new TextField(bookItem.getPlace());
+
+        ComboBox<BookStatus> statusCombo = new ComboBox<>();
+        statusCombo.getItems().addAll(BookStatus.values());
+        statusCombo.setValue(bookItem.getBookStatus());
+
+        grid.add(new Label("位置:"), 0, 0);
+        grid.add(placeField, 1, 0);
+        grid.add(new Label("状态:"), 0, 1);
+        grid.add(statusCombo, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK) {
+                // 更新副本信息
+                bookItem.setPlace(placeField.getText().trim());
+                bookItem.setBookStatus(statusCombo.getValue());
+
+                // 发送更新副本请求
+                updateBookItem(bookItem);
+            }
+        });
+    }
+
+    private void updateBook(BookClass bookClass) {
         new Thread(() -> {
             try {
                 Platform.runLater(() -> setStatus("更新中..."));
 
                 // 构建更新请求
                 Map<String, Object> data = new HashMap<>();
-                data.put("book", book);
+                data.put("book", bookClass);
                 Request request = new Request("updateBook", data);
 
                 // 使用ClientNetworkHelper发送请求
                 String response = ClientNetworkHelper.send(request);
-                System.out.println("更新响应: " + response);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
@@ -626,19 +625,18 @@ public class ModifyBookPanel extends BorderPane {
         }).start();
     }
 
-    private void deleteBook(Book book) {
+    private void addBookItem(BookItem bookItem) {
         new Thread(() -> {
             try {
-                Platform.runLater(() -> setStatus("删除中..."));
+                Platform.runLater(() -> setStatus("添加副本中..."));
 
-                // 构建删除请求
+                // 构建添加副本请求
                 Map<String, Object> data = new HashMap<>();
-                data.put("isbn", book.getIsbn());
-                Request request = new Request("deleteBook", data);
+                data.put("bookItem", bookItem);
+                Request request = new Request("addBookItem", data);
 
                 // 使用ClientNetworkHelper发送请求
                 String response = ClientNetworkHelper.send(request);
-                System.out.println("删除响应: " + response);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
@@ -646,23 +644,144 @@ public class ModifyBookPanel extends BorderPane {
 
                 if (code == 200) {
                     Platform.runLater(() -> {
-                        setStatus("删除成功");
+                        setStatus("添加副本成功");
                         // 刷新搜索结果
                         performSearch();
                     });
                 } else {
                     Platform.runLater(() ->
-                            setStatus("删除失败: " + responseMap.get("message")));
+                            setStatus("添加副本失败: " + responseMap.get("message")));
                 }
             } catch (Exception e) {
                 Platform.runLater(() ->
-                        setStatus("删除错误: " + e.getMessage()));
+                        setStatus("添加副本错误: " + e.getMessage()));
                 e.printStackTrace();
             }
         }).start();
     }
 
-    private void setStatus(String message) {
-        statusLabel.setText(message);
+    private void updateBookItem(BookItem bookItem) {
+        new Thread(() -> {
+            try {
+                Platform.runLater(() -> setStatus("更新副本中..."));
+
+                // 构建更新副本请求
+                Map<String, Object> data = new HashMap<>();
+                data.put("bookItem", bookItem);
+                Request request = new Request("updateBookItem", data);
+
+                // 使用ClientNetworkHelper发送请求
+                String response = ClientNetworkHelper.send(request);
+
+                // 解析响应
+                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
+                int code = ((Double) responseMap.get("code")).intValue();
+
+                if (code == 200) {
+                    Platform.runLater(() -> {
+                        setStatus("更新副本成功");
+                        // 刷新搜索结果
+                        performSearch();
+                    });
+                } else {
+                    Platform.runLater(() ->
+                            setStatus("更新副本失败: " + responseMap.get("message")));
+                }
+            } catch (Exception e) {
+                Platform.runLater(() ->
+                        setStatus("更新副本错误: " + e.getMessage()));
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void deleteBookItem(BookItem bookItem) {
+        // 确认删除对话框
+        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmDialog.setTitle("确认删除");
+        confirmDialog.setHeaderText("确认删除副本");
+        confirmDialog.setContentText("确定要删除这个副本吗？此操作不可撤销。");
+
+        confirmDialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                new Thread(() -> {
+                    try {
+                        Platform.runLater(() -> setStatus("删除副本中..."));
+
+                        // 构建删除副本请求
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("uuid", bookItem.getUuid().toString());
+                        Request request = new Request("deleteBookItem", data);
+
+                        // 使用ClientNetworkHelper发送请求
+                        String responseStr = ClientNetworkHelper.send(request);
+
+                        // 解析响应
+                        Map<String, Object> responseMap = gson.fromJson(responseStr, Map.class);
+                        int code = ((Double) responseMap.get("code")).intValue();
+
+                        if (code == 200) {
+                            Platform.runLater(() -> {
+                                setStatus("删除副本成功");
+                                // 刷新搜索结果
+                                performSearch();
+                            });
+                        } else {
+                            Platform.runLater(() ->
+                                    setStatus("删除副本失败: " + responseMap.get("message")));
+                        }
+                    } catch (Exception e) {
+                        Platform.runLater(() ->
+                                setStatus("删除副本错误: " + e.getMessage()));
+                        e.printStackTrace();
+                    }
+                }).start();
+            }
+        });
+    }
+
+    private void deleteBook(BookClass bookClass) {
+        // 确认删除对话框
+        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmDialog.setTitle("确认删除");
+        confirmDialog.setHeaderText("确认删除书籍");
+        confirmDialog.setContentText("确定要删除《" + bookClass.getName() + "》及其所有副本吗？此操作不可撤销。");
+
+        confirmDialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                new Thread(() -> {
+                    try {
+                        Platform.runLater(() -> setStatus("删除书籍中..."));
+
+                        // 构建删除书籍请求
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("isbn", bookClass.getIsbn());
+                        Request request = new Request("deleteBook", data);
+
+                        // 使用ClientNetworkHelper发送请求
+                        String responseStr = ClientNetworkHelper.send(request);
+
+                        // 解析响应
+                        Map<String, Object> responseMap = gson.fromJson(responseStr, Map.class);
+                        int code = ((Double) responseMap.get("code")).intValue();
+
+                        if (code == 200) {
+                            Platform.runLater(() -> {
+                                setStatus("删除书籍成功");
+                                // 刷新搜索结果
+                                performSearch();
+                            });
+                        } else {
+                            Platform.runLater(() ->
+                                    setStatus("删除书籍失败: " + responseMap.get("message")));
+                        }
+                    } catch (Exception e) {
+                        Platform.runLater(() ->
+                                setStatus("删除书籍错误: " + e.getMessage()));
+                        e.printStackTrace();
+                    }
+                }).start();
+            }
+        });
     }
 }
