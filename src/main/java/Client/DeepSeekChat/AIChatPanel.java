@@ -1,40 +1,49 @@
 package Client.DeepSeekChat;
 
-import javafx.animation.FadeTransition;
-import javafx.application.Platform;
-import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
-import javafx.scene.layout.*;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
-import javafx.util.Duration;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-import Client.util.Config; // 新增：读取 application.properties
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import Client.ClientNetworkHelper;
+import Client.util.Config;
+import Server.model.Request; 
+import javafx.animation.FadeTransition;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+import javafx.util.Duration;
 
 /**
- * 嵌入式 AI 助手聊天面板（替代独立 ）。
- * 直接作为主界面 center 内容使用，不再创建 Stage。\n * 说明：API Key 与 URL 通过配置 / 环境变量加载。
+ * 嵌入式 AI 助手聊天面板（虚拟校园系统专用）
  */
 public class AIChatPanel extends BorderPane {
     private final VBox chatContainer = new VBox();
@@ -43,23 +52,23 @@ public class AIChatPanel extends BorderPane {
     private final ScrollPane scrollPane = new ScrollPane();
     private final List<JsonObject> conversationHistory = new ArrayList<>();
 
-    // 可外部注入（后续可改为从配置文件或输入框设置）
-    private String apiKey = "your_api_key"; // 默认占位，启动时会被覆盖
+    private String apiKey = "your_api_key"; // 默认占位
     private String apiUrl = "https://api.deepseek.com/v1/chat/completions";
 
     private final Gson gson = new GsonBuilder().create();
-    private final String userDisplayName; // 用于显示在用户消息头
 
-    // 新增：头像图片缓存
     private Image aiAvatarImg;
     private Image userAvatarImg;
 
+    private final String userDisplayName; // 默认显示名
+
     public AIChatPanel(String userDisplayName){
-        this.userDisplayName = userDisplayName == null ? "用户" : userDisplayName;
-        // 加载头像资源
+        this.userDisplayName = userDisplayName == null ? "未知用户" : userDisplayName;
+        // 加载头像
         try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
         try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
-        // 启动前尝试加载外部配置
+
+        // 加载 API Key
         String envKey = System.getenv("DEEPSEEK_API_KEY");
         if (envKey != null && !envKey.isBlank()) {
             this.apiKey = envKey.trim();
@@ -67,9 +76,92 @@ public class AIChatPanel extends BorderPane {
             String propKey = Config.get("deepseek.api.key");
             if (propKey != null && !propKey.isBlank()) this.apiKey = propKey.trim();
         }
+
+        // 初始化系统消息（无需学生信息也可运行）
+        initSystemContext();
+
         buildUI();
     }
 
+    /** 初始化系统上下文 */
+    private void initSystemContext() {
+        String systemPrompt = 
+            "你是东南大学虚拟校园系统的智能助手。\n" +
+            "该系统模块包括：\n" +
+            "1. 用户管理模块：用户登录、登出、修改/忘记密码。\n" +
+            "2. 学籍管理模块：学生可查看姓名、性别、出生日期、身份证号、一卡通号、学号、学院、专业、学籍状态、入学时间、籍贯、政治面貌；管理员可操作学籍信息。\n" +
+            "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
+            "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
+            "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
+            "\n" +
+            "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
+
+        JsonObject systemMsg = new JsonObject();
+        systemMsg.addProperty("role", "system");
+        systemMsg.addProperty("content", systemPrompt);
+
+        conversationHistory.add(systemMsg);
+    }
+    /**
+     * 动态拼接 5 个模块的上下文信息
+     */
+    private String fetchDynamicContext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是学生最新的系统信息，请结合回答：\n\n");
+        Integer cardNumber = Integer.valueOf(userDisplayName);
+        try {
+            // 2. 学籍管理模块
+            String studentInfo = ClientNetworkHelper.send(
+                    new Request("getSelf", Map.of("cardNumber", cardNumber))
+            );
+            sb.append("【2. 学籍管理模块】\n").append(studentInfo).append("\n\n");
+
+            // 3. 选课系统模块
+            String courseInfo = ClientNetworkHelper.send(
+                    new Request("getStudentSelectedCourses", Map.of("cardNumber", cardNumber))
+            );
+            sb.append("【3. 选课系统模块】\n").append(courseInfo).append("\n\n");
+
+            // 4. 图书管理模块
+            String libraryInfo = ClientNetworkHelper.send(
+                    new Request("getOwnRecords", Map.of("userId", cardNumber))
+            );
+            sb.append("【4. 图书管理模块】\n").append(libraryInfo).append("\n\n");
+
+            // 5. 商店模块
+            String shopOrdersJson = ClientNetworkHelper.send(
+                    new Request("getUserOrders", Map.of("cardNumber", cardNumber))
+            );
+
+            Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> orders = new Gson().fromJson(shopOrdersJson, listType);
+
+            StringBuilder shopSb = new StringBuilder();
+            shopSb.append("【5. 商店模块】\n");
+
+            for (Map<String, Object> orderMap : orders) {
+                String uuidStr = (String) orderMap.get("uuid");
+                shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
+
+                // 调用 getOrder 接口获取订单详情
+                String orderDetailJson = ClientNetworkHelper.send(
+                        new Request("getOrder", Map.of("orderId", uuidStr))
+                );
+
+                shopSb.append("订单详情: ").append(orderDetailJson).append("\n\n");
+            }
+
+            sb.append(shopSb.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sb.append("（部分模块信息获取失败，请稍后重试）");
+        }
+
+        return sb.toString();
+    }
+
+    /** 构建界面 */
     private void buildUI(){
         getStyleClass().add("ai-root");
 
@@ -100,12 +192,12 @@ public class AIChatPanel extends BorderPane {
             ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
             logo.setFitHeight(30);
             logo.setPreserveRatio(true);
-            Label title = new Label("AI助手");
+            Label title = new Label("东南大学虚拟校园系统智能助手");
             title.getStyleClass().add("title");
             HBox.setMargin(title, new Insets(0,0,0,10));
             header.getChildren().addAll(logo, title);
         } catch (Exception e){
-            Label title = new Label("AI助手");
+            Label title = new Label("东南大学虚拟校园系统智能助手");
             title.getStyleClass().add("title");
             header.getChildren().add(title);
         }
@@ -122,14 +214,12 @@ public class AIChatPanel extends BorderPane {
         scrollPane.setContent(chatContainer);
         scrollPane.getStyleClass().add("scroll-pane");
         scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true); // 允许高度自适应填充
+        scrollPane.setFitToHeight(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
-        // 使用 StackPane 作为白色背景面板填满 center
         StackPane wrapper = new StackPane(scrollPane);
         wrapper.setStyle("-fx-background-color: white;");
         StackPane.setMargin(scrollPane, Insets.EMPTY);
-        // 绑定最小高度以保证空内容时也撑开
         wrapper.heightProperty().addListener((o,ov,nv)->{
             if (chatContainer.getHeight() < nv.doubleValue()) {
                 chatContainer.setMinHeight(nv.doubleValue());
@@ -144,15 +234,14 @@ public class AIChatPanel extends BorderPane {
         HBox messageBox = new HBox();
         messageBox.getStyleClass().add("ai-message-container");
         messageBox.setAlignment(Pos.TOP_LEFT);
-        // 使用图片头像替换圆形
         Node aiAvatarNode = buildAiAvatarNode();
         VBox messageContent = new VBox();
         messageContent.setSpacing(5);
-        Label nameLabel = new Label("DeepSeek");
+        Label nameLabel = new Label("东南大学虚拟校园系统智能助手");
         nameLabel.getStyleClass().add("message-name");
         TextFlow textFlow = new TextFlow();
         textFlow.getStyleClass().add("ai-message");
-        Text t = new Text("您好！我是AI助手，有什么可以帮您的吗？");
+        Text t = new Text("您好！我是东南大学虚拟校园系统的智能助手，有什么可以帮您的吗？");
         textFlow.getChildren().add(t);
         messageContent.getChildren().addAll(nameLabel, textFlow);
         HBox.setMargin(messageContent, new Insets(0,0,0,10));
@@ -175,7 +264,7 @@ public class AIChatPanel extends BorderPane {
 
         sendButton.getStyleClass().add("send-button");
         sendButton.setPrefSize(40,40);
-        sendButton.setAlignment(Pos.CENTER); // 新增：按钮内容居中
+        sendButton.setAlignment(Pos.CENTER);
         try {
             ImageView sendIcon = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/send-icon.png")));
             sendIcon.setFitHeight(20); sendIcon.setPreserveRatio(true);
@@ -187,34 +276,62 @@ public class AIChatPanel extends BorderPane {
         area.getChildren().addAll(inputField, sendButton);
         return area;
     }
-
     private void sendMessage(){
         String msg = inputField.getText().trim();
         if (msg.isEmpty()) return;
+
+        // 假设你在类里保存了 userId 和 cardNumber
+        String dynamicContext = fetchDynamicContext();
+
+        // 删除旧的动态上下文
+        conversationHistory.removeIf(ctx -> 
+            "system".equals(ctx.get("role").getAsString()) &&
+            ctx.get("content").getAsString().startsWith("以下是学生最新的系统信息")
+        );
+
+        // 添加新的动态上下文
+        JsonObject contextMsg = new JsonObject();
+        contextMsg.addProperty("role", "system");
+        contextMsg.addProperty("content", dynamicContext);
+        conversationHistory.add(contextMsg);
+
+        // 添加用户消息
         addUserMessage(msg);
         inputField.clear();
         showTypingIndicator();
         callDeepSeekAPI(msg);
     }
 
+
     private void addUserMessage(String message){
         HBox box = new HBox();
         box.getStyleClass().add("user-message-container");
         box.setAlignment(Pos.TOP_RIGHT);
+
         VBox content = new VBox();
         content.setSpacing(5); content.setAlignment(Pos.TOP_RIGHT);
+
         Label name = new Label(userDisplayName);
         name.getStyleClass().add("message-name");
-        TextFlow tf = new TextFlow(); tf.getStyleClass().add("user-message");
+
+        TextFlow tf = new TextFlow();
+        tf.getStyleClass().add("user-message");
         tf.getChildren().add(new Text(message));
+
         content.getChildren().addAll(name, tf);
-        // 用户头像（右侧）
+
         Node userAvatarNode = buildUserAvatarNode();
         HBox.setMargin(content, new Insets(0,10,0,0));
         box.getChildren().addAll(content, userAvatarNode);
         chatContainer.getChildren().add(box);
-        FadeTransition ft = new FadeTransition(Duration.millis(300), box); ft.setFromValue(0); ft.setToValue(1); ft.play();
-        JsonObject obj = new JsonObject(); obj.addProperty("role","user"); obj.addProperty("content", message); conversationHistory.add(obj);
+
+        FadeTransition ft = new FadeTransition(Duration.millis(300), box); 
+        ft.setFromValue(0); ft.setToValue(1); ft.play();
+
+        JsonObject obj = new JsonObject(); 
+        obj.addProperty("role","user"); 
+        obj.addProperty("content", message); 
+        conversationHistory.add(obj);
     }
 
     private void addAiMessage(String message){
@@ -292,7 +409,6 @@ public class AIChatPanel extends BorderPane {
         Thread th = new Thread(task, "ai-chat-api"); th.setDaemon(true); th.start();
     }
 
-    // 新增：构建AI头像节点
     private Node buildAiAvatarNode(){
         if (aiAvatarImg != null) {
             ImageView iv = new ImageView(aiAvatarImg);
@@ -302,7 +418,7 @@ public class AIChatPanel extends BorderPane {
         }
         Circle fallback = new Circle(20); fallback.getStyleClass().add("ai-avatar"); return fallback;
     }
-    // 新增：构建用户头像节点
+
     private Node buildUserAvatarNode(){
         if (userAvatarImg != null) {
             ImageView iv = new ImageView(userAvatarImg);

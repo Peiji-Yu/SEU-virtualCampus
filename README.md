@@ -115,10 +115,8 @@ CREATE TABLE lib_user (
 CREATE TABLE book_record (
     uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
     user_id INT NOT NULL,                 -- 用户一卡通号
-    book_item_uuid CHAR(36) NOT NULL,     -- 借阅的书本副本UUID
     borrow_time DATE NOT NULL,            -- 借书时间
     due_time DATE NOT NULL,               -- 到期时间
-    return_time DATE,                     -- 归还时间（可为空）
-    CONSTRAINT fk_book_record_item FOREIGN KEY (book_item_uuid) REFERENCES book_item(uuid)
+    name VARCHAR(255) NOT NULL,           -- 书名
 );
 

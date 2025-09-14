@@ -1,7 +1,6 @@
 package Server;
 
 import Server.model.*;
-import Server.model.book.BookRecord;
 import Server.model.shop.*;
 import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
@@ -786,7 +785,7 @@ public class ClientHandler implements Runnable {
                                 response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
                             }
                         break;
-            
+
 
                         // 📖 获取个人借阅记录（通过 userId）
                         case "getOwnRecords": {
@@ -872,6 +871,66 @@ public class ClientHandler implements Runnable {
                             }
                             boolean result = bookService.returnBook(uuid);
                             response = result ? Response.success("还书成功") : Response.error("还书失败");
+                            break;
+                        }
+                        // ➕ 添加书籍实体
+                        case "addBookItem": {
+                            Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
+                            BookItem newbookItem = createBookItemFromMap(bookitemData); // 需要自己写的方法，将 Map 转成 BookItem
+                            boolean result = bookService.addBookItem(newbookItem);
+                            response = result ? Response.success("添加成功", newbookItem.getUuid()) : Response.error("添加失败");
+                            break;
+                        }
+
+                        // ❌ 删除书籍实体
+                        case "deleteBookItem": {
+                            String uuid = (String) request.getData().get("uuid");
+                            if (uuid == null) {
+                                response = Response.error("缺少 uuid 参数");
+                                break;
+                            }
+                            boolean result = bookService.deleteBookItem(uuid);
+                            response = result ? Response.success("删除成功") : Response.error("删除失败");
+                            break;
+                        }
+
+                        // ✏ 更新书籍实体
+                        case "updateBookItem": {
+                            Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
+                            BookItem itemUpdate = createBookItemFromMap(bookitemData);
+                            boolean result = bookService.updateBookItem(itemUpdate);
+                            response = result ? Response.success("更新成功") : Response.error("更新失败");
+                            break;
+                        }
+
+                        // 🔍 查询书籍实体（根据 UUID）
+                        case "findBookItem": {
+                            String uuid = (String) request.getData().get("uuid");
+                            if (uuid == null) {
+                                response = Response.error("缺少 uuid 参数");
+                                break;
+                            }
+                            try {
+                                BookItem item = bookService.getBookItemByUuid(uuid);
+                                response = item != null ? Response.success("查询成功", item) : Response.error("未找到对应书籍实体");
+                            } catch (Exception e) {
+                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
+                            }
+                            break;
+                        }
+                        // 🔍 根据 ISBN 搜索书籍实体
+                        case "searchBookItems": {
+                            String isbn = (String) request.getData().get("isbn");
+                            if (isbn == null) {
+                                response = Response.error("缺少 ISBN 参数");
+                                break;
+                            }
+                            try {
+                                List<BookItem> itembooks = bookService.retrieveBookItems(isbn);
+                                response = Response.success("查询成功", itembooks);
+                            } catch (Exception e) {
+                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
+                            }
                             break;
                         }
 
@@ -1026,6 +1085,46 @@ public class ClientHandler implements Runnable {
         }
 
         return book;
+    }
+    public BookItem createBookItemFromMap(Map<String, Object> map) {
+        if (map == null) return null;
+
+        BookItem bookItem = new BookItem();
+
+        // UUID
+        Object uuidObj = map.get("uuid");
+        if (uuidObj != null) {
+            bookItem.setUuid(uuidObj.toString());
+        }
+
+        // ISBN
+        Object isbnObj = map.get("isbn");
+        if (isbnObj != null) {
+            bookItem.setIsbn(isbnObj.toString());
+        }
+
+        // 馆藏位置
+        Object placeObj = map.get("place");
+        if (placeObj != null) {
+            bookItem.setPlace(placeObj.toString());
+        }
+
+        // 书籍状态（字符串转枚举）
+        Object statusObj = map.get("bookStatus");
+        if (statusObj != null) {
+            String statusStr = statusObj.toString().toUpperCase(); // 支持传 "INLIBRARY" 或 "lend"
+            try {
+                BookStatus status = BookStatus.valueOf(statusStr);
+                bookItem.setBookStatus(status);
+            } catch (IllegalArgumentException e) {
+                // 默认状态为 INLIBRARY，如果前端传错值
+                bookItem.setBookStatus(BookStatus.INLIBRARY);
+            }
+        } else {
+            bookItem.setBookStatus(BookStatus.INLIBRARY);
+        }
+
+        return bookItem;
     }
 
 }

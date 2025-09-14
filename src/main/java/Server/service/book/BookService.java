@@ -9,12 +9,10 @@ import org.apache.ibatis.session.SqlSession;
 import Server.dao.book.BookItemMapper;
 import Server.dao.book.BookMapper;
 import Server.dao.book.BookRecordMapper;
-import Server.dao.book.LibUserMapper;
 import Server.model.book.Book;
 import Server.model.book.BookItem;
 import Server.model.book.BookRecord;
 import Server.model.book.BookStatus;
-import Server.model.book.LibUser;
 import Server.util.DatabaseUtil;
 public class BookService {
 
@@ -26,6 +24,15 @@ public class BookService {
         }
     }
 
+    // 根据书籍名称检索书籍信息
+    public List<Book> searchBooks(String name) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
+            return bookMapper.findByName("%" + name + "%");
+        }
+    }
+
+
     // 根据ISBN检索实体书籍
     public List<BookItem> retrieveBookItems(String isbn) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
@@ -35,28 +42,10 @@ public class BookService {
     }
 
     // 根据UUID检索实体书籍
-    public BookItem uuidBookItem(String uuid) {
+    public BookItem getBookItemByUuid(String uuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
             return bookItemMapper.findByUuid(uuid);
-        }
-    }
-
-    // 根据书籍名称检索书籍信息
-    public List<Book> searchBooks(String name) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            return bookMapper.findByName("%" + name + "%");
-        }
-    }
-
-    // 管理员更新书籍
-    public boolean updateBook(Book book) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            int res = bookMapper.updateBook(book);
-            sqlSession.commit();
-            return res > 0;
         }
     }
 
@@ -70,36 +59,72 @@ public class BookService {
         }
     }
 
+
+    // 管理员更新书籍
+    public boolean updateBook(Book book) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
+            int res = bookMapper.updateBook(book);
+            sqlSession.commit();
+            return res > 0;
+        }
+    }
+
+    // 添加书籍实体
+    public boolean addBookItem(BookItem bookItem) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
+
+            // 生成 UUID（如果没有）
+            if (bookItem.getUuid() == null || bookItem.getUuid().isEmpty()) {
+                bookItem.setUuid(UUID.randomUUID().toString());
+            }
+
+            // 插入实体记录
+            int res = bookItemMapper.insertBookItem(bookItem);
+
+            sqlSession.commit();
+            return res > 0;
+        }
+    }
+
     // 管理员添加书籍
     public boolean addBook(Book book) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            // 1. 查询是否已存在该 ISBN
-            Book existingBook = bookMapper.findByIsbn(book.getIsbn());
-
-            int resBook = 0;
-            if (existingBook == null) {
-                // 不存在：插入新书，库存设为1
-                book.setInventory(1);
-                resBook = bookMapper.insertBook(book);
-            } else {
-                // 已存在：更新库存量 +1
-                existingBook.setInventory(existingBook.getInventory() + 1);
-                resBook = bookMapper.updateBook(existingBook);
-            }
-
-    
+            int resBook = bookMapper.insertBook(book);
             sqlSession.commit();
             return resBook > 0;
         }
     }
+
+    // 删除书籍实体
+    public boolean deleteBookItem(String uuid) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
+
+            // 删除实体
+            int res = bookItemMapper.deleteBookItem(uuid);
+
+            sqlSession.commit();
+            return res > 0;
+        }
+    }
+
     // 管理员删除书籍
     public boolean deleteBook(String isbn) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            int res = bookMapper.deleteBook(isbn);
+            BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
+
+            // 先删除所有副本
+            bookItemMapper.deleteBookItemIsbn(isbn);
+
+            // 再删除书籍
+            int resbook = bookMapper.deleteBook(isbn);
+
             sqlSession.commit();
-            return res > 0;
+            return resbook > 0;
         }
     }
 
@@ -111,36 +136,16 @@ public class BookService {
         }
     }
 
-    // 根据ISBN查询书籍借阅记录
-    public List<BookRecord> isbnRecords(String isbn) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookRecordMapper bookRecordMapper = sqlSession.getMapper(BookRecordMapper.class);
-            return bookRecordMapper.findByIsbn(isbn);
-        }
-    }
 
     // 借书
-    public boolean borrowBook(int userId, String isbn) {
+    public boolean borrowBook(int userId, String uuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
             BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
-            LibUserMapper libUserMapper = sqlSession.getMapper(LibUserMapper.class);
             BookRecordMapper bookRecordMapper = sqlSession.getMapper(BookRecordMapper.class);
 
-            // 1. 查询用户
-            LibUser user = libUserMapper.findById(userId);
-            if (user == null || user.getBorrowed() >= user.getMaxBorrowed()) {
-                return false; // 用户不存在或已达最大借书量
-            }
-
-            // 2. 查询书籍
-            Book book = bookMapper.findByIsbn(isbn);
-            if (book == null || book.getInventory() <= 0) {
-                return false; // 书籍不存在或库存不足
-            }
 
             // 3. 查询在馆副本
-            BookItem bookItem = bookItemMapper.findAvailableByIsbn(isbn);
+            BookItem bookItem = bookItemMapper.findAvailableByUuid(uuid);
             if (bookItem == null) {
                 return false; // 没有可借副本
             }
@@ -149,23 +154,14 @@ public class BookService {
             bookItem.setBookStatus(BookStatus.LEND);
             bookItemMapper.updateBookItem(bookItem);
 
-            // 5. 更新书籍库存
-            book.setInventory(book.getInventory() - 1);
-            bookMapper.updateBook(book);
-
-            // 6. 更新用户已借书数量
-            user.setBorrowed(user.getBorrowed() + 1);
-            libUserMapper.update(user);
 
             // 7. 插入借阅记录
             BookRecord record = new BookRecord();
-            record.setUuid(UUID.randomUUID().toString());
+            record.setUuid(uuid);
             record.setUserId(userId);
-            record.setUuid(bookItem.getUuid());
             record.setBorrowTime(LocalDate.now());
             record.setDueTime(LocalDate.now().plusDays(30)); // 默认30天
             bookRecordMapper.insertBookRecord(record);
-
             sqlSession.commit();
             return true;
         } catch (Exception e) {
@@ -175,20 +171,16 @@ public class BookService {
     }
 
     // 还书
-    public boolean returnBook(String recordUuid) {
+    public boolean returnBook(String uuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookRecordMapper bookRecordMapper = sqlSession.getMapper(BookRecordMapper.class);
             BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            LibUserMapper libUserMapper = sqlSession.getMapper(LibUserMapper.class);
 
             // 1. 查询借阅记录
-            BookRecord record = bookRecordMapper.findByUuid(recordUuid);
+            BookRecord record = bookRecordMapper.findByUuid(uuid);
             if (record == null ) {
                 return false; // 记录不存在或已归还
             }
-
-
 
             // 3. 更新副本状态为在馆
             BookItem item = bookItemMapper.findByUuid(record.getUuid());
@@ -197,19 +189,6 @@ public class BookService {
                 bookItemMapper.updateBookItem(item);
             }
 
-            // 4. 更新书籍库存
-            Book book = bookMapper.findByIsbn(item.getIsbn());
-            if (book != null) {
-                book.setInventory(book.getInventory() + 1);
-                bookMapper.updateBook(book);
-            }
-
-            // 5. 更新用户已借数量
-            LibUser user = libUserMapper.findById(record.getUserId());
-            if (user != null && user.getBorrowed() > 0) {
-                user.setBorrowed(user.getBorrowed() - 1);
-                libUserMapper.update(user);
-            }
             bookRecordMapper.deleteBookRecord(record.getUuid());
             sqlSession.commit();
             return true;
