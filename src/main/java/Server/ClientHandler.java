@@ -775,7 +775,7 @@ public class ClientHandler implements Runnable {
                     case "getTodaySalesStats":
                         // 管理员功能：获取今日销售统计
                         List<StoreMapper.SalesStats> todaySalesStats = storeService.getTodaySalesStatistics();
-                        response = Response.success("获取销售统计成功", todaySalesStats);
+                        response = Response.success("获取今日销售统计成功", todaySalesStats);
                         break;
 
                     case "getTodaySales":
