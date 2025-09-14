@@ -2,38 +2,33 @@ package Client.library.admin;
 
 import Client.ClientNetworkHelper;
 import Client.library.util.model.BookClass;
-import Client.library.util.model.BookItem;
 import Client.library.util.model.Category;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
-import Server.model.book.BookStatus;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class AddBookPanel extends VBox {
-    private TextField isbnField, titleField, authorField, publisherField, inventoryField;
+    private TextField isbnField, titleField, authorField, publisherField;
     private ComboBox<Category> categoryComboBox;
     private DatePicker publishDatePicker;
     private TextArea descriptionArea;
     private Label statusLabel;
 
     private Gson gson;
-    private Stage addItemsStage;
-    private List<TextField> locationFields;
 
     public AddBookPanel() {
         // 创建配置了LocalDate和UUID适配器的Gson实例
@@ -99,6 +94,7 @@ public class AddBookPanel extends VBox {
         form.add(publishDateLabel, 0, 4);
         form.add(publishDatePicker, 1, 4);
 
+        // 类别字段
         Label categoryLabel = new Label("类别:");
         categoryLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
         categoryComboBox = new ComboBox<>();
@@ -133,10 +129,6 @@ public class AddBookPanel extends VBox {
 
         form.add(categoryLabel, 0, 5);
         form.add(categoryComboBox, 1, 5);
-        // 库存字段
-        inventoryField = createStyledTextField("库存数量");
-        form.add(createLabel("库存:", labelStyle), 0, 6);
-        form.add(inventoryField, 1, 6);
 
         // 描述字段
         Label descriptionLabel = createLabel("描述:", labelStyle);
@@ -145,8 +137,8 @@ public class AddBookPanel extends VBox {
         descriptionArea.setWrapText(true);
         descriptionArea.setPrefRowCount(4);
         descriptionArea.setStyle("-fx-font-size: 14px; -fx-background-radius: 5; -fx-border-radius: 5;");
-        form.add(descriptionLabel, 0, 7);
-        form.add(descriptionArea, 1, 7);
+        form.add(descriptionLabel, 0, 6);
+        form.add(descriptionArea, 1, 6);
 
         // 按钮区域
         HBox buttonBox = new HBox(10);
@@ -195,10 +187,6 @@ public class AddBookPanel extends VBox {
             setStatus("请输入书名");
             return;
         }
-        if (inventoryField.getText().trim().isEmpty()) {
-            setStatus("请输入库存数量");
-            return;
-        }
 
         new Thread(() -> {
             try {
@@ -210,7 +198,6 @@ public class AddBookPanel extends VBox {
                 String publisher = publisherField.getText().trim();
                 LocalDate publishDate = publishDatePicker.getValue();
                 String category = categoryComboBox.getValue().name(); // 获取枚举名称(如"SCIENCE")
-                int inventory = Integer.parseInt(inventoryField.getText().trim());
                 String description = descriptionArea.getText().trim();
 
                 // 构建书籍对象
@@ -221,7 +208,7 @@ public class AddBookPanel extends VBox {
                 book.setPublisher(publisher);
                 book.setPublishDate(publishDate);
                 book.setCategory(category);
-                book.setInventory(inventory);
+                book.setInventory(0); // 默认库存量为0
                 book.setDescription(description);
 
                 // 构建添加请求
@@ -239,8 +226,8 @@ public class AddBookPanel extends VBox {
 
                 if (code == 200) {
                     Platform.runLater(() -> {
-                        setStatus("书籍添加成功，请添加副本信息");
-                        showAddBookItemsDialog(isbn, inventory);
+                        setStatus("书籍添加成功");
+                        clearForm();
                     });
                 } else if (code == 409) { // 假设409表示书籍已存在
                     Platform.runLater(() -> {
@@ -255,147 +242,9 @@ public class AddBookPanel extends VBox {
                     Platform.runLater(() ->
                             setStatus("添加失败: " + responseMap.get("message")));
                 }
-            } catch (NumberFormatException e) {
-                Platform.runLater(() ->
-                        setStatus("输入错误: 库存必须是数字"));
             } catch (Exception e) {
                 Platform.runLater(() ->
                         setStatus("添加错误: " + e.getMessage()));
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
-    private void showAddBookItemsDialog(String isbn, int inventory) {
-        Platform.runLater(() -> {
-            // 创建新窗口
-            addItemsStage = new Stage();
-            addItemsStage.initModality(Modality.APPLICATION_MODAL);
-            addItemsStage.setTitle("添加书籍副本 - " + isbn);
-
-            VBox dialogVBox = new VBox(15);
-            dialogVBox.setPadding(new Insets(20));
-            dialogVBox.setStyle("-fx-background-color: #f5f7fa;");
-
-            Label titleLabel = new Label("添加书籍副本");
-            titleLabel.setFont(Font.font(20));
-            titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-
-            // 表单容器
-            GridPane form = new GridPane();
-            form.setHgap(15);
-            form.setVgap(15);
-            form.setPadding(new Insets(20));
-            form.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0.0, 0.0);");
-
-            // 设置列约束
-            ColumnConstraints col1 = new ColumnConstraints();
-            col1.setPrefWidth(80);
-            ColumnConstraints col2 = new ColumnConstraints();
-            col2.setHgrow(Priority.ALWAYS);
-            form.getColumnConstraints().addAll(col1, col2);
-
-            // 创建标签样式
-            String labelStyle = "-fx-font-weight: bold; -fx-font-size: 14px;";
-
-            // 为每个副本创建位置输入字段
-            locationFields = new ArrayList<>();
-            for (int i = 0; i < inventory; i++) {
-                Label copyLabel = createLabel("副本 " + (i + 1) + ":", labelStyle);
-                TextField locationField = createStyledTextField("馆藏位置");
-                locationFields.add(locationField);
-                form.add(copyLabel, 0, i);
-                form.add(locationField, 1, i);
-            }
-
-            // 按钮区域
-            HBox buttonBox = new HBox(10);
-            buttonBox.setAlignment(Pos.CENTER_RIGHT);
-            buttonBox.setPadding(new Insets(15, 0, 0, 0));
-
-            Button submitButton = new Button("添加副本");
-            submitButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-pref-width: 120px; -fx-pref-height: 35px;");
-            submitButton.setOnAction(e -> addBookItems(isbn));
-
-            Button cancelButton = new Button("取消");
-            cancelButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-pref-width: 120px; -fx-pref-height: 35px;");
-            cancelButton.setOnAction(e -> addItemsStage.close());
-
-            buttonBox.getChildren().addAll(cancelButton, submitButton);
-
-            // 添加到对话框容器
-            dialogVBox.getChildren().addAll(titleLabel, form, buttonBox);
-
-            // 创建场景并显示
-            Scene dialogScene = new Scene(dialogVBox, 500, Math.min(600, 150 + inventory * 50));
-            addItemsStage.setScene(dialogScene);
-            addItemsStage.show();
-        });
-    }
-
-    private void addBookItems(String isbn) {
-        new Thread(() -> {
-            try {
-                Platform.runLater(() -> setStatus("添加副本中..."));
-
-                boolean allSuccess = true;
-                StringBuilder errorMessages = new StringBuilder();
-
-                for (int i = 0; i < locationFields.size(); i++) {
-                    TextField locationField = locationFields.get(i);
-                    String place = locationField.getText().trim();
-
-                    if (place.isEmpty()) {
-                        errorMessages.append("副本 ").append(i + 1).append(": 请输入馆藏位置\n");
-                        allSuccess = false;
-                        continue;
-                    }
-
-                    // 构建副本对象
-                    BookItem bookItem = new BookItem();
-                    bookItem.setIsbn(isbn);
-                    bookItem.setPlace(place);
-                    bookItem.setBookStatus(String.valueOf(BookStatus.INLIBRARY)); // 默认为在馆状态
-
-                    // 构建添加请求
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("bookItem", bookItem);
-                    Request request = new Request("addBookItem", data);
-
-                    // 使用ClientNetworkHelper发送请求
-                    String response = ClientNetworkHelper.send(request);
-                    System.out.println("添加副本响应: " + response);
-
-                    // 解析响应
-                    Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                    int code = ((Double) responseMap.get("code")).intValue();
-
-                    if (code != 200) {
-                        errorMessages.append("副本 ").append(i + 1).append(": ")
-                                .append(responseMap.get("message")).append("\n");
-                        allSuccess = false;
-                    }
-                }
-
-                if (allSuccess) {
-                    Platform.runLater(() -> {
-                        setStatus("所有副本添加成功");
-                        addItemsStage.close();
-                        clearForm();
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        setStatus("部分副本添加失败");
-                        Alert alert = new Alert(Alert.AlertType.WARNING);
-                        alert.setTitle("添加副本失败");
-                        alert.setHeaderText("部分副本添加失败");
-                        alert.setContentText(errorMessages.toString());
-                        alert.showAndWait();
-                    });
-                }
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        setStatus("添加副本错误: " + e.getMessage()));
                 e.printStackTrace();
             }
         }).start();
@@ -408,7 +257,6 @@ public class AddBookPanel extends VBox {
         publisherField.clear();
         publishDatePicker.setValue(null);
         categoryComboBox.getSelectionModel().selectFirst(); // 重置为默认选择
-        inventoryField.clear();
         descriptionArea.clear();
         setStatus("表单已清空");
     }

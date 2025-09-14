@@ -119,7 +119,7 @@ book_record表：借阅记录表
             user_id INT NOT NULL,                 -- 用户一卡通号
             borrow_time DATE NOT NULL,            -- 借书时间
             due_time DATE NOT NULL,               -- 到期时间
-            name VARCHAR(255) NOT NULL,           -- 书名
+            name VARCHAR(255) NOT NULL            -- 书名
         );
 
 students表: 学生表

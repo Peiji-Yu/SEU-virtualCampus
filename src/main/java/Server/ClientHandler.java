@@ -955,11 +955,6 @@ public class ClientHandler implements Runnable {
                             response = Response.error(500, "搜索过程中发生���误: " + e.getMessage());
                         }
                         break;
-<<<<<<< HEAD
-
-=======
->>>>>>> c1da06908c511561928644c67328bfb1ebe3a60c
-
 
                     // 📖 获取个人借阅记录（通过 userId）
                     case "getOwnRecords": {
@@ -1025,13 +1020,13 @@ public class ClientHandler implements Runnable {
 
                     // 📚 借书
                     case "borrowBook": {
-                        String isbn = (String) request.getData().get("isbn");
+                        String uuid = (String) request.getData().get("uuid");
                         Integer userId = ((Double) request.getData().get("userId")).intValue();
-                        if (isbn == null || userId == 0) {
+                        if (uuid == null || userId == 0) {
                             response = Response.error("缺少 uuid 或 userId 参数");
                             break;
                         }
-                        boolean result = bookService.borrowBook(userId, isbn);
+                        boolean result = bookService.borrowBook(userId, uuid);
                         response = result ? Response.success("借书成功") : Response.error("借书失败");
                         break;
                     }
