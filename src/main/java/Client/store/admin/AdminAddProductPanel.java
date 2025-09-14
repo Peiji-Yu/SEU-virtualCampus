@@ -24,6 +24,9 @@ public class AdminAddProductPanel extends VBox {
     private TextArea descriptionField; // 更改为TextArea以支持多行文本
     private Button submitButton, clearButton;
     private Label statusLabel;
+    private ComboBox<String> categoryCombo;
+    private static final String[] CATEGORY_OPTIONS = {"书籍", "文具", "食品", "日用品", "电子产品", "其他"};
+
 
     private Gson gson;
 
@@ -56,7 +59,7 @@ public class AdminAddProductPanel extends VBox {
 
         // 设置列约束，使第二列可以扩展
         ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPrefWidth(100);
+        col1.setPrefWidth(120);
         ColumnConstraints col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         ColumnConstraints col3 = new ColumnConstraints();
@@ -70,6 +73,7 @@ public class AdminAddProductPanel extends VBox {
         uuidField.setText(UUID.randomUUID().toString());
         uuidField.setEditable(false);
         uuidField.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px;");
+        uuidField.setMaxWidth(Double.MAX_VALUE);
 
         Button generateUuidButton = new Button("生成新UUID");
         generateUuidButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 12px; -fx-pref-height: 30px;");
@@ -93,9 +97,17 @@ public class AdminAddProductPanel extends VBox {
         form.add(priceField, 1, 2, 2, 1);
 
         // 类别字段
-        categoryField = createStyledTextField("类别");
+//        categoryField = createStyledTextField("类别");
+//        form.add(createLabel("类别:", labelStyle), 0, 3);
+//        form.add(categoryField, 1, 3, 2, 1);
+
+        categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().addAll(CATEGORY_OPTIONS);
+        categoryCombo.setPromptText("请选择类别");
+        categoryCombo.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px;");
+        categoryCombo.setPrefWidth(250);
         form.add(createLabel("类别:", labelStyle), 0, 3);
-        form.add(categoryField, 1, 3, 2, 1);
+        form.add(categoryCombo, 1, 3, 2, 1);
 
         // 库存字段
         stockField = createStyledTextField("库存数量");
@@ -170,16 +182,22 @@ public class AdminAddProductPanel extends VBox {
             setStatus("请输入商品价格");
             return;
         }
-        if (categoryField.getText().trim().isEmpty()) {
-            setStatus("请输入商品类别");
-            return;
-        }
+//        if (categoryField.getText().trim().isEmpty()) {
+//            setStatus("请输入商品类别");
+//            return;
+//        }
         if (stockField.getText().trim().isEmpty()) {
             setStatus("请输入库存数量");
             return;
         }
         if (barcodeField.getText().trim().isEmpty()) {
             setStatus("请输入条形码");
+            return;
+        }
+
+        String category = categoryCombo.getValue();
+        if (category == null || category.trim().isEmpty()) {
+            setStatus("请选择商品类别");
             return;
         }
 
@@ -191,7 +209,7 @@ public class AdminAddProductPanel extends VBox {
                 String name = nameField.getText().trim();
                 double price = Double.parseDouble(priceField.getText().trim());
                 int priceFen = (int) Math.round(price * 100);
-                String category = categoryField.getText().trim();
+                String category1 = categoryField.getText().trim();
                 int stock = Integer.parseInt(stockField.getText().trim());
                 String barcode = barcodeField.getText().trim();
                 String picture = pictureField.getText().trim();
@@ -202,7 +220,7 @@ public class AdminAddProductPanel extends VBox {
                 item.put("uuid", uuid);
                 item.put("itemName", name);
                 item.put("price", priceFen);
-                item.put("category", category);
+                item.put("category", category1);
                 item.put("stock", stock);
                 item.put("barcode", barcode);
                 item.put("pictureLink", picture);
@@ -244,11 +262,11 @@ public class AdminAddProductPanel extends VBox {
     private void clearForm() {
         nameField.clear();
         priceField.clear();
-        categoryField.clear();
         stockField.clear();
         barcodeField.clear();
         pictureField.clear();
         descriptionField.clear();
+        categoryCombo.getSelectionModel().clearSelection();
         uuidField.setText(UUID.randomUUID().toString());
         setStatus("表单已清空");
     }

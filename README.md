@@ -115,6 +115,16 @@ book_item表：书籍副本表
 
 lib_user表：用户表
 
+<<<<<<< HEAD
+-- 借阅记录表
+CREATE TABLE book_record (
+    uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
+    user_id INT NOT NULL,                 -- 用户一卡通号
+    borrow_time DATE NOT NULL,            -- 借书时间
+    due_time DATE NOT NULL,               -- 到期时间
+    name VARCHAR(255) NOT NULL,           -- 书名
+);
+=======
         CREATE TABLE lib_user (
             user_id INT PRIMARY KEY,              -- 用户一卡通号
             borrowed INT NOT NULL DEFAULT 0,      -- 当前已借书数量
@@ -223,4 +233,5 @@ student_selected_courses图：学生已选课程视图
         FROM student_teaching_class stc
         JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
         JOIN courses c ON tc.course_id = c.course_id;
+>>>>>>> c1da06908c511561928644c67328bfb1ebe3a60c
 

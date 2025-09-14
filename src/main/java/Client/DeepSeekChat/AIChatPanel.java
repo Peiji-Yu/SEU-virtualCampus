@@ -1,12 +1,14 @@
 package Client.DeepSeekChat;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.gson.Gson;
@@ -14,7 +16,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import Client.ClientNetworkHelper;
 import Client.util.Config;
+import Server.model.Request;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -56,10 +60,10 @@ public class AIChatPanel extends BorderPane {
     private Image aiAvatarImg;
     private Image userAvatarImg;
 
-    private final String userDisplayName = "用户"; // 默认显示名
+    private final String userDisplayName; // 默认显示名
 
-    public AIChatPanel(String cardnumber){
-
+    public AIChatPanel(String userDisplayName){
+        this.userDisplayName = userDisplayName == null ? "未知用户" : userDisplayName;
         // 加载头像
         try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
         try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
@@ -87,16 +91,74 @@ public class AIChatPanel extends BorderPane {
                         "1. 用户管理模块：用户登录、登出、修改/忘记密码。\n" +
                         "2. 学籍管理模块：学生可查看姓名、性别、出生日期、身份证号、一卡通号、学号、学院、专业、学籍状态、入学时间、籍贯、政治面貌；管理员可操作学籍信息。\n" +
                         "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
-                        "4. 图书管理模块：学生查询借阅信息，管理员管理图书及读者信息。\n" +
+                        "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
                         "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
                         "\n" +
-                        "请根据提供信息回答问题，并优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
         systemMsg.addProperty("content", systemPrompt);
 
         conversationHistory.add(systemMsg);
+    }
+    /**
+     * 动态拼接 5 个模块的上下文信息
+     */
+    private String fetchDynamicContext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是学生最新的系统信息，请结合回答：\n\n");
+        Integer cardNumber = Integer.valueOf(userDisplayName);
+        try {
+            // 2. 学籍管理模块
+            String studentInfo = ClientNetworkHelper.send(
+                    new Request("getSelf", Map.of("cardNumber", cardNumber))
+            );
+            sb.append("【2. 学籍管理模块】\n").append(studentInfo).append("\n\n");
+
+            // 3. 选课系统模块
+            String courseInfo = ClientNetworkHelper.send(
+                    new Request("getStudentSelectedCourses", Map.of("cardNumber", cardNumber))
+            );
+            sb.append("【3. 选课系统模块】\n").append(courseInfo).append("\n\n");
+
+            // 4. 图书管理模块
+            String libraryInfo = ClientNetworkHelper.send(
+                    new Request("getOwnRecords", Map.of("userId", cardNumber))
+            );
+            sb.append("【4. 图书管理模块】\n").append(libraryInfo).append("\n\n");
+
+            // 5. 商店模块
+            String shopOrdersJson = ClientNetworkHelper.send(
+                    new Request("getUserOrders", Map.of("cardNumber", cardNumber))
+            );
+
+            Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> orders = new Gson().fromJson(shopOrdersJson, listType);
+
+            StringBuilder shopSb = new StringBuilder();
+            shopSb.append("【5. 商店模块】\n");
+
+            for (Map<String, Object> orderMap : orders) {
+                String uuidStr = (String) orderMap.get("uuid");
+                shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
+
+                // 调用 getOrder 接口获取订单详情
+                String orderDetailJson = ClientNetworkHelper.send(
+                        new Request("getOrder", Map.of("orderId", uuidStr))
+                );
+
+                shopSb.append("订单详情: ").append(orderDetailJson).append("\n\n");
+            }
+
+            sb.append(shopSb.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sb.append("（部分模块信息获取失败，请稍后重试）");
+        }
+
+        return sb.toString();
     }
 
     /** 构建界面 */
@@ -130,12 +192,12 @@ public class AIChatPanel extends BorderPane {
             ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
             logo.setFitHeight(30);
             logo.setPreserveRatio(true);
-            Label title = new Label("AI助手");
+            Label title = new Label("东南大学虚拟校园系统智能助手");
             title.getStyleClass().add("title");
             HBox.setMargin(title, new Insets(0,0,0,10));
             header.getChildren().addAll(logo, title);
         } catch (Exception e){
-            Label title = new Label("AI助手");
+            Label title = new Label("东南大学虚拟校园系统智能助手");
             title.getStyleClass().add("title");
             header.getChildren().add(title);
         }
@@ -157,6 +219,7 @@ public class AIChatPanel extends BorderPane {
 
         StackPane wrapper = new StackPane(scrollPane);
         wrapper.setStyle("-fx-background-color: white;");
+        StackPane.setMargin(scrollPane, Insets.EMPTY);
         wrapper.heightProperty().addListener((o,ov,nv)->{
             if (chatContainer.getHeight() < nv.doubleValue()) {
                 chatContainer.setMinHeight(nv.doubleValue());
@@ -174,11 +237,11 @@ public class AIChatPanel extends BorderPane {
         Node aiAvatarNode = buildAiAvatarNode();
         VBox messageContent = new VBox();
         messageContent.setSpacing(5);
-        Label nameLabel = new Label("DeepSeek");
+        Label nameLabel = new Label("东南大学虚拟校园系统智能助手");
         nameLabel.getStyleClass().add("message-name");
         TextFlow textFlow = new TextFlow();
         textFlow.getStyleClass().add("ai-message");
-        Text t = new Text("您好！我是AI助手，有什么可以帮您的吗？");
+        Text t = new Text("您好！我是东南大学虚拟校园系统的智能助手，有什么可以帮您的吗？");
         textFlow.getChildren().add(t);
         messageContent.getChildren().addAll(nameLabel, textFlow);
         HBox.setMargin(messageContent, new Insets(0,0,0,10));
@@ -213,15 +276,32 @@ public class AIChatPanel extends BorderPane {
         area.getChildren().addAll(inputField, sendButton);
         return area;
     }
-
     private void sendMessage(){
         String msg = inputField.getText().trim();
         if (msg.isEmpty()) return;
+
+        // 假设你在类里保存了 userId 和 cardNumber
+        String dynamicContext = fetchDynamicContext();
+
+        // 删除旧的动态上下文
+        conversationHistory.removeIf(ctx ->
+                "system".equals(ctx.get("role").getAsString()) &&
+                        ctx.get("content").getAsString().startsWith("以下是学生最新的系统信息")
+        );
+
+        // 添加新的动态上下文
+        JsonObject contextMsg = new JsonObject();
+        contextMsg.addProperty("role", "system");
+        contextMsg.addProperty("content", dynamicContext);
+        conversationHistory.add(contextMsg);
+
+        // 添加用户消息
         addUserMessage(msg);
         inputField.clear();
         showTypingIndicator();
         callDeepSeekAPI(msg);
     }
+
 
     private void addUserMessage(String message){
         HBox box = new HBox();
@@ -347,21 +427,5 @@ public class AIChatPanel extends BorderPane {
             return iv;
         }
         Circle fallback = new Circle(20); fallback.getStyleClass().add("user-avatar"); return fallback;
-    }
-    /**
-     * 设置学生信息，用于更新系统上下文
-     */
-    public void setStudentInfo(String name, String studentNumber) {
-        // 更新系统上下文中的学生信息提示
-        String studentInfo = String.format("当前学生姓名：%s，学号：%s。", name, studentNumber);
-
-        // 找到系统消息（假设是 conversationHistory 的第一个元素）
-        if (!conversationHistory.isEmpty()) {
-            JsonObject systemMsg = conversationHistory.get(0);
-            if ("system".equals(systemMsg.get("role").getAsString())) {
-                String oldContent = systemMsg.get("content").getAsString();
-                systemMsg.addProperty("content", oldContent + "\n" + studentInfo);
-            }
-        }
     }
 }

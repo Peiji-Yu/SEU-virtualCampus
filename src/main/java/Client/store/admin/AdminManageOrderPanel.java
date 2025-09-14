@@ -311,7 +311,8 @@ public class AdminManageOrderPanel extends BorderPane {
         Label userLabel = new Label("用户: " + order.getCardNumber());
         userLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
 
-        Label timeLabel = new Label("时间: " + order.getTime());
+        // 修改时间显示格式
+        Label timeLabel = new Label("时间: " + order.getTime().replace("T", " "));
         timeLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
 
         infoBox.getChildren().addAll(idLabel, userLabel, timeLabel);
@@ -405,7 +406,7 @@ public class AdminManageOrderPanel extends BorderPane {
         detailGrid.add(new Label(String.valueOf(order.getCardNumber())), 1, 1);
 
         detailGrid.add(new Label("订单时间:"), 0, 2);
-        detailGrid.add(new Label(order.getTime()), 1, 2);
+        detailGrid.add(new Label(order.getTime().replace("T", " ")), 1, 2);
 
         detailGrid.add(new Label("订单状态:"), 0, 3);
         Label statusDetailLabel = new Label(order.getStatus());

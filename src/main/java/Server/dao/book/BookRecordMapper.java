@@ -18,11 +18,8 @@ public interface BookRecordMapper {
     @Select("SELECT * FROM book_record WHERE user_id = #{userId}")
     List<BookRecord> findByUserId(@Param("userId") int userId);
 
-    @Select("SELECT * FROM book_record WHERE isbn = #{isbn}")
-    List<BookRecord> findByIsbn(@Param("isbn") String isbn);
-
-    @Insert("INSERT INTO book_record(uuid, user_id, borrow_time, due_time) " +
-            "VALUES(#{uuid}, #{userId}, #{borrowTime}, #{dueTime})")
+    @Insert("INSERT INTO book_record(uuid, user_id, borrow_time, due_time, name) " +
+            "VALUES(#{uuid}, #{userId}, #{borrowTime}, #{dueTime}, #{name})")
     int insertBookRecord(BookRecord bookRecord);
 
     @Update("UPDATE book_record SET borrow_time=#{borrowTime}, due_time=#{dueTime} WHERE uuid=#{uuid}")

@@ -12,8 +12,8 @@ public interface ClassStudentMapper {
     
     // 根据学号查询学生信息
     @Select("SELECT * FROM student WHERE student_number = #{studentNumber}")
-    ClassStudent findByStudentNumber(@Param("studentNumber") Integer studentNumber);
-    
+    ClassStudent findByStudentNumber(@Param("studentNumber") String studentNumber);
+
     // 插入新学生
     @Insert("INSERT INTO student (card_number, student_number, major, school, status) " +
             "VALUES (#{cardNumber}, #{studentNumber}, #{major}, #{school}, #{status})")
@@ -40,8 +40,8 @@ public interface ClassStudentMapper {
     
     // 获取最大的学号，用于生成新的学号
     @Select("SELECT MAX(student_number) FROM student")
-    Integer getMaxStudentNumber();
-    
+    String getMaxStudentNumber();
+
     // 根据教学班UUID查询选课学生
     @Select("SELECT s.* FROM student s " +
             "JOIN student_teaching_class stc ON s.card_number = stc.student_card_number " +

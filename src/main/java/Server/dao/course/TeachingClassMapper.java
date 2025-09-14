@@ -24,15 +24,22 @@ public interface TeachingClassMapper {
     @Select("SELECT * FROM teaching_classes WHERE teacher_name = #{teacherName}")
     List<TeachingClass> findByTeacherName(@Param("teacherName") String teacherName);
 
+    // 根据一卡通号查询教师负责的教学班（通过 user 表的 card_number 与 teaching_classes.teacher_name 关联）
+    @Select("SELECT tc.* FROM teaching_classes tc JOIN user u ON tc.teacher_name = u.name WHERE u.card_number = #{cardNumber}")
+    @Results({
+        @Result(property = "teacherName", column = "teacher_name")
+    })
+    List<TeachingClass> findByTeacherCardNumber(@Param("cardNumber") Integer cardNumber);
+
     // 插入新教学班
     @Insert("INSERT INTO teaching_classes (uuid, course_id, teacher_name, schedule, place, capacity, selected_count) " +
-            "VALUES (#{uuid}, #{courseId}, #{teacherName}, #{schedule}, #{place}, #{capacity}, #{selectedCount})")
+            "VALUES (#{uuid}, #{courseId}, #{teacherName}, #{schedule}, #{place}, IFNULL(#{capacity}, 0), IFNULL(#{selectedCount}, 0))")
     int insertTeachingClass(TeachingClass teachingClass);
     
     // 更新教学班信息
     @Update("UPDATE teaching_classes SET " +
             "course_id = #{courseId}, teacher_name = #{teacherName}, schedule = #{schedule}, " +
-            "place = #{place}, capacity = #{capacity}, selected_count = #{selectedCount} " +
+            "place = #{place}, capacity = IFNULL(#{capacity}, capacity), selected_count = IFNULL(#{selectedCount}, selected_count) " +
             "WHERE uuid = #{uuid}")
     int updateTeachingClass(TeachingClass teachingClass);
     

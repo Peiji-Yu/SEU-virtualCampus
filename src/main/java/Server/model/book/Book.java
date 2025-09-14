@@ -1,7 +1,6 @@
 package Server.model.book;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
  * 书籍类
@@ -17,14 +16,12 @@ public class Book {
     private int inventory;       // 库存量
     private Category category;   // 类别
 
-    private List<BookItem> items; // 该书的所有实体（副本）
 
     public Book() {}
 
     public Book(String name, String isbn, String author,
                 String publisher, LocalDate publishDate,
-                String description, int inventory, Category category,
-                List<BookItem> items) {
+                String description, int inventory, Category category) {
         this.name = name;
         this.isbn = isbn;
         this.author = author;
@@ -33,7 +30,6 @@ public class Book {
         this.description = description;
         this.inventory = inventory;
         this.category = category;
-        this.items = items;
     }
 
     // Getter 和 Setter
@@ -101,13 +97,6 @@ public class Book {
         this.category = category;
     }
 
-    public List<BookItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<BookItem> items) {
-        this.items = items;
-    }
 
     // toString 方法
     @Override
@@ -121,7 +110,6 @@ public class Book {
                 ", description='" + description + '\'' +
                 ", inventory=" + inventory +
                 ", category=" + (category != null ? category.toString() : "未分类") +
-                ", items=" + (items != null ? items.toString() : "无副本") +
                 '}';
     }
 }
