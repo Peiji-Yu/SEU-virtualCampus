@@ -112,7 +112,9 @@ public final class ClientNetworkHelper {
     public static String getAllCourses() throws IOException {
         Request req = new Request();
         req.setType("getAllCourses");
-        req.setData(null);
+        // 避免 data 为 null 导致某些序列化/解析场景不一致，使用空 Map
+        Map<String, Object> data = new HashMap<>();
+        req.setData(data);
         return send(req);
     }
     public static String getCourseById(String courseId) throws IOException {
@@ -216,6 +218,15 @@ public final class ClientNetworkHelper {
         Map<String, Object> data = new HashMap<>();
         data.put("cardNumber", cardNumber);
         data.put("courseId", courseId);
+        req.setData(data);
+        return send(req);
+    }
+
+    // 获取所有教学班
+    public static String getAllTeachingClasses() throws IOException {
+        Request req = new Request();
+        req.setType("getAllTeachingClasses");
+        Map<String, Object> data = new HashMap<>();
         req.setData(data);
         return send(req);
     }

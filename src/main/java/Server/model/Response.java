@@ -8,6 +8,7 @@ public class Response {
     private int code;    // 状态码：200成功，400客户端错误，500服务器错误
     private String message; // 响应消息
     private Object data; // 响应数据
+    private boolean success; // 兼容老前端，表示请求是否成功（code==200）
 
     // 构造方法
     public Response() {}
@@ -16,6 +17,7 @@ public class Response {
         this.code = code;
         this.message = message;
         this.data = data;
+        this.success = (this.code == 200);
     }
 
     // 成功响应的快捷方法
@@ -43,6 +45,7 @@ public class Response {
 
     public void setCode(int code) {
         this.code = code;
+        this.success = (this.code == 200);
     }
 
     public String getMessage() {
@@ -61,12 +64,21 @@ public class Response {
         this.data = data;
     }
 
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
     @Override
     public String toString() {
         return "Response{" +
                 "code=" + code +
                 ", message='" + message + '\'' +
                 ", data=" + data +
+                ", success=" + success +
                 '}';
     }
 }

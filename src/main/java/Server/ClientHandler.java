@@ -1078,32 +1078,112 @@ public class ClientHandler implements Runnable {
                 // 支持逗号或分号分隔，允许空白符
                 String[] parts = val.split("[,;]\\s*");
                 List<TimeRange> ranges = new ArrayList<>();
+
+                // 节次与时间的映射（根据学校实际时间可调整）
+                String[] periodStart = new String[]{
+                        "", // 0 占位
+                        "08:00", "08:50", "10:00", "10:50",
+                        "14:00", "14:50", "15:50", "16:40",
+                        "19:00", "19:50", "20:10", "20:55"
+                };
+                String[] periodEnd = new String[]{
+                        "",
+                        "08:45", "09:35", "10:45", "11:30",
+                        "14:45", "15:35", "16:35", "17:25",
+                        "19:45", "20:35", "20:50", "21:40"
+                };
+
                 for (String p : parts) {
                     // 规范化中文标点与空白
                     String rawPart = p.replace('：', ':').replace('－', '-').replace('—', '-').replace('–', '-').trim();
                     if (rawPart.isEmpty()) continue;
-                    String[] se = rawPart.split("-");
-                    if (se.length != 2) continue;
-                    String startStr = se[0].trim();
-                    String endStr = se[1].trim();
-                    // 尝试多种时间格式解析（H:mm / HH:mm / H:mm:ss）
-                    LocalTime s = null, t = null;
-                    java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] {
-                            java.time.format.DateTimeFormatter.ofPattern("H:mm"),
-                            java.time.format.DateTimeFormatter.ofPattern("HH:mm"),
-                            java.time.format.DateTimeFormatter.ofPattern("H:mm:ss"),
-                            java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
-                    };
-                    for (java.time.format.DateTimeFormatter fmt : fmts) {
-                        if (s == null) {
-                            try { s = LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+
+                    // 如果包含 ':'，仍按时间区间解析（如 08:00-09:40）
+                    if (rawPart.contains(":")) {
+                        String[] se = rawPart.split("-");
+                        if (se.length != 2) continue;
+                        String startStr = se[0].trim();
+                        String endStr = se[1].trim();
+                        // 尝试多种时间格式解析（H:mm / HH:mm / H:mm:ss）
+                        java.time.LocalTime s = null, t = null;
+                        java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] {
+                                java.time.format.DateTimeFormatter.ofPattern("H:mm"),
+                                java.time.format.DateTimeFormatter.ofPattern("HH:mm"),
+                                java.time.format.DateTimeFormatter.ofPattern("H:mm:ss"),
+                                java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
+                        };
+                        for (java.time.format.DateTimeFormatter fmt : fmts) {
+                            if (s == null) {
+                                try { s = java.time.LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+                            }
+                            if (t == null) {
+                                try { t = java.time.LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
+                            }
+                            if (s != null && t != null) break;
                         }
-                        if (t == null) {
-                            try { t = LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
-                        }
-                        if (s != null && t != null) break;
+                        if (s != null && t != null) ranges.add(new TimeRange(s, t));
+                        continue;
                     }
-                    if (s != null && t != null) ranges.add(new TimeRange(s, t));
+
+                    // 识别节次格式，例如 "1-2节"、"1-2"、"3节" 或 "3"
+                    java.util.regex.Pattern rangePat = java.util.regex.Pattern.compile("^(\\d+)\\s*-\\s*(\\d+)\\s*节?$");
+                    java.util.regex.Matcher m = rangePat.matcher(rawPart);
+                    if (m.find()) {
+                        try {
+                            int a = Integer.parseInt(m.group(1));
+                            int b = Integer.parseInt(m.group(2));
+                            if (a < 1) a = 1;
+                            if (b < 1) b = 1;
+                            if (a >= periodStart.length) a = periodStart.length - 1;
+                            if (b >= periodEnd.length) b = periodEnd.length - 1;
+                            if (a > b) { int tmp = a; a = b; b = tmp; }
+                            String ss = periodStart[a];
+                            String ee = periodEnd[b];
+                            if (ss != null && ee != null && !ss.isEmpty() && !ee.isEmpty()) {
+                                ranges.add(new TimeRange(java.time.LocalTime.parse(ss), java.time.LocalTime.parse(ee)));
+                                continue;
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    java.util.regex.Pattern singlePat = java.util.regex.Pattern.compile("^(\\d+)\\s*节?$");
+                    m = singlePat.matcher(rawPart);
+                    if (m.find()) {
+                        try {
+                            int pnum = Integer.parseInt(m.group(1));
+                            if (pnum < 1) pnum = 1;
+                            if (pnum >= periodStart.length) pnum = periodStart.length - 1;
+                            String ss = periodStart[pnum];
+                            String ee = periodEnd[pnum];
+                            if (ss != null && ee != null && !ss.isEmpty() && !ee.isEmpty()) {
+                                ranges.add(new TimeRange(java.time.LocalTime.parse(ss), java.time.LocalTime.parse(ee)));
+                                continue;
+                            }
+                        } catch (Exception ignored) {}
+                    }
+
+                    // 若都无法识别，尝试原有的用 '-' 分割解析（兼容无冒号但有连字符的时间）
+                    String[] se = rawPart.split("-");
+                    if (se.length == 2) {
+                        String startStr = se[0].trim();
+                        String endStr = se[1].trim();
+                        java.time.LocalTime s = null, t = null;
+                        java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] {
+                                java.time.format.DateTimeFormatter.ofPattern("H:mm"),
+                                java.time.format.DateTimeFormatter.ofPattern("HH:mm"),
+                                java.time.format.DateTimeFormatter.ofPattern("H:mm:ss"),
+                                java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
+                        };
+                        for (java.time.format.DateTimeFormatter fmt : fmts) {
+                            if (s == null) {
+                                try { s = java.time.LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+                            }
+                            if (t == null) {
+                                try { t = java.time.LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
+                            }
+                            if (s != null && t != null) break;
+                        }
+                        if (s != null && t != null) ranges.add(new TimeRange(s, t));
+                    }
                 }
                 if (!ranges.isEmpty()) map.put(day, ranges);
             }

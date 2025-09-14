@@ -1,6 +1,7 @@
 package Client.courseselect;
 
 import Client.ClientNetworkHelper;
+import Client.util.EventBus;
 import Server.model.Request;
 import Server.model.Response;
 import Server.model.course.StudentTeachingClass;
@@ -16,6 +17,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 学生选课界面，重构版。后端数据类型安全，支持多教学班，容量校验，冲突检测。
@@ -30,7 +33,7 @@ public class CourseSelectPanel extends BorderPane {
     // 视图切换按钮：全部课程 / 已选课程
     private Button allCoursesBtn;
     private Button selectedCoursesBtn;
-    private final Map<Integer, TeachingClass> teachingClassMap;
+    private final Map<String, TeachingClass> teachingClassMap;
     private List<StudentTeachingClass> selectedClasses;
     // 防止重复提交的临时集合（线程安全）
     private final Set<String> pendingSelections = Collections.synchronizedSet(new HashSet<>());
@@ -215,11 +218,12 @@ public class CourseSelectPanel extends BorderPane {
 
                         teachingClassMap.clear();
                         for (TeachingClass tc : allTeachingClassesCopy) {
-                            if (tc != null && tc.getUuid() != null) teachingClassMap.put(tc.getUuid().hashCode(), tc);
+                            if (tc != null && tc.getUuid() != null) teachingClassMap.put(tc.getUuid().trim().toLowerCase(), tc);
                         }
                         // 显示课程为一级卡片，展开后显示该课程的教学班卡片
                         displayCoursesByCourse(courseListCopy, teachingClassesByCourseCopy);
-                        statusLabel.setText("共加载 " + totalCount + " 个教学班，按课程分组显示");
+                        // 显示按课程分组的课程数量，而不是教学班总数
+                        statusLabel.setText("共加载 " + courseListCopy.size() + " 门课程，按课程分组显示");
                         // 保证切换按钮样式与当前视图一致
                         allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
                         selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
@@ -317,29 +321,46 @@ public class CourseSelectPanel extends BorderPane {
     // 创建单个教学班卡片（用于课程详情展开内显示）
     private Node createTeachingClassCard(TeachingClass tc, FlowPane parent) {
          boolean isSelected = isCourseSelected(tc.getUuid());
-         HBox card = new HBox(12);
-         card.setPadding(new Insets(12));
-         String baseStyle = "-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6;";
-         if (isSelected) {
-             card.setStyle("-fx-background-color: #e6f6ec; " + baseStyle); // 绿底
-         } else {
-             card.setStyle("-fx-background-color: #f7f9fc; " + baseStyle);
-         }
-         card.setAlignment(Pos.CENTER_LEFT);
-
-         // 建议卡片宽度：缩小到 ~230 以便 FlowPane 每行最多显示 4 个卡片
-         // 绑定卡片宽度到父容器，计算：(父可用宽度 - 3*hgap) / 4
+         // 判断是否与任一已选教学班冲突（仅对未选中的教学班进行高亮）
+         boolean isConflict = false;
          try {
-             // 使用 parent 的宽度作为参考，减去左右内边距与间距后平均分配给四个卡片
+             if (!isSelected && tc != null && tc.getSchedule() != null && !selectedUuids.isEmpty()) {
+                 for (String selUuid : selectedUuids) {
+                     if (selUuid == null) continue;
+                     TeachingClass existTc = teachingClassMap.get(selUuid.trim().toLowerCase());
+                     if (existTc == null) continue;
+                     if (schedulesConflict(existTc.getSchedule(), tc.getSchedule())) {
+                         isConflict = true;
+                         break;
+                     }
+                 }
+             }
+         } catch (Exception ignored) {}
+
+         VBox card = new VBox(8);
+         card.setPadding(new Insets(12));
+         // 默认样式
+         card.setStyle("-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #f7f9fc;");
+         if (isSelected) {
+             // 已选：绿色背景
+             card.setStyle("-fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #e6f6ec;");
+         } else if (isConflict) {
+             // 冲突：红色提示背景（不改变按钮逻辑）
+             card.setStyle("-fx-background-radius: 6; -fx-border-color: #f5c2c7; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #fdecec;");
+         }
+         card.setAlignment(Pos.TOP_LEFT);
+         // 固定高度让每行卡片纵向对齐，按钮能靠底部显示
+         card.setPrefHeight(160);
+
+         // 绑定卡片宽度到父容器，确保四列均匀分布
+         try {
              card.prefWidthProperty().bind(parent.widthProperty()
-                     .subtract(32) // 预留内边距估算
+                     .subtract(32)
                      .subtract(parent.getHgap() * 3)
                      .divide(4));
-             // 限制最小宽度与最大宽度，防止在过窄或过宽时样式跑形
              card.minWidthProperty().bind(card.prefWidthProperty().multiply(0.75));
              card.maxWidthProperty().bind(card.prefWidthProperty().multiply(1.05));
          } catch (Exception ex) {
-             // 回退到固定宽度，保证兼容性
              card.setPrefWidth(230);
              card.setMinWidth(200);
          }
@@ -347,7 +368,7 @@ public class CourseSelectPanel extends BorderPane {
          VBox info = new VBox(8);
          Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
          teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
-         // 解析 schedule JSON
+
          VBox scheduleBox = new VBox(2);
          scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
          String scheduleJson = tc.getSchedule();
@@ -357,7 +378,8 @@ public class CourseSelectPanel extends BorderPane {
                  Map<String, String> scheduleMap = new Gson().fromJson(scheduleJson, mapType);
                  if (scheduleMap != null && !scheduleMap.isEmpty()) {
                      for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
-                         Label dayLine = new Label(e.getKey() + ": " + e.getValue());
+                         String formatted = formatScheduleValue(e.getValue());
+                         Label dayLine = new Label(e.getKey() + ": " + formatted);
                          dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
                          scheduleBox.getChildren().add(dayLine);
                      }
@@ -383,8 +405,9 @@ public class CourseSelectPanel extends BorderPane {
          capacity.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
          info.getChildren().addAll(teacher, timeRow, placeLabel, capacity);
 
-         Region spacer = new Region();
-         HBox.setHgrow(spacer, Priority.ALWAYS);
+         // 用可伸缩区域把按钮推到卡片底部
+         Region vSpacer = new Region();
+         VBox.setVgrow(vSpacer, Priority.ALWAYS);
 
          Button selectButton = new Button();
          final Button selectButtonFinal = selectButton;
@@ -392,7 +415,6 @@ public class CourseSelectPanel extends BorderPane {
          boolean isPending = pendingSelections.contains(tc.getUuid());
 
          if (isSelected) {
-             // 已选：显示退课按钮
              selectButton.setText("退课");
              selectButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;");
              selectButton.setDisable(false);
@@ -419,8 +441,11 @@ public class CourseSelectPanel extends BorderPane {
              });
          }
          selectButton.setPrefWidth(90);
+         selectButton.setMaxWidth(Double.MAX_VALUE);
+         HBox buttonRow = new HBox(selectButton);
+         buttonRow.setAlignment(Pos.CENTER_RIGHT);
 
-         card.getChildren().addAll(info, spacer, selectButton);
+         card.getChildren().addAll(info, vSpacer, buttonRow);
          return card;
     }
 
@@ -447,6 +472,8 @@ public class CourseSelectPanel extends BorderPane {
                         } else {
                             loadCourseData();
                         }
+                        // 通知全局事件：学生选课发生变化（用于课表等面板自动刷新）
+                        EventBus.post("student:courseChanged");
                         // 在刷新之后再给出提示，避免样式被 alert 打断后意外恢复到默认
                         showAlert("成功", "退课成功！", Alert.AlertType.INFORMATION);
                      } else {
@@ -469,77 +496,115 @@ public class CourseSelectPanel extends BorderPane {
         return selectedUuids.contains(teachingClassUuid.trim().toLowerCase());
     }
 
-    private void selectCourse(TeachingClass tc) {
-        new Thread(() -> {
+    // 把后端的 schedule 值格式化为可读文本。
+    // 支持原始时间范围（含 ':'）以及新的节次格式如 "1-2节"、"3节"。
+    // 当识别为节次时，会尝试将节次转换为近似的时间区间（映射表可根据学校实际时间调整）。
+    private String formatScheduleValue(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        if (s.isEmpty()) return "";
+        // 如果已经是时间范围（包含 ':'），直接返回原样
+        if (s.contains(":")) return s;
+
+        // 简单映射：节次 -> 时间段。可根据实际校历调整。
+        String[] periodStart = new String[]{
+                "", // 0 占位
+                "08:00", "08:50", "10:00", "10:50",
+                "14:00", "14:50", "15:50", "16:40",
+                "19:00", "19:50", "20:10", "20:55"
+        };
+        String[] periodEnd = new String[]{
+                "",
+                "08:45", "09:35", "10:45", "11:30",
+                "14:45", "15:35", "16:35", "17:25",
+                "19:45", "20:35", "20:50", "21:40"
+        };
+
+        // 匹配范围，例如 "1-2节" 或 "1-2"
+        Pattern rangePat = Pattern.compile("^(\\d+)\\s*-\\s*(\\d+)\\s*节?$");
+        Matcher m = rangePat.matcher(s);
+        if (m.find()) {
             try {
-                Map<String, Object> data = new HashMap<>();
-                data.put("cardNumber", studentId);
-                data.put("teachingClassUuid", tc.getUuid());
+                int a = Integer.parseInt(m.group(1));
+                int b = Integer.parseInt(m.group(2));
+                if (a < 1) a = 1;
+                if (b < 1) b = 1;
+                if (a >= periodStart.length) a = periodStart.length - 1;
+                if (b >= periodEnd.length) b = periodEnd.length - 1;
+                if (a > b) { int tmp=a; a=b; b=tmp; }
+                String start = periodStart[a];
+                String end = periodEnd[b];
+                if (start != null && !start.isEmpty() && end != null && !end.isEmpty()) {
+                    return s + " (" + start + "-" + end + ")";
+                }
+            } catch (Exception ignored) {}
+        }
 
-                Request request = new Request("selectCourse", data);
-                String responseStr = ClientNetworkHelper.send(request);
-                Response response = new Gson().fromJson(responseStr, Response.class);
-
-                Platform.runLater(() -> {
-                    if (response.getCode() == 200) {
-                        showAlert("成功", "选课成功！", Alert.AlertType.INFORMATION);
-                        // 刷新课程列表
-                        loadCourseData();
-                    } else {
-                        showAlert("选课失败", response.getMessage(), Alert.AlertType.ERROR);
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR);
-                });
-            }
-        }).start();
-    }
-
-    // 重载：带按钮引用，用于在请求失败时恢复按钮状态
-    private void selectCourse(TeachingClass tc, Button selectButton) {
-        new Thread(() -> {
+        // 匹配单节 "3节" 或 "3"
+        Pattern singlePat = Pattern.compile("^(\\d+)\\s*节?$");
+        m = singlePat.matcher(s);
+        if (m.find()) {
             try {
-                Map<String, Object> data = new HashMap<>();
-                data.put("cardNumber", studentId);
-                data.put("teachingClassUuid", tc.getUuid());
+                int p = Integer.parseInt(m.group(1));
+                if (p < 1) p = 1;
+                if (p >= periodStart.length) p = periodStart.length - 1;
+                String start = periodStart[p];
+                String end = periodEnd[p];
+                if (start != null && !start.isEmpty() && end != null && !end.isEmpty()) {
+                    return s + " (" + start + "-" + end + ")";
+                }
+            } catch (Exception ignored) {}
+        }
 
-                Request request = new Request("selectCourse", data);
-                String responseStr = ClientNetworkHelper.send(request);
-                Response response = new Gson().fromJson(responseStr, Response.class);
+        // 退回原始字符串
+        return s;
+    }
 
-                Platform.runLater(() -> {
-                    pendingSelections.remove(tc.getUuid());
-                    if (response.getCode() == 200) {
-                        showAlert("成功", "选课成功！", Alert.AlertType.INFORMATION);
-                        // 刷新课程列表
-                        loadCourseData();
-                    } else {
-                        // 恢复按钮以允许重试
-                        selectButton.setDisable(false);
-                        showAlert("选课失败", response.getMessage(), Alert.AlertType.ERROR);
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    pendingSelections.remove(tc.getUuid());
-                    selectButton.setDisable(false);
-                    showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR);
-                });
+    // 创建已选课程卡片，显示详细信息并提供退课按钮
+    private Node createSelectedCourseCard(TeachingClass tc) {
+        HBox card = new HBox(10);
+        card.setPadding(new Insets(12));
+        card.setStyle("-fx-background-color: #e6f6ec; -fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6;");
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        VBox info = new VBox(6);
+        Label title = new Label(tc.getCourseId() + "  " + (tc.getCourse() != null ? tc.getCourse().getCourseName() : ""));
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "" : tc.getTeacherName()));
+        teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
+        VBox scheduleBox = new VBox(2);
+        try {
+            java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+            Map<String, String> scheduleMap = new Gson().fromJson(tc.getSchedule(), mapType);
+            if (scheduleMap != null) {
+                for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
+                    String formatted = formatScheduleValue(e.getValue());
+                    Label line = new Label(e.getKey() + ": " + formatted);
+                    line.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                    scheduleBox.getChildren().add(line);
+                }
             }
-        }).start();
+        } catch (Exception ignored) {}
+
+        Label place = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
+        place.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        info.getChildren().addAll(title, teacher, scheduleBox, place);
+
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button dropBtn = new Button("退课");
+        dropBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+        dropBtn.setOnAction(e -> {
+            dropBtn.setDisable(true);
+            pendingSelections.add(tc.getUuid());
+            dropCourse(tc, dropBtn);
+        });
+        dropBtn.setPrefWidth(90);
+
+        card.getChildren().addAll(info, spacer, dropBtn);
+        return card;
     }
 
-    private void showAlert(String title, String message, Alert.AlertType type) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    // 加载并显示学生已选课程视图
     private void loadSelectedCourses() {
         statusLabel.setText("正在加载已选课程...");
         courseListContainer.getChildren().clear();
@@ -565,7 +630,6 @@ public class CourseSelectPanel extends BorderPane {
                     selectedClasses = new ArrayList<>();
                     for (TeachingClass t : list) {
                         if (t != null && t.getUuid() != null) selectedUuids.add(t.getUuid().trim().toLowerCase());
-                        // create a minimal StudentTeachingClass wrapper so other logic can use it if needed
                         StudentTeachingClass stc = new StudentTeachingClass();
                         stc.setTeachingClassUuid(t == null ? null : t.getUuid());
                         selectedClasses.add(stc);
@@ -575,7 +639,6 @@ public class CourseSelectPanel extends BorderPane {
                     Platform.runLater(() -> {
                         displaySelectedCoursesList(finalList);
                         statusLabel.setText("已选课程: " + finalList.size());
-                        // 保证切换按钮样式与当前视图一致
                         selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
                         allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
                     });
@@ -584,7 +647,7 @@ public class CourseSelectPanel extends BorderPane {
                         statusLabel.setText("加载已选课程失败: " + response.getMessage());
                         showAlert("错误", "加载已选课程失败: " + response.getMessage(), Alert.AlertType.ERROR);
                     });
-                }
+                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     statusLabel.setText("网络错误: " + e.getMessage());
@@ -594,7 +657,6 @@ public class CourseSelectPanel extends BorderPane {
         }).start();
     }
 
-    // 在 courseListContainer 中显示已选课程列表（卡片形式），并提供退课按钮
     private void displaySelectedCoursesList(List<TeachingClass> list) {
         courseListContainer.getChildren().clear();
         if (list == null || list.isEmpty()) {
@@ -609,47 +671,166 @@ public class CourseSelectPanel extends BorderPane {
         }
     }
 
-    // 创建已选课程卡片，显示详细信息并提供退课按钮
-    private Node createSelectedCourseCard(TeachingClass tc) {
-        HBox card = new HBox(10);
-        card.setPadding(new Insets(12));
-        card.setStyle("-fx-background-color: #e6f6ec; -fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6;");
-        card.setAlignment(Pos.CENTER_LEFT);
+    private void selectCourse(TeachingClass tc) {
+        new Thread(() -> {
+            try {
+                Map<String, Object> data = new HashMap<>();
+                data.put("cardNumber", studentId);
+                data.put("teachingClassUuid", tc.getUuid());
 
-        VBox info = new VBox(6);
-        Label title = new Label(tc.getCourseId() + "  " + (tc.getCourse() != null ? tc.getCourse().getCourseName() : ""));
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
-        Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "" : tc.getTeacherName()));
-        teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
-        VBox scheduleBox = new VBox(2);
+                Request request = new Request("selectCourse", data);
+                String responseStr = ClientNetworkHelper.send(request);
+                Response response = new Gson().fromJson(responseStr, Response.class);
+
+                Platform.runLater(() -> {
+                    if (response.getCode() == 200) {
+                        showAlert("成功", "选课成功！", Alert.AlertType.INFORMATION);
+                        loadCourseData();
+                        // 通知全局事件：学生选课发生变化（用于课表等面板自动刷新）
+                        EventBus.post("student:courseChanged");
+                    } else {
+                        showAlert("选课失败", response.getMessage(), Alert.AlertType.ERROR);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR));
+            }
+        }).start();
+    }
+
+    private void selectCourse(TeachingClass tc, Button selectButton) {
+        new Thread(() -> {
+            try {
+                Map<String, Object> data = new HashMap<>();
+                data.put("cardNumber", studentId);
+                data.put("teachingClassUuid", tc.getUuid());
+
+                Request request = new Request("selectCourse", data);
+                String responseStr = ClientNetworkHelper.send(request);
+                Response response = new Gson().fromJson(responseStr, Response.class);
+
+                Platform.runLater(() -> {
+                    pendingSelections.remove(tc.getUuid());
+                    if (response.getCode() == 200) {
+                        showAlert("成功", "选课成功！", Alert.AlertType.INFORMATION);
+                        loadCourseData();
+                        // 通知全局事件：学生选课发生变化（用于课表等面板自动刷新）
+                        EventBus.post("student:courseChanged");
+                    } else {
+                        selectButton.setDisable(false);
+                        showAlert("选课失败", response.getMessage(), Alert.AlertType.ERROR);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    pendingSelections.remove(tc.getUuid());
+                    selectButton.setDisable(false);
+                    showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR);
+                });
+            }
+        }).start();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // 客户端用于表示时间段的简单类型
+    private static class TimeRange {
+        java.time.LocalTime start;
+        java.time.LocalTime end;
+        TimeRange(java.time.LocalTime s, java.time.LocalTime e) { start = s; end = e; }
+    }
+
+    // 客户端解析 schedule JSON 为 Map<day, List<TimeRange>>，兼容节次格式
+    private Map<String, List<TimeRange>> parseScheduleClient(String scheduleJson) {
+        Map<String, List<TimeRange>> map = new HashMap<>();
+        if (scheduleJson == null || scheduleJson.trim().isEmpty()) return map;
         try {
             java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
-            Map<String, String> scheduleMap = new Gson().fromJson(tc.getSchedule(), mapType);
-            if (scheduleMap != null) {
-                for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
-                    Label line = new Label(e.getKey() + ": " + e.getValue());
-                    line.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                    scheduleBox.getChildren().add(line);
+            Map<String, String> raw = new Gson().fromJson(scheduleJson, mapType);
+            if (raw == null) return map;
+
+            String[] periodStart = new String[]{"", "08:00","08:50","10:00","10:50","14:00","14:50","15:50","16:40","19:00","19:50","20:10","20:55"};
+            String[] periodEnd = new String[]{"", "08:45","09:35","10:45","11:30","14:45","15:35","16:35","17:25","19:45","20:35","20:50","21:40"};
+
+            for (Map.Entry<String, String> e : raw.entrySet()) {
+                String day = e.getKey();
+                String val = e.getValue();
+                if (val == null) continue;
+                String[] parts = val.split("[,;]\\s*");
+                List<TimeRange> ranges = new ArrayList<>();
+                for (String p : parts) {
+                    String rawPart = p.replace('：', ':').replace('－', '-').replace('—', '-').replace('–', '-').trim();
+                    if (rawPart.isEmpty()) continue;
+                    if (rawPart.contains(":")) {
+                        String[] se = rawPart.split("-"); if (se.length != 2) continue;
+                        String startStr = se[0].trim(); String endStr = se[1].trim();
+                        java.time.LocalTime s = null, t = null;
+                        java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] {
+                                java.time.format.DateTimeFormatter.ofPattern("H:mm"), java.time.format.DateTimeFormatter.ofPattern("HH:mm") };
+                        for (java.time.format.DateTimeFormatter fmt : fmts) {
+                            if (s == null) try { s = java.time.LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+                            if (t == null) try { t = java.time.LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
+                            if (s != null && t != null) break;
+                        }
+                        if (s != null && t != null) ranges.add(new TimeRange(s, t));
+                        continue;
+                    }
+                    java.util.regex.Pattern rangePat = java.util.regex.Pattern.compile("^(\\d+)\\s*-\\s*(\\d+)\\s*节?$");
+                    java.util.regex.Matcher m = rangePat.matcher(rawPart);
+                    if (m.find()) {
+                        try { int a = Integer.parseInt(m.group(1)); int b = Integer.parseInt(m.group(2));
+                            if (a < 1) a = 1; if (b < 1) b = 1;
+                            if (a >= periodStart.length) a = periodStart.length - 1;
+                            if (b >= periodEnd.length) b = periodEnd.length - 1;
+                            if (a > b) { int tmp=a; a=b; b=tmp; }
+                            String ss = periodStart[a]; String ee = periodEnd[b];
+                            if (ss != null && ee != null && !ss.isEmpty() && !ee.isEmpty()) ranges.add(new TimeRange(java.time.LocalTime.parse(ss), java.time.LocalTime.parse(ee)));
+                            continue; } catch (Exception ignored) {}
+                    }
+                    java.util.regex.Pattern singlePat = java.util.regex.Pattern.compile("^(\\d+)\\s*节?$");
+                    m = singlePat.matcher(rawPart);
+                    if (m.find()) {
+                        try { int pnum = Integer.parseInt(m.group(1)); if (pnum < 1) pnum = 1; if (pnum >= periodStart.length) pnum = periodStart.length - 1;
+                            String ss = periodStart[pnum]; String ee = periodEnd[pnum];
+                            if (ss != null && ee != null && !ss.isEmpty() && !ee.isEmpty()) ranges.add(new TimeRange(java.time.LocalTime.parse(ss), java.time.LocalTime.parse(ee)));
+                            continue; } catch (Exception ignored) {}
+                    }
+                    String[] se = rawPart.split("-"); if (se.length == 2) {
+                        String startStr = se[0].trim(); String endStr = se[1].trim();
+                        java.time.LocalTime s = null, t = null;
+                        java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] { java.time.format.DateTimeFormatter.ofPattern("H:mm"), java.time.format.DateTimeFormatter.ofPattern("HH:mm") };
+                        for (java.time.format.DateTimeFormatter fmt : fmts) {
+                            if (s == null) try { s = java.time.LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+                            if (t == null) try { t = java.time.LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
+                            if (s != null && t != null) break;
+                        }
+                        if (s != null && t != null) ranges.add(new TimeRange(s, t));
+                    }
                 }
+                if (!ranges.isEmpty()) map.put(e.getKey(), ranges);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) { }
+        return map;
+    }
 
-        Label place = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
-        place.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-        info.getChildren().addAll(title, teacher, scheduleBox, place);
-
-        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button dropBtn = new Button("退课");
-        dropBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
-        dropBtn.setOnAction(e -> {
-            dropBtn.setDisable(true);
-            pendingSelections.add(tc.getUuid());
-            dropCourse(tc, dropBtn);
-        });
-        dropBtn.setPrefWidth(90);
-
-        card.getChildren().addAll(info, spacer, dropBtn);
-        return card;
+    private boolean schedulesConflict(String s1, String s2) {
+        if (s1 == null || s2 == null) return false;
+        Map<String, List<TimeRange>> m1 = parseScheduleClient(s1);
+        Map<String, List<TimeRange>> m2 = parseScheduleClient(s2);
+        for (String day : m1.keySet()) {
+            if (!m2.containsKey(day)) continue;
+            List<TimeRange> r1 = m1.get(day);
+            List<TimeRange> r2 = m2.get(day);
+            for (TimeRange a : r1) for (TimeRange b : r2) {
+                if (a.start.isBefore(b.end) && b.start.isBefore(a.end)) return true;
+            }
+        }
+        return false;
     }
 }
