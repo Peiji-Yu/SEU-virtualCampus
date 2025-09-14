@@ -10,15 +10,14 @@ import java.util.List;
 
 public class TeachingClassService {
 
-    private TeachingClassMapper teachingClassMapper;
-
     public TeachingClassService() {
-        SqlSession sqlSession = DatabaseUtil.getSqlSession();
-        this.teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
+        // 无状态服务，SqlSession 在每个方法中按需获取并关闭，避免连接泄露
     }
+
     public TeachingClass findByUuid(String uuid) {
-        try {
-            return teachingClassMapper.findByUuid(uuid);
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper mapper = sqlSession.getMapper(TeachingClassMapper.class);
+            return mapper.findByUuid(uuid);
         } catch (Exception e) {
             System.err.println("查询教学班信息失败: " + e.getMessage());
             return null;
@@ -26,10 +25,10 @@ public class TeachingClassService {
     }
 
     public List<TeachingClass> findByCourseId(String courseId) {
-        try {
-            SqlSession sqlSession = DatabaseUtil.getSqlSession();
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
-            CourseMapper courseMapper = sqlSession.getMapper(CourseMapper.class);List<TeachingClass> list = teachingClassMapper.findByCourseId(courseId);
+            CourseMapper courseMapper = sqlSession.getMapper(CourseMapper.class);
+            List<TeachingClass> list = teachingClassMapper.findByCourseId(courseId);
             for (TeachingClass tc : list) {
                 // 补充 Course 信息
                 tc.setCourse(courseMapper.findByCourseId(tc.getCourseId()));
@@ -42,14 +41,13 @@ public class TeachingClassService {
     }
 
     public boolean addTeachingClass(TeachingClass teachingClass) {
-        try {
-            // 检查教学班UUID是否已存在
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass existingTeachingClass = teachingClassMapper.findByUuid(teachingClass.getUuid());
             if (existingTeachingClass != null) {
                 System.err.println("教学班UUID已存在: " + teachingClass.getUuid());
                 return false;
             }
-            
             int result = teachingClassMapper.insertTeachingClass(teachingClass);
             return result > 0;
         } catch (Exception e) {
@@ -59,14 +57,13 @@ public class TeachingClassService {
     }
 
     public boolean updateTeachingClass(TeachingClass teachingClass) {
-        try {
-            // 检查教学班是否存在
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass existingTeachingClass = teachingClassMapper.findByUuid(teachingClass.getUuid());
             if (existingTeachingClass == null) {
                 System.err.println("教学班不存在: " + teachingClass.getUuid());
                 return false;
             }
-            
             int result = teachingClassMapper.updateTeachingClass(teachingClass);
             return result > 0;
         } catch (Exception e) {
@@ -76,14 +73,13 @@ public class TeachingClassService {
     }
 
     public boolean deleteTeachingClass(String uuid) {
-        try {
-            // 检查教学班是否存在
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass existingTeachingClass = teachingClassMapper.findByUuid(uuid);
             if (existingTeachingClass == null) {
                 System.err.println("教学班不存在: " + uuid);
                 return false;
             }
-            
             int result = teachingClassMapper.deleteTeachingClass(uuid);
             return result > 0;
         } catch (Exception e) {
@@ -93,7 +89,8 @@ public class TeachingClassService {
     }
 
     public List<TeachingClass> getAllTeachingClasses() {
-        try {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             return teachingClassMapper.findAllTeachingClasses();
         } catch (Exception e) {
             System.err.println("获取所有教学班失败: " + e.getMessage());
@@ -102,7 +99,8 @@ public class TeachingClassService {
     }
 
     public List<TeachingClass> getTeachingClassesByTeacherName(String teacherName) {
-        try {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             return teachingClassMapper.findByTeacherName(teacherName);
         } catch (Exception e) {
             System.err.println("根据教师姓名查询教学班失败: " + e.getMessage());
@@ -111,14 +109,13 @@ public class TeachingClassService {
     }
 
     public boolean incrementSelectedCount(String uuid) {
-        try {
-            // 检查教学班是否存在
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass existingTeachingClass = teachingClassMapper.findByUuid(uuid);
             if (existingTeachingClass == null) {
                 System.err.println("教学班不存在: " + uuid);
                 return false;
             }
-            
             int result = teachingClassMapper.incrementSelectedCount(uuid);
             return result > 0;
         } catch (Exception e) {
@@ -128,14 +125,13 @@ public class TeachingClassService {
     }
 
     public boolean decrementSelectedCount(String uuid) {
-        try {
-            // 检查教学班是否存在
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass existingTeachingClass = teachingClassMapper.findByUuid(uuid);
             if (existingTeachingClass == null) {
                 System.err.println("教学班不存在: " + uuid);
                 return false;
             }
-            
             int result = teachingClassMapper.decrementSelectedCount(uuid);
             return result > 0;
         } catch (Exception e) {
@@ -145,13 +141,13 @@ public class TeachingClassService {
     }
 
     public boolean hasAvailableSeats(String uuid) {
-        try {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
             TeachingClass teachingClass = teachingClassMapper.findByUuid(uuid);
             if (teachingClass == null) {
                 System.err.println("教学班不存在: " + uuid);
                 return false;
             }
-            
             return teachingClass.getSelectedCount() < teachingClass.getCapacity();
         } catch (Exception e) {
             System.err.println("检查座位可用性失败: " + e.getMessage());

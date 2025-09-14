@@ -56,12 +56,15 @@ public class CourseSelectPanel extends BorderPane {
         HBox statusBox = new HBox(statusLabel);
         statusBox.setPadding(new Insets(0, 20, 10, 20));
 
-        // 课程列表容器
-        courseListContainer = new VBox(15);
-        courseListContainer.setPadding(new Insets(10, 20, 20, 20));
+        // 课程列表容器（增大间距与默认宽度，作为更大表格的基础）
+        courseListContainer = new VBox(20);
+        courseListContainer.setPadding(new Insets(16, 24, 24, 24));
+        courseListContainer.setPrefWidth(1000); // 建议的默认宽度
 
         scrollPane = new ScrollPane(courseListContainer);
         scrollPane.setFitToWidth(true);
+        scrollPane.setPannable(true);
+        scrollPane.setPrefViewportHeight(720); // 增大视口高度，显示更多内容
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
         // 刷新按钮
@@ -224,23 +227,25 @@ public class CourseSelectPanel extends BorderPane {
             String courseName = course.get("courseName") == null ? "" : String.valueOf(course.get("courseName"));
             List<TeachingClass> tcs = teachingClassesByCourse.getOrDefault(courseId, Collections.emptyList());
 
-            // 课程卡片头部
-            VBox courseCard = new VBox(8);
-            courseCard.setPadding(new Insets(12));
-            courseCard.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-width: 1; -fx-border-radius: 8;");
+            // 课程卡片头部（增大卡片尺寸以形成更大的课程表格）
+            VBox courseCard = new VBox(10);
+            courseCard.setPadding(new Insets(16));
+            courseCard.setPrefWidth(980);
+            courseCard.setMaxWidth(Double.MAX_VALUE);
+            courseCard.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-width: 1; -fx-border-radius: 10;");
 
             HBox header = new HBox();
             header.setAlignment(Pos.CENTER_LEFT);
             Label title = new Label(courseId + "  " + courseName);
-            title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+            title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
             header.getChildren().addAll(title, spacer);
 
-            // 详情容器改为横向排列，包含该课程的所有教学班卡片
-            HBox details = new HBox(10);
-            details.setPadding(new Insets(8, 0, 0, 0));
+            // 详情容器改为横向排列，包含该课程的所有教学班卡片（每个卡片加宽）
+            HBox details = new HBox(12);
+            details.setPadding(new Insets(10, 0, 0, 0));
             // 默认不显示，除非该课程包含已选教学班
             details.setVisible(false);
             details.setManaged(false);
@@ -278,8 +283,8 @@ public class CourseSelectPanel extends BorderPane {
     // 创建单个教学班卡片（用于课程详情展开内显示）
     private Node createTeachingClassCard(TeachingClass tc) {
         boolean isSelected = isCourseSelected(tc.getUuid());
-        HBox card = new HBox(10);
-        card.setPadding(new Insets(10));
+        HBox card = new HBox(12);
+        card.setPadding(new Insets(12));
         String baseStyle = "-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6;";
         if (isSelected) {
             card.setStyle("-fx-background-color: #e6f6ec; " + baseStyle); // 绿底
@@ -288,9 +293,13 @@ public class CourseSelectPanel extends BorderPane {
         }
         card.setAlignment(Pos.CENTER_LEFT);
 
-        VBox info = new VBox(6);
+        // 建议卡片宽度，形成更明显的表格布局
+        card.setPrefWidth(320);
+        card.setMinWidth(280);
+
+        VBox info = new VBox(8);
         Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
-        teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
+        teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
         // 解析 schedule JSON
         VBox scheduleBox = new VBox(2);
         scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
@@ -362,7 +371,7 @@ public class CourseSelectPanel extends BorderPane {
                 selectCourse(tc, selectButtonFinal);
             });
         }
-        selectButton.setPrefWidth(80);
+        selectButton.setPrefWidth(90);
 
         card.getChildren().addAll(info, spacer, selectButton);
         return card;
