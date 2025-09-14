@@ -409,11 +409,11 @@ public class TimetablePanel extends BorderPane {
 
     private GridPane createTimetableGrid() {
         GridPane grid = new GridPane();
-        grid.setStyle("-fx-background-color: " + CARD_BG + "; -fx-background-radius: 12; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
-        grid.setPadding(new Insets(15));
-        grid.setHgap(2);
-        grid.setVgap(2);
+        grid.setStyle("-fx-background-color: " + CARD_BG + "; -fx-background-radius: 16; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0, 0, 3);");
+        grid.setPadding(new Insets(20));
+        grid.setHgap(3);
+        grid.setVgap(3);
 
         // 设置列约束（时间列较窄，课程列等宽）
         ColumnConstraints timeCol = new ColumnConstraints();
@@ -545,7 +545,8 @@ public class TimetablePanel extends BorderPane {
 
     private void addEmptyCell(GridPane grid, int col, int row) {
         Pane cell = new Pane();
-        cell.setStyle("-fx-background-color: #fafafa; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0.5;");
+        cell.setStyle("-fx-background-color: #f8fafc; -fx-border-color: " + BORDER_COLOR + "; " +
+                     "-fx-border-width: 0.5; -fx-border-radius: 4;");
         grid.add(cell, col, row);
     }
 
