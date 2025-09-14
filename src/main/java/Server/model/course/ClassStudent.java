@@ -4,18 +4,20 @@ import java.util.List;
 
 public class ClassStudent {
     private Integer cardNumber;      // 学生一卡通号，9位数字
-    private Integer studentNumber;   // 学号，8位数字
+    private String studentNumber;   // 学号，保存为字符串以保留前导零
+    private String name;            // 学生姓名
     private String major;            // 专业
     private String school;           // 学院
     private String status;           // 学籍状态
     private List<TeachingClass> selectedClasses; // 已选课程列表
-    
+
     // 构造方法
     public ClassStudent() {}
     
-    public ClassStudent(Integer cardNumber, Integer studentNumber, String major, String school, String status) {
+    public ClassStudent(Integer cardNumber, String studentNumber, String name, String major, String school, String status) {
         this.cardNumber = cardNumber;
         this.studentNumber = studentNumber;
+        this.name = name;
         this.major = major;
         this.school = school;
         this.status = status;
@@ -30,14 +32,22 @@ public class ClassStudent {
         this.cardNumber = cardNumber;
     }
     
-    public Integer getStudentNumber() {
+    public String getStudentNumber() {
         return studentNumber;
     }
     
-    public void setStudentNumber(Integer studentNumber) {
+    public void setStudentNumber(String studentNumber) {
         this.studentNumber = studentNumber;
     }
     
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getMajor() {
         return major;
     }
@@ -74,7 +84,8 @@ public class ClassStudent {
     public String toString() {
         return "ClassStudent{" +
                 "cardNumber=" + cardNumber +
-                ", studentNumber=" + studentNumber +
+                ", studentNumber='" + studentNumber + '\'' +
+                ", name='" + name + '\'' +
                 ", major='" + major + '\'' +
                 ", school='" + school + '\'' +
                 ", status='" + status + '\'' +

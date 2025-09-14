@@ -47,5 +47,10 @@ public interface UserMapper {
      */
     @Insert("INSERT INTO user (id, card_number, password) VALUES (#{identity}, #{cardNumber}, #{password})")
     int insertUser(User user);
-}
 
+    /**
+     * 根据一卡通号查询用户（用���按一卡通号获取姓名等信息）
+     */
+    @Select("SELECT * FROM user WHERE card_number = #{cardNumber}")
+    User findByCardNumber(@Param("cardNumber") Integer cardNumber);
+}

@@ -28,7 +28,7 @@ public class ClassStudentService {
         }
     }
 
-    public ClassStudent findByStudentNumber(Integer studentNumber) {
+    public ClassStudent findByStudentNumber(String studentNumber) {
         try {
             return classStudentMapper.findByStudentNumber(studentNumber);
         } catch (Exception e) {

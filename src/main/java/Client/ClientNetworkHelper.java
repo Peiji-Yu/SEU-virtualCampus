@@ -179,6 +179,14 @@ public final class ClientNetworkHelper {
         return send(req);
     }
 
+    // 通过一卡通号查询教师负责的教学班（后端将负责根据 cardNumber 查找对应姓名并返回教学班）
+    public static String getTeachingClassesByTeacherCardNumber(String cardNumber) throws IOException {
+        // 以字符串形式传递 cardNumber，服务端按需解析为整数
+        String json = String.format("{\"type\":\"getTeachingClassesByTeacherCardNumber\",\"data\":{\"cardNumber\":\"%s\"}}", cardNumber);
+        Request req = GSON.fromJson(json, Request.class);
+        return send(req);
+    }
+
     // 获取教学班学生列表
     public static String getTeachingClassStudents(String teachingClassUuid) throws IOException {
         String json = String.format("{\"type\":\"getTeachingClassStudents\",\"data\":{\"teachingClassUuid\":\"%s\"}}", teachingClassUuid);

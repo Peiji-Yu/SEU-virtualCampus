@@ -142,4 +142,17 @@ public class UserService {
             return Response.error(500, "密码重置过程中发生错误: " + e.getMessage());
         }
     }
+
+    /**
+     * 根据一卡通号查询用户信息（仅用于服务端内部调用）
+     */
+    public User findUserByCardNumber(Integer cardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+            return userMapper.findByCardNumber(cardNumber);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

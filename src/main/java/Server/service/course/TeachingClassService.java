@@ -48,7 +48,14 @@ public class TeachingClassService {
                 System.err.println("教学班UUID已存在: " + teachingClass.getUuid());
                 return false;
             }
+            // 防御性：确保写入数据库的字段不为 null（数据库有 NOT NULL 约束）
+            if (teachingClass.getSelectedCount() == null) teachingClass.setSelectedCount(0);
+            if (teachingClass.getCapacity() == null) teachingClass.setCapacity(0);
+
+            // 调试日志：打印将要插入的对象（便于定位 null 问题）
+            System.out.println("插入 TeachingClass: " + teachingClass);
             int result = teachingClassMapper.insertTeachingClass(teachingClass);
+            sqlSession.commit();
             return result > 0;
         } catch (Exception e) {
             System.err.println("添加教学班失败: " + e.getMessage());
@@ -64,7 +71,13 @@ public class TeachingClassService {
                 System.err.println("教学班不存在: " + teachingClass.getUuid());
                 return false;
             }
+            // 防御性：避免将 null 写入 NOT NULL 列
+            if (teachingClass.getSelectedCount() == null) teachingClass.setSelectedCount(existingTeachingClass.getSelectedCount() == null ? 0 : existingTeachingClass.getSelectedCount());
+            if (teachingClass.getCapacity() == null) teachingClass.setCapacity(existingTeachingClass.getCapacity() == null ? 0 : existingTeachingClass.getCapacity());
+
+            System.out.println("更新 TeachingClass: " + teachingClass);
             int result = teachingClassMapper.updateTeachingClass(teachingClass);
+            sqlSession.commit();
             return result > 0;
         } catch (Exception e) {
             System.err.println("更新教学班失败: " + e.getMessage());
@@ -81,6 +94,7 @@ public class TeachingClassService {
                 return false;
             }
             int result = teachingClassMapper.deleteTeachingClass(uuid);
+            sqlSession.commit();
             return result > 0;
         } catch (Exception e) {
             System.err.println("删除教学班失败: " + e.getMessage());
@@ -104,6 +118,29 @@ public class TeachingClassService {
             return teachingClassMapper.findByTeacherName(teacherName);
         } catch (Exception e) {
             System.err.println("根据教师姓名查询教学班失败: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 根据一卡通号查询教师负责的教学班（通过DAO的 JOIN 查询，一次性返回）
+     */
+    public List<TeachingClass> getTeachingClassesByTeacherCardNumber(Integer cardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
+            List<TeachingClass> list = teachingClassMapper.findByTeacherCardNumber(cardNumber);
+            // 补充 Course 信息以保持返回对象一致
+            if (list != null) {
+                CourseMapper courseMapper = sqlSession.getMapper(CourseMapper.class);
+                for (TeachingClass tc : list) {
+                    if (tc != null) {
+                        tc.setCourse(courseMapper.findByCourseId(tc.getCourseId()));
+                    }
+                }
+            }
+            return list;
+        } catch (Exception e) {
+            System.err.println("根据一卡通号查询教学班失败: " + e.getMessage());
             return null;
         }
     }
