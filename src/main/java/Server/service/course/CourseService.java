@@ -2,15 +2,18 @@ package Server.service.course;
 
 import Server.dao.course.CourseMapper;
 import Server.model.course.Course;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-
+import Server.util.DatabaseUtil;
+import org.apache.ibatis.session.SqlSession;
 import java.util.List;
 
 public class CourseService {
 
     private CourseMapper courseMapper;
+
+    public CourseService() {
+        SqlSession sqlSession = DatabaseUtil.getSqlSession();
+        this.courseMapper = sqlSession.getMapper(CourseMapper.class);
+    }
 
     public Course findByCourseId(String courseId) {
         try {

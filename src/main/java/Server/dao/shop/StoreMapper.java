@@ -35,8 +35,8 @@ public interface StoreMapper {
     /**
      * 添加新商品
      */
-    @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode) " +
-            "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode})")
+    @Insert("INSERT INTO store_item (uuid, item_name, price, picture_link, stock, sales_volume, description, barcode, category) " +
+        "VALUES (#{uuid}, #{itemName}, #{price}, #{pictureLink}, #{stock}, 0, #{description}, #{barcode}, #{category})")
     int insertItem(StoreItem item);
 
     /**
@@ -69,7 +69,7 @@ public interface StoreMapper {
      * 增加商品销量
      */
     @Update("UPDATE store_item SET sales_volume = sales_volume + #{amount} WHERE uuid = #{itemUuid}")
-    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount" ) Integer amount);
+    int increaseItemSales(@Param("itemUuid") UUID itemUuid, @Param("amount") Integer amount);
 
     /**
      * 按类别搜索商品
@@ -77,11 +77,11 @@ public interface StoreMapper {
     @Select("SELECT * FROM store_item WHERE category = #{category}")
     List<StoreItem> findItemsByCategory(@Param("category") String category);
 
-    /**
-     * 获取所有商品类别
-     */
-    @Select("SELECT DISTINCT category FROM store_item")
-    List<String> findAllCategories();
+//    /**
+//     * 获取所有商品类别
+//     */
+//    @Select("SELECT DISTINCT category FROM store_item")
+//    List<String> findAllCategories();
 
     /**
      * 按类别和关键词搜索商品
@@ -107,11 +107,11 @@ public interface StoreMapper {
             "VALUES (#{uuid}, #{orderUuid}, #{itemUuid}, #{itemPrice}, #{amount})")
     int insertOrderItem(StoreOrderItem orderItem);
 
-    /**
-     * 根据ID查询订单
-     */
-    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
-    StoreOrder findOrderById(@Param("uuid") UUID uuid);
+//    /**
+//     * 根据ID查询订单
+//     */
+//    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
+//    StoreOrder findOrderById(@Param("uuid") UUID uuid);
 
 //    /**
 //     * 查询订单的所有商品项
@@ -119,15 +119,31 @@ public interface StoreMapper {
 //    @Select("SELECT * FROM store_order_item WHERE order_uuid = #{orderUuid}")
 //    List<StoreOrderItem> findOrderItemsByOrderId(@Param("orderUuid") UUID orderUuid);
 
+//    /**
+//     * 根据ID查询订单（包含商品项和商品详细信息）
+//     */
+//    @Select("SELECT so.*, soi.uuid as item_id, soi.item_uuid, soi.item_price, soi.amount, " +
+//            "si.item_name, si.picture_link, si.description, si.barcode " +
+//            "FROM store_order so " +
+//            "LEFT JOIN store_order_item soi ON so.uuid = soi.order_uuid " +
+//            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
+//            "WHERE so.uuid = #{uuid}")
+//    @Results({
+//            @Result(property = "uuid", column = "uuid"),
+//            @Result(property = "cardNumber", column = "card_number"),
+//            @Result(property = "totalAmount", column = "total_amount"),
+//            @Result(property = "time", column = "time"),
+//            @Result(property = "status", column = "status"),
+//            @Result(property = "remark", column = "remark"),
+//            @Result(property = "items", column = "uuid",
+//                    many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsWithDetailsByOrderId"))
+//    })
+//    StoreOrder findOrderWithDetailsById(@Param("uuid") UUID uuid);
+
     /**
      * 根据ID查询订单（包含商品项和商品详细信息）
      */
-    @Select("SELECT so.*, soi.uuid as item_id, soi.item_uuid, soi.item_price, soi.amount, " +
-            "si.item_name, si.picture_link, si.description, si.barcode " +
-            "FROM store_order so " +
-            "LEFT JOIN store_order_item soi ON so.uuid = soi.order_uuid " +
-            "LEFT JOIN store_item si ON soi.item_uuid = si.uuid " +
-            "WHERE so.uuid = #{uuid}")
+    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
     @Results({
             @Result(property = "uuid", column = "uuid"),
             @Result(property = "cardNumber", column = "card_number"),
@@ -167,20 +183,14 @@ public interface StoreMapper {
     @Update("UPDATE store_order SET status = #{status} WHERE uuid = #{uuid}")
     int updateOrderStatus(@Param("uuid") UUID uuid, @Param("status") String status);
 
-    /**
-     * 删除订单（同时删除关联的商品项）
-     */
-    @Delete("DELETE FROM store_order WHERE uuid = #{uuid}")
-    int deleteOrder(@Param("uuid") UUID uuid);
-
-    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
-    int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
-
-    /**
-     * 退款操作：更新订单状态为已退款
-     */
-    @Update("UPDATE store_order SET status = '已退款' WHERE uuid = #{orderUuid} AND status = '已支付'")
-    int refundOrder(@Param("orderUuid") UUID orderUuid);
+//    /**
+//     * 删除订单（同时删除关联的商品项）
+//     */
+//    @Delete("DELETE FROM store_order WHERE uuid = #{uuid}")
+//    int deleteOrder(@Param("uuid") UUID uuid);
+//
+//    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
+//    int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
 
     /**
      * 减少商品销量（退款时调用）
@@ -209,20 +219,37 @@ public interface StoreMapper {
     // 销售统计相关操作
 
     /**
-     * 获取商品销售统计
+     * 获取商品销售统计（总的）
      */
     @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
             "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
-            "WHERE st.status = true " +
+            "WHERE st.status = '已支付' " +
             "GROUP BY si.uuid, si.item_name " +
             "ORDER BY total_revenue DESC")
     List<SalesStats> getSalesStatistics();
 
     /**
+     * 获取商品销售统计（总的）
+     */
+    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
+            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
+            "WHERE st.status = '已支付' AND DATE(time) = CURDATE()" +
+            "GROUP BY si.uuid, si.item_name " +
+            "ORDER BY total_revenue DESC")
+    List<SalesStats> getTodaySalesStatistics();
+
+    /**
+     * 获取销售总额
+     */
+    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
+            "WHERE status = '已支付'")
+    Integer getSalesRevenue();
+
+    /**
      * 获取今日销售总额
      */
     @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
-            "WHERE status = true AND DATE(time) = CURDATE()")
+            "WHERE status = '已支付' AND DATE(time) = CURDATE()")
     Integer getTodaySalesRevenue();
 
     // 销售统计结果映射类

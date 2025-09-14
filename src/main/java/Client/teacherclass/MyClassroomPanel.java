@@ -46,7 +46,9 @@ public class MyClassroomPanel extends BorderPane {
         }
     }
 
+    // 传入构造参数为当前用户的一卡通号（字符串），内部先解析为真实姓名再请求教师教学班
     private final String teacherCardNumber;
+    private String teacherName; // 解析自服务器的姓名，若解析失败回退为 cardNumber
     private final ObservableList<Course> myCourses = FXCollections.observableArrayList();
 
     private final ListView<Course> courseListView = new ListView<>();
@@ -55,8 +57,9 @@ public class MyClassroomPanel extends BorderPane {
     private final Label courseStats = new Label();
     private final TableView<Student> studentTable = new TableView<>();
 
-    public MyClassroomPanel(String teacherId) {
-        this.teacherCardNumber = teacherId;
+    public MyClassroomPanel(String teacherCardNumber) {
+        this.teacherCardNumber = teacherCardNumber;
+        this.teacherName = teacherCardNumber; // 临时占位，稍后尝试解析为真实姓名
         setStyle("-fx-background-color: " + BG + ";");
         setPadding(new Insets(10));
         setPrefSize(900, 600);
@@ -73,7 +76,8 @@ public class MyClassroomPanel extends BorderPane {
     private void loadMyCoursesFromServer() throws Exception {
         new Thread(() -> {
             try {
-                String resp = ClientNetworkHelper.getTeachingClassesByTeacherId(teacherCardNumber);
+                // 直接将当前一卡通号发给服务端，服务端负责将 cardNumber->用户名(name) 映射后查询教学班
+                String resp = ClientNetworkHelper.getTeachingClassesByTeacherCardNumber(teacherCardNumber);
                 Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
                 if (Boolean.TRUE.equals(result.get("success"))) {
                     List<Map<String, Object>> classList = (List<Map<String, Object>>) result.get("data");
@@ -84,7 +88,20 @@ public class MyClassroomPanel extends BorderPane {
                             String courseId = (String) tc.get("courseId");
                             String place = (String) tc.get("place");
                             int capacity = ((Double) tc.get("capacity")).intValue();
+                            // 如果服务端返回了 selectedCount，则用占位学生填充列表以显示正确的已选人数
+                            int selectedCount = 0;
+                            if (tc.containsKey("selectedCount") && tc.get("selectedCount") != null) {
+                                Object sc = tc.get("selectedCount");
+                                if (sc instanceof Number) selectedCount = ((Number) sc).intValue();
+                                else {
+                                    try { selectedCount = Integer.parseInt(String.valueOf(sc)); } catch (Exception ignored) {}
+                                }
+                            }
+                            List<Student> placeholders = new ArrayList<>();
+                            for (int i = 0; i < Math.max(0, selectedCount); i++) placeholders.add(new Student("", "", "", ""));
                             Course course = new Course(uuid, courseId, place, capacity, new ArrayList<>());
+                            // 将占位学生加入 course.students，以便显示计数
+                            if (!placeholders.isEmpty()) course.students.addAll(placeholders);
                             myCourses.add(course);
                         }
                         courseListView.setItems(myCourses);
@@ -116,13 +133,40 @@ public class MyClassroomPanel extends BorderPane {
                     javafx.application.Platform.runLater(() -> {
                         ObservableList<Student> studentList = FXCollections.observableArrayList();
                         for (Map<String, Object> stu : students) {
-                            String sid = String.valueOf(stu.get("studentNumber"));
+                            // 处理 studentNumber 可能是 Double/Integer/Long 或 String 的情况，避免出现 9023231.0
+                            Object stuNumObj = stu.get("studentNumber");
+                            String sid;
+                            if (stuNumObj == null) {
+                                sid = "";
+                            } else if (stuNumObj instanceof String) {
+                                sid = (String) stuNumObj;
+                            } else if (stuNumObj instanceof Number) {
+                                // 使用 BigDecimal 避免科学计数法或小数尾部 .0
+                                sid = new java.math.BigDecimal(stuNumObj.toString()).toPlainString();
+                                // 去掉小数点后多余的零（例如 "9023231.0" -> "9023231"）
+                                if (sid.indexOf('.') >= 0) {
+                                    sid = sid.replaceAll("\\.?0+$", "");
+                                }
+                            } else {
+                                sid = String.valueOf(stuNumObj);
+                            }
                             String sname = (String) stu.get("name");
                             String major = (String) stu.get("major");
                             String clazz = (String) stu.get("school");
                             studentList.add(new Student(sid, sname, major, clazz));
                         }
                         studentTable.setItems(studentList);
+                        // 更新对应 Course 的 students 列表，以便左侧课程列表显示正确的已选人数
+                        Course cur = null;
+                        for (Course c : myCourses) {
+                            if (teachingClassUuid.equals(c.id)) { cur = c; break; }
+                        }
+                        if (cur != null) {
+                            // 将 Course 中的 ObservableList 内容替换为最新的学生列表
+                            cur.students.setAll(studentList);
+                            // 强制 ListView 刷新显示（选中行除外），以更新右侧计数等
+                            courseListView.refresh();
+                        }
                         courseStats.setText("已选人数: " + studentList.size());
                     });
                 }
@@ -188,7 +232,8 @@ public class MyClassroomPanel extends BorderPane {
         TableColumn<Student, String> c3 = new TableColumn<>("专业");
         c3.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().major));
         c3.setPrefWidth(160);
-        TableColumn<Student, String> c4 = new TableColumn<>("班级");
+        // 该列实际绑定的是学生的学院信息（从后端字段 school 获取），因此显示为“学院"
+        TableColumn<Student, String> c4 = new TableColumn<>("学院");
         c4.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().clazz));
         c4.setPrefWidth(120);
         studentTable.getColumns().addAll(c1, c2, c3, c4);

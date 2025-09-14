@@ -51,9 +51,7 @@ public class StoreOrder {
         this.totalAmount = totalAmount;
     }
 
-    public List<StoreOrderItem> getItems() {
-        return items;
-    }
+    public List<StoreOrderItem> getItems() { return items; }
 
     public void setItems(List<StoreOrderItem> items) {
         this.items = items;

@@ -8,7 +8,7 @@ public class TeachingClass {
     private String uuid;         // 唯一标识符，用作主键
     private String courseId;     // 课程编号
     private Course course;       // 关联的课程对象
-    private Integer teacherId;   // 教师ID
+    private String teacherName; // 教师姓名
     private String schedule;     // 上课信息（JSON格式）
     private String place;        // 上课地点
     private Integer capacity;    // 课容量
@@ -18,11 +18,11 @@ public class TeachingClass {
     // 构造方法
     public TeachingClass() {}
     
-    public TeachingClass(String uuid, String courseId, Integer teacherId, String schedule, 
+    public TeachingClass(String uuid, String courseId, String teacherName, String schedule,
                         String place, Integer capacity, Integer selectedCount) {
         this.uuid = uuid;
         this.courseId = courseId;
-        this.teacherId = teacherId;
+        this.teacherName = teacherName;
         this.schedule = schedule;
         this.place = place;
         this.capacity = capacity;
@@ -53,15 +53,15 @@ public class TeachingClass {
     public void setCourse(Course course) {
         this.course = course;
     }
-    
-    public Integer getTeacherId() {
-        return teacherId;
+
+    public String getTeacherName() {
+        return teacherName;
     }
-    
-    public void setTeacherId(Integer teacherId) {
-        this.teacherId = teacherId;
+
+    public void setTeacherName(String teacherName) {
+        this.teacherName = teacherName;
     }
-    
+
     public String getSchedule() {
         return schedule;
     }
@@ -107,7 +107,7 @@ public class TeachingClass {
         return "TeachingClass{" +
                 "uuid='" + uuid + '\'' +
                 ", courseId='" + courseId + '\'' +
-                ", teacherId=" + teacherId +
+                ", teacherName='" + teacherName + '\'' +
                 ", schedule='" + schedule + '\'' +
                 ", place='" + place + '\'' +
                 ", capacity=" + capacity +

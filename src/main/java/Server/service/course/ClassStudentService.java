@@ -1,7 +1,10 @@
 package Server.service.course;
 
 import Server.dao.course.ClassStudentMapper;
+import Server.dao.course.CourseMapper;
 import Server.model.course.ClassStudent;
+import Server.util.DatabaseUtil;
+import org.apache.ibatis.session.SqlSession;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.stereotype.Service;
 //import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +15,10 @@ public class ClassStudentService {
 
     private ClassStudentMapper classStudentMapper;
 
+    public ClassStudentService() {
+        SqlSession sqlSession = DatabaseUtil.getSqlSession();
+        this.classStudentMapper = sqlSession.getMapper(ClassStudentMapper.class);
+    }
     public ClassStudent findByCardNumber(Integer cardNumber) {
         try {
             return classStudentMapper.findByCardNumber(cardNumber);
@@ -21,7 +28,7 @@ public class ClassStudentService {
         }
     }
 
-    public ClassStudent findByStudentNumber(Integer studentNumber) {
+    public ClassStudent findByStudentNumber(String studentNumber) {
         try {
             return classStudentMapper.findByStudentNumber(studentNumber);
         } catch (Exception e) {

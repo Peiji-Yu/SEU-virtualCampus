@@ -32,6 +32,13 @@ public class DatabaseUtil {
      * @return SqlSession实例
      */
     public static SqlSession getSqlSession() {
-        return sqlSessionFactory.openSession();
+        return sqlSessionFactory.openSession(true);
+    }
+
+    /**
+     * 获取 SqlSession，可指定是否自动提交（用于需要事务控制的场景）
+     */
+    public static SqlSession getSqlSession(boolean autoCommit) {
+        return sqlSessionFactory.openSession(autoCommit);
     }
 }

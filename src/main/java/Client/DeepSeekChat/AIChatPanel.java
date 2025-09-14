@@ -16,9 +16,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+
 import Client.ClientNetworkHelper;
 import Client.util.Config;
 import Server.model.Request; 
+
+import Client.util.Config;
+
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -64,6 +68,7 @@ public class AIChatPanel extends BorderPane {
 
     public AIChatPanel(String userDisplayName){
         this.userDisplayName = userDisplayName == null ? "未知用户" : userDisplayName;
+
         // 加载头像
         try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
         try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
@@ -102,6 +107,7 @@ public class AIChatPanel extends BorderPane {
 
         conversationHistory.add(systemMsg);
     }
+
     /**
      * 动态拼接 5 个模块的上下文信息
      */
@@ -160,6 +166,7 @@ public class AIChatPanel extends BorderPane {
 
         return sb.toString();
     }
+
 
     /** 构建界面 */
     private void buildUI(){
@@ -325,12 +332,14 @@ public class AIChatPanel extends BorderPane {
         box.getChildren().addAll(content, userAvatarNode);
         chatContainer.getChildren().add(box);
 
+
         FadeTransition ft = new FadeTransition(Duration.millis(300), box); 
         ft.setFromValue(0); ft.setToValue(1); ft.play();
 
         JsonObject obj = new JsonObject(); 
         obj.addProperty("role","user"); 
         obj.addProperty("content", message); 
+
         conversationHistory.add(obj);
     }
 
@@ -427,5 +436,21 @@ public class AIChatPanel extends BorderPane {
             return iv;
         }
         Circle fallback = new Circle(20); fallback.getStyleClass().add("user-avatar"); return fallback;
+    }
+    /**
+     * 设置学生信息，用于更新系统上下文
+     */
+    public void setStudentInfo(String name, String studentNumber) {
+        // 更新系统上下文中的学生信息提示
+        String studentInfo = String.format("当前学生姓名：%s，学号：%s。", name, studentNumber);
+
+        // 找到系统消息（假设是 conversationHistory 的第一个元素）
+        if (!conversationHistory.isEmpty()) {
+            JsonObject systemMsg = conversationHistory.get(0);
+            if ("system".equals(systemMsg.get("role").getAsString())) {
+                String oldContent = systemMsg.get("content").getAsString();
+                systemMsg.addProperty("content", oldContent + "\n" + studentInfo);
+            }
+        }
     }
 }

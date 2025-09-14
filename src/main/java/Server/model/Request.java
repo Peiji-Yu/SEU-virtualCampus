@@ -11,11 +11,11 @@ public class Request {
     private Map<String, Object> data; // 请求数据
 
     // 构造方法
-    public Request() {}
+    public Request() { this.data = new java.util.HashMap<>(); }
 
     public Request(String type, Map<String, Object> data) {
         this.type = type;
-        this.data = data;
+        this.data = data == null ? new java.util.HashMap<>() : data;
     }
 
     // Getter和Setter方法
@@ -32,7 +32,7 @@ public class Request {
     }
 
     public void setData(Map<String, Object> data) {
-        this.data = data;
+        this.data = data == null ? new java.util.HashMap<>() : data;
     }
 
     @Override
