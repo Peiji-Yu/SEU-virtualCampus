@@ -108,62 +108,71 @@ public final class ClientNetworkHelper {
         }
     }
 
-    // 获取所有课程
+    // 课程管理相关接口
     public static String getAllCourses() throws IOException {
-        String json = "{\"type\":\"getAllCourses\",\"data\":{}}";
-        Request req = GSON.fromJson(json, Request.class);
+        Request req = new Request();
+        req.setType("getAllCourses");
+        req.setData(null);
         return send(req);
     }
-
-    // 根据课程ID获取教学班
-    public static String getTeachingClassesByCourseId(String courseId) throws IOException {
-        String json = String.format("{\"type\":\"getTeachingClassesByCourseId\",\"data\":{\"courseId\":\"%s\"}}", courseId);
-        Request req = GSON.fromJson(json, Request.class);
+    public static String getCourseById(String courseId) throws IOException {
+        Request req = new Request();
+        req.setType("getCourseById");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseId", courseId);
+        req.setData(data);
         return send(req);
     }
-
-    // 学生选课
-    public static String selectCourse(String cardNumber, String teachingClassUuid) throws IOException {
-        String json = String.format("{\"type\":\"selectCourse\",\"data\":{\"cardNumber\":%s,\"teachingClassUuid\":\"%s\"}}", cardNumber, teachingClassUuid);
-        Request req = GSON.fromJson(json, Request.class);
+    public static String getCourseByName(String courseName) throws IOException {
+        Request req = new Request();
+        req.setType("getCourseByName");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseName", courseName);
+        req.setData(data);
         return send(req);
     }
-
-    // 学生退课
-    public static String dropCourse(String cardNumber, String teachingClassUuid) throws IOException {
-        String json = String.format("{\"type\":\"dropCourse\",\"data\":{\"cardNumber\":%s,\"teachingClassUuid\":\"%s\"}}", cardNumber, teachingClassUuid);
-        Request req = GSON.fromJson(json, Request.class);
+    public static String getCourseBySchool(String school) throws IOException {
+        Request req = new Request();
+        req.setType("getCourseBySchool");
+        Map<String, Object> data = new HashMap<>();
+        data.put("school", school);
+        req.setData(data);
         return send(req);
     }
-
-    // 获取学生已选课程
-    public static String getStudentSelectedCourses(String cardNumber) throws IOException {
-        String json = String.format("{\"type\":\"getStudentSelectedCourses\",\"data\":{\"cardNumber\":%s}}", cardNumber);
-        Request req = GSON.fromJson(json, Request.class);
+    public static String addCourse(String courseId, String courseName, String school, float credit) throws IOException {
+        Request req = new Request();
+        req.setType("addCourse");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseId", courseId);
+        data.put("courseName", courseName);
+        data.put("school", school);
+        data.put("credit", credit);
+        req.setData(data);
         return send(req);
     }
-
-    // 添加课程
-    public static String addCourse(Map<String, Object> course) throws IOException {
-        String json = new com.google.gson.Gson().toJson(
-            Map.of("type", "addCourse", "data", Map.of("course", course))
-        );
-        Request req = GSON.fromJson(json, Request.class);
+    public static String updateCourse(String courseId, String courseName, String school, float credit) throws IOException {
+        Request req = new Request();
+        req.setType("updateCourse");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseId", courseId);
+        data.put("courseName", courseName);
+        data.put("school", school);
+        data.put("credit", credit);
+        req.setData(data);
         return send(req);
     }
-
-    // 更新课程
-    public static String updateCourse(String courseId, Map<String, Object> updates) throws IOException {
-        String json = new com.google.gson.Gson().toJson(
-            Map.of("type", "updateCourse", "data", Map.of("courseId", courseId, "updates", updates))
-        );
-        Request req = GSON.fromJson(json, Request.class);
+    public static String deleteCourse(String courseId) throws IOException {
+        Request req = new Request();
+        req.setType("deleteCourse");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseId", courseId);
+        req.setData(data);
         return send(req);
     }
 
     // 获取教师教学班
-    public static String getTeachingClassesByTeacherId(String teacherId) throws IOException {
-        String json = String.format("{\"type\":\"getTeachingClassesByTeacherId\",\"data\":{\"teacherId\":%s}}", teacherId);
+    public static String getTeachingClassesByTeacherName(String teacherName) throws IOException {
+        String json = String.format("{\"type\":\"getTeachingClassesByTeacherName\",\"data\":{\"teacherName\":\"%s\"}}", teacherName);
         Request req = GSON.fromJson(json, Request.class);
         return send(req);
     }
@@ -172,6 +181,42 @@ public final class ClientNetworkHelper {
     public static String getTeachingClassStudents(String teachingClassUuid) throws IOException {
         String json = String.format("{\"type\":\"getTeachingClassStudents\",\"data\":{\"teachingClassUuid\":\"%s\"}}", teachingClassUuid);
         Request req = GSON.fromJson(json, Request.class);
+        return send(req);
+    }
+
+    // 选课相关接口
+    public static String getTeachingClassesByCourseId(String courseId) throws IOException {
+        Request req = new Request();
+        req.setType("getTeachingClassesByCourseId");
+        Map<String, Object> data = new HashMap<>();
+        data.put("courseId", courseId);
+        req.setData(data);
+        return send(req);
+    }
+    public static String getStudentSelectedCourses(String cardNumber) throws IOException {
+        Request req = new Request();
+        req.setType("getStudentSelectedCourses");
+        Map<String, Object> data = new HashMap<>();
+        data.put("cardNumber", cardNumber);
+        req.setData(data);
+        return send(req);
+    }
+    public static String dropCourse(String cardNumber, String courseId) throws IOException {
+        Request req = new Request();
+        req.setType("dropCourse");
+        Map<String, Object> data = new HashMap<>();
+        data.put("cardNumber", cardNumber);
+        data.put("courseId", courseId);
+        req.setData(data);
+        return send(req);
+    }
+    public static String selectCourse(String cardNumber, String courseId) throws IOException {
+        Request req = new Request();
+        req.setType("selectCourse");
+        Map<String, Object> data = new HashMap<>();
+        data.put("cardNumber", cardNumber);
+        data.put("courseId", courseId);
+        req.setData(data);
         return send(req);
     }
 

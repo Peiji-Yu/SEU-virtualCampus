@@ -2,12 +2,12 @@ package Client.coursemgmt.admin;
 
 import Client.ClientNetworkHelper;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 /**
  * 管理员-课程管理（前端演示版，无后端）。
  * 功能：搜索（按学生/教师/教学班）、表格展示、增删改、刷新。
+ * @author Copilot
  */
 public class CourseAdminPanel extends VBox {
     private static final String PRIMARY_COLOR = "#4e8cff";
@@ -22,86 +23,251 @@ public class CourseAdminPanel extends VBox {
     private static final String TEXT_COLOR = "#2a4d7b";
     private static final double BUTTON_WIDTH = 110;
 
-    // 简单课程模型（演示用）
+    // 后端一致课程模型
     public static class Course {
-        public String id;         // 课程号
-        public String name;       // 课程名
-        public String teacher;    // 任课教师
-        public String clazz;      // 教学班
-        public String room;       // 教室
-        public int capacity;      // 容量
-        public List<String> students = new ArrayList<>(); // 已选学生姓名
-        public String schedule;   // 上课时间（字符串）
-        public int selected() {return students==null?0:students.size();}
+        public String courseId;     // 课程编号
+        public String courseName;   // 课程名
+        public String school;       // 开设学院
+        public float credit;        // 学分
+        // 新增字段
+        public List<String> students = new ArrayList<>(); // 学生列表
+        public String teacher = ""; // 教师
+        public String clazz = "";   // 教学班
+        public String room = ""; // 教室
+        public int capacity = 0;   // 容量
+        public String schedule = ""; // 上课时间
+        public Course() {}
+        public Course(String courseId, String courseName, String school, float credit) {
+            this.courseId = courseId;
+            this.courseName = courseName;
+            this.school = school;
+            this.credit = credit;
+        }
     }
 
-    private final List<Course> allData = new ArrayList<>(); // 全量演示数据
+    private final List<Course> allData = new ArrayList<>(); // 后端数据
     private TableView<Course> table;
 
+    private void addControlBar() {
+        HBox bar = new HBox(10);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        TextField searchField = new TextField();
+        searchField.setPromptText("输入课程编号/名称/学院...");
+        ComboBox<String> searchType = new ComboBox<>();
+        searchType.getItems().addAll("全部", "编号", "名称", "学院");
+        searchType.setValue("全部");
+        Button searchBtn = new Button("搜索");
+        setPrimaryButtonStyle(searchBtn);
+        uniformButtonWidth(searchBtn);
+        searchBtn.setOnAction(e -> doSearchBackend(searchType.getValue(), searchField.getText()));
+        Button addBtn = new Button("新增课程");
+        setPrimaryButtonStyle(addBtn);
+        uniformButtonWidth(addBtn);
+        addBtn.setOnAction(e -> showEditDialog(null));
+        Button editBtn = new Button("编辑课程");
+        setPrimaryButtonStyle(editBtn);
+        uniformButtonWidth(editBtn);
+        editBtn.setOnAction(e -> {
+            Course selected = table.getSelectionModel().getSelectedItem();
+            if (selected == null) { showWarn("请先选择要编辑的课程"); return; }
+            showEditDialog(selected);
+        });
+        Button delBtn = new Button("删除课程");
+        setPrimaryButtonStyle(delBtn);
+        uniformButtonWidth(delBtn);
+        delBtn.setOnAction(e -> {
+            Course selected = table.getSelectionModel().getSelectedItem();
+            if (selected == null) { showWarn("请先选择要删除的课程"); return; }
+            doDeleteCourse(selected.courseId);
+        });
+        Button refreshBtn = new Button("刷新");
+        setPrimaryButtonStyle(refreshBtn);
+        uniformButtonWidth(refreshBtn);
+        refreshBtn.setOnAction(e -> refreshFromAll());
+        bar.getChildren().addAll(searchType, searchField, searchBtn, addBtn, editBtn, delBtn, refreshBtn);
+        getChildren().add(1, bar);
+    }
+
+    private void doSearchBackend(String type, String value) {
+        new Thread(() -> {
+            try {
+                String resp = null;
+                if ("全部".equals(type) || value.trim().isEmpty()) {
+                    resp = ClientNetworkHelper.getAllCourses();
+                } else if ("编号".equals(type)) {
+                    resp = ClientNetworkHelper.getCourseById(value.trim());
+                } else if ("名称".equals(type)) {
+                    resp = ClientNetworkHelper.getCourseByName(value.trim());
+                } else if ("学院".equals(type)) {
+                    resp = ClientNetworkHelper.getCourseBySchool(value.trim());
+                }
+                java.lang.reflect.Type typeToken = new TypeToken<Map<String, Object>>(){}.getType();
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, typeToken);
+                Object codeObj = result.get("code");
+                int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
+                Platform.runLater(() -> {
+                    if (code == 200) {
+                        java.lang.reflect.Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                        List<Map<String, Object>> courseList = new com.google.gson.Gson().fromJson(new com.google.gson.Gson().toJson(result.get("data")), listType);
+                        List<Course> filtered = new ArrayList<>();
+                        if (courseList != null) {
+                            for (Map<String, Object> course : courseList) {
+                                Course c = new Course();
+                                c.courseId = (String) course.getOrDefault("courseId", "");
+                                c.courseName = (String) course.getOrDefault("courseName", "");
+                                c.school = (String) course.getOrDefault("school", "");
+                                c.credit = ((Number) course.getOrDefault("credit", 0)).floatValue();
+                                filtered.add(c);
+                            }
+                        }
+                        table.getItems().setAll(filtered);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "搜索失败", "code=" + code);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "搜索失败", e.getMessage()));
+            }
+        }).start();
+    }
+
+    private void showEditDialog(Course course) {
+        Dialog<Course> dialog = new Dialog<>();
+        dialog.setTitle(course == null ? "新增课程" : "编辑课程");
+        dialog.setHeaderText(null);
+        ButtonType okType = new ButtonType("确定", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okType, ButtonType.CANCEL);
+        GridPane grid = new GridPane();
+        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20, 150, 10, 10));
+        TextField idField = new TextField(); idField.setPromptText("课程编号");
+        TextField nameField = new TextField(); nameField.setPromptText("课程名称");
+        TextField schoolField = new TextField(); schoolField.setPromptText("开设学院");
+        TextField creditField = new TextField(); creditField.setPromptText("学分");
+        if (course != null) {
+            idField.setText(course.courseId); idField.setDisable(true);
+            nameField.setText(course.courseName);
+            schoolField.setText(course.school);
+            creditField.setText(String.valueOf(course.credit));
+        }
+        grid.add(new Label("课程编号:"), 0, 0); grid.add(idField, 1, 0);
+        grid.add(new Label("课程名称:"), 0, 1); grid.add(nameField, 1, 1);
+        grid.add(new Label("开设学院:"), 0, 2); grid.add(schoolField, 1, 2);
+        grid.add(new Label("学分:"), 0, 3); grid.add(creditField, 1, 3);
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okType) {
+                String id = idField.getText().trim();
+                String name = nameField.getText().trim();
+                String school = schoolField.getText().trim();
+                float credit;
+                try { credit = Float.parseFloat(creditField.getText().trim()); } catch (Exception e) { credit = 0; }
+                if (id.isEmpty() || name.isEmpty() || school.isEmpty() || credit <= 0) {
+                    showAlert(Alert.AlertType.WARNING, "数据校验", "请填写完整且合法的课程信息");
+                    return null;
+                }
+                return new Course(id, name, school, credit);
+            }
+            return null;
+        });
+        Optional<Course> result = dialog.showAndWait();
+        result.ifPresent(c -> {
+            if (course == null) doAddCourse(c); else doUpdateCourse(c);
+        });
+    }
+
+    private void doAddCourse(Course c) {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.addCourse(c.courseId, c.courseName, c.school, c.credit);
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                Object codeObj = result.get("code");
+                int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
+                Platform.runLater(() -> {
+                    if (code == 200) {
+                        showAlert(Alert.AlertType.INFORMATION, "新增成功", "课程已添加");
+                        refreshFromAll();
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "新增失败", "code=" + code);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "新增失败", e.getMessage()));
+            }
+        }).start();
+    }
+
+    private void doUpdateCourse(Course c) {
+        new Thread(() -> {
+            try {
+                String resp = ClientNetworkHelper.updateCourse(c.courseId, c.courseName, c.school, c.credit);
+                Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                Object codeObj = result.get("code");
+                int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
+                Platform.runLater(() -> {
+                    if (code == 200) {
+                        showAlert(Alert.AlertType.INFORMATION, "编辑成功", "课程信息已更新");
+                        refreshFromAll();
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "编辑失败", "code=" + code);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "编辑失败", e.getMessage()));
+            }
+        }).start();
+    }
+
+    private void doDeleteCourse(String courseId) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "确定要删除该课程吗？", ButtonType.YES, ButtonType.NO);
+        confirm.setHeaderText(null);
+        Optional<ButtonType> res = confirm.showAndWait();
+        if (res.isPresent() && res.get() == ButtonType.YES) {
+            new Thread(() -> {
+                try {
+                    String resp = ClientNetworkHelper.deleteCourse(courseId);
+                    Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
+                    Object codeObj = result.get("code");
+                    int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
+                    Platform.runLater(() -> {
+                        if (code == 200) {
+                            showAlert(Alert.AlertType.INFORMATION, "删除成功", "课程已删除");
+                            refreshFromAll();
+                        } else {
+                            showAlert(Alert.AlertType.ERROR, "删除失败", "code=" + code);
+                        }
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "删除失败", e.getMessage()));
+                }
+            }).start();
+        }
+    }
+
+    // 构造方法中调用 addControlBar()
     public CourseAdminPanel() {
         setPadding(new Insets(18));
         setSpacing(10);
         init();
+        addControlBar();
         loadAll(); // 初始化时加载后端数据
     }
 
     private void init() {
         Label title = new Label("课程管理");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
-        getChildren().add(title);
-
-        Client.coursemgmt.admin.CourseSearchBar searchBar = new Client.coursemgmt.admin.CourseSearchBar(new Client.coursemgmt.admin.CourseSearchBar.SearchListener() {
-            @Override public void onSearch(String type, String value, boolean fuzzy) { doSearch(type,value,fuzzy);}
-            @Override public void onClear() { loadAll(); }
-        });
-        getChildren().add(searchBar);
-
-        table = createTable();
-        VBox.setVgrow(table, Priority.ALWAYS);
-        getChildren().add(table);
-
-        HBox opBox = createOpBox();
-        getChildren().add(opBox);
-
-        seedDemo();
-        loadAll();
-    }
-
-    private TableView<Course> createTable() {
-        TableView<Course> t = new TableView<>();
-        t.setPrefHeight(460);
-        t.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        t.setTableMenuButtonVisible(true);
-        TableColumn<Course,String> cId = new TableColumn<>("课程号"); cId.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().id))); cId.setPrefWidth(110);
-        TableColumn<Course,String> cName = new TableColumn<>("课程名"); cName.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().name))); cName.setPrefWidth(160);
-        TableColumn<Course,String> cTeacher = new TableColumn<>("任课教师"); cTeacher.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().teacher))); cTeacher.setPrefWidth(110);
-        TableColumn<Course,String> cClazz = new TableColumn<>("教学班"); cClazz.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().clazz))); cClazz.setPrefWidth(110);
-        TableColumn<Course,String> cRoom = new TableColumn<>("教室"); cRoom.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().room))); cRoom.setPrefWidth(110);
-        TableColumn<Course,Number> cCap = new TableColumn<>("容量"); cCap.setCellValueFactory(d-> new SimpleIntegerProperty(d.getValue().capacity)); cCap.setPrefWidth(70);
-        TableColumn<Course,Number> cSel = new TableColumn<>("已选"); cSel.setCellValueFactory(d-> new SimpleIntegerProperty(d.getValue().selected())); cSel.setPrefWidth(70);
-        TableColumn<Course,String> cSched = new TableColumn<>("时间"); cSched.setCellValueFactory(d-> new SimpleStringProperty(nv(d.getValue().schedule))); cSched.setPrefWidth(180);
-        t.getColumns().addAll(cId,cName,cTeacher,cClazz,cRoom,cCap,cSel,cSched);
-        return t;
-    }
-
-    private String nv(String s){return (s==null||s.isEmpty())?"未设置":s;}
-
-    private HBox createOpBox() {
-        HBox box = new HBox(20); box.setPadding(new Insets(15,0,0,0)); box.setAlignment(Pos.CENTER);
-        Button add = new Button("添加课程"); setPrimaryButtonStyle(add); uniformButtonWidth(add);
-        Button edit = new Button("修改选中"); setPrimaryButtonStyle(edit); uniformButtonWidth(edit);
-        Button del = new Button("删除选中"); setPrimaryButtonStyle(del); uniformButtonWidth(del);
-        Button ref = new Button("刷新"); setPrimaryButtonStyle(ref); uniformButtonWidth(ref);
-        Region s1=new Region();Region s2=new Region();Region s3=new Region();Region l=new Region();Region r=new Region();
-        HBox.setHgrow(l,Priority.ALWAYS);HBox.setHgrow(r,Priority.ALWAYS);HBox.setHgrow(s1,Priority.ALWAYS);HBox.setHgrow(s2,Priority.ALWAYS);HBox.setHgrow(s3,Priority.ALWAYS);
-
-        add.setOnAction(e-> CourseEditDialog.open(null, c->{ allData.add(c); refreshFromAll(); }));
-        edit.setOnAction(e->{ Course sel = table.getSelectionModel().getSelectedItem(); if(sel!=null){CourseEditDialog.open(sel, x->{ refreshFromAll(); });} else {showWarn("请先选择要修改的课程");}});
-        del.setOnAction(e->{ Course sel = table.getSelectionModel().getSelectedItem(); if(sel!=null){ CourseDeleteHelper.confirmAndDelete(sel, allData, this::refreshFromAll);} else {showWarn("请先选择要删除的课程");}});
-        ref.setOnAction(e->loadAll());
-
-        box.getChildren().addAll(l,add,s1,edit,s2,del,s3,ref,r);
-        return box;
+        // 表格初始化
+        table = new TableView<>();
+        TableColumn<Course, String> idCol = new TableColumn<>("课程编号");
+        idCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().courseId));
+        TableColumn<Course, String> nameCol = new TableColumn<>("课程名称");
+        nameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().courseName));
+        TableColumn<Course, String> schoolCol = new TableColumn<>("开设学院");
+        schoolCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().school));
+        TableColumn<Course, String> creditCol = new TableColumn<>("学分");
+        creditCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().credit)));
+        table.getColumns().addAll(idCol, nameCol, schoolCol, creditCol);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        getChildren().addAll(title, table);
     }
 
     private void loadAll() {
@@ -109,22 +275,26 @@ public class CourseAdminPanel extends VBox {
             try {
                 String resp = ClientNetworkHelper.getAllCourses();
                 Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
-                if (Boolean.TRUE.equals(result.get("success"))) {
+                Object codeObj = result.get("code");
+                int code = codeObj instanceof Number ? ((Number) codeObj).intValue() : -1;
+                if (code == 200) {
                     List<Map<String, Object>> courseList = (List<Map<String, Object>>) result.get("data");
                     Platform.runLater(() -> {
                         allData.clear();
                         for (Map<String, Object> course : courseList) {
                             Course c = new Course();
-                            c.id = (String) course.get("courseId");
-                            c.name = (String) course.get("courseName");
-                            c.teacher = ""; // 可扩展为后端返回
-                            c.clazz = "";   // 可扩展为后端返回
-                            c.room = "";    // 可扩展为后端返回
-                            c.capacity = ((Double) course.get("credit")).intValue(); // 或用capacity字段
-                            c.schedule = ""; // 可扩展为后端返回
+                            c.courseId = (String) course.getOrDefault("courseId", "");
+                            c.courseName = (String) course.getOrDefault("courseName", "");
+                            c.school = (String) course.getOrDefault("school", "");
+                            c.credit = ((Number) course.getOrDefault("credit", 0)).floatValue();
                             allData.add(c);
                         }
                         table.getItems().setAll(allData);
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "课程数据加载失败: code=" + code);
+                        alert.showAndWait();
                     });
                 }
             } catch (Exception e) {
@@ -185,9 +355,9 @@ public class CourseAdminPanel extends VBox {
 
     private void seedDemo(){
         allData.clear();
-        Course c1 = new Course(); c1.id="CS101"; c1.name="数据结构"; c1.teacher="张老师"; c1.clazz="计科2101"; c1.room="教四-201"; c1.capacity=60; c1.schedule="周二(3-5节), 周四(6-7节)"; c1.students= new ArrayList<>(Arrays.asList("张三","李四","王五"));
-        Course c2 = new Course(); c2.id="CS202"; c2.name="计算机网络"; c2.teacher="李老师"; c2.clazz="软工2102"; c2.room="实验中心-204"; c2.capacity=48; c2.schedule="周一(11-13节)"; c2.students= new ArrayList<>(Arrays.asList("赵六","钱七"));
-        Course c3 = new Course(); c3.id="MA110"; c3.name="线性代数"; c3.teacher="周老师"; c3.clazz="计科2101"; c3.room="教一-308"; c3.capacity=80; c3.schedule="周五(8-10节)"; c3.students= new ArrayList<>(Arrays.asList("孙八","吴九","郑十"));
+        Course c1 = new Course(); c1.courseId="CS101"; c1.courseName="数据结构"; c1.school="计算机学院"; c1.credit=3;
+        Course c2 = new Course(); c2.courseId="CS202"; c2.courseName="计算机网络"; c2.school="网络学院"; c2.credit=2;
+        Course c3 = new Course(); c3.courseId="MA110"; c3.courseName="线性代数"; c3.school="数学学院"; c3.credit=4;
         allData.addAll(Arrays.asList(c1,c2,c3));
     }
 }

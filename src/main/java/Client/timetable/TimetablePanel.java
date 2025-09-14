@@ -89,27 +89,23 @@ public class TimetablePanel extends BorderPane {
     private void loadTimetableFromServer() {
         new Thread(() -> {
             try {
-                String resp = ClientNetworkHelper.getStudentSelectedCourses(cardNumber);
+                String resp = ClientNetworkHelper.getAllCourses();
                 Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
                 if (Boolean.TRUE.equals(result.get("success"))) {
                     List<Map<String, Object>> courseList = (List<Map<String, Object>>) result.get("data");
                     selectedCourses.clear();
                     scheduleMap.clear();
-                    for (Map<String, Object> tc : courseList) {
-                        String courseName = (String) tc.get("courseId");
-                        String place = (String) tc.get("place");
-                        String scheduleJson = (String) tc.get("schedule");
-                        Map<String, String> schedule = new com.google.gson.Gson().fromJson(scheduleJson, Map.class);
-                        for (Map.Entry<String, String> entry : schedule.entrySet()) {
-                            String day = entry.getKey();
-                            String time = entry.getValue();
-                            Map<String, Object> courseInfo = new HashMap<>();
-                            courseInfo.put("courseName", courseName);
-                            courseInfo.put("place", place);
-                            courseInfo.put("time", time);
-                            if (!scheduleMap.containsKey(day)) scheduleMap.put(day, new ArrayList<>());
-                            scheduleMap.get(day).add(courseInfo);
-                        }
+                    for (Map<String, Object> course : courseList) {
+                        String courseName = (String) course.get("courseName");
+                        String place = course.containsKey("place") ? (String) course.get("place") : "";
+                        String schedule = course.containsKey("schedule") ? (String) course.get("schedule") : "";
+                        // 默认全部放在周一第1节（可根据 schedule 字段解析具体时间）
+                        Map<String, Object> courseInfo = new HashMap<>();
+                        courseInfo.put("courseName", courseName);
+                        courseInfo.put("place", place);
+                        courseInfo.put("time", schedule);
+                        if (!scheduleMap.containsKey("周一")) scheduleMap.put("周一", new ArrayList<>());
+                        scheduleMap.get("周一").add(courseInfo);
                     }
                     javafx.application.Platform.runLater(this::renderTimetable);
                 }

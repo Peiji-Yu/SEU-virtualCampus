@@ -13,6 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -39,8 +40,8 @@ public class CourseEditDialog {
         TextArea students = new TextArea(); students.setPromptText("已选学生（以英文逗号分隔）"); students.setPrefRowCount(3);
 
         if (origin != null){
-            id.setText(nv(origin.id));
-            name.setText(nv(origin.name));
+            id.setText(nv(origin.courseId));
+            name.setText(nv(origin.courseName));
             teacher.setText(nv(origin.teacher));
             clazz.setText(nv(origin.clazz));
             room.setText(nv(origin.room));
@@ -70,45 +71,29 @@ public class CourseEditDialog {
         save.setOnAction(e -> {
             final String courseId = id.getText().trim();
             final String courseName = name.getText().trim();
+            final String teacherName = teacher.getText().trim();
+            final String clazzName = clazz.getText().trim();
+            final String roomName = room.getText().trim();
+            final int courseCapacity;
+            try { courseCapacity = Integer.parseInt(capacity.getText().trim()); } catch (Exception ex) { return; }
+            final String courseSchedule = schedule.getText().trim();
+            final List<String> studentList = Arrays.stream(students.getText().split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
             final String school = "计算机学院"; // 可扩展为输入项
-            final double credit;
-            try { credit = Double.parseDouble(capacity.getText().trim()); } catch (Exception ex) { return; }
-            // 构造课程对象
-            java.util.Map<String, Object> course = new java.util.HashMap<>();
-            course.put("courseId", courseId);
-            course.put("courseName", courseName);
-            course.put("school", school);
-            course.put("credit", credit);
-            new Thread(() -> {
-                try {
-                    String resp;
-                    if (origin == null) {
-                        // 新增课程
-                        resp = ClientNetworkHelper.addCourse(course);
-                    } else {
-                        // 编辑课程
-                        java.util.Map<String, Object> updates = new java.util.HashMap<>();
-                        updates.put("courseName", courseName);
-                        updates.put("credit", credit);
-                        resp = ClientNetworkHelper.updateCourse(courseId, updates);
-                    }
-                    java.util.Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, java.util.Map.class);
-                    javafx.application.Platform.runLater(() -> {
-                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(result.get("success").equals(Boolean.TRUE) ? javafx.scene.control.Alert.AlertType.INFORMATION : javafx.scene.control.Alert.AlertType.ERROR,
-                                (String) result.get("message"));
-                        alert.showAndWait();
-                        if (result.get("success").equals(Boolean.TRUE)) {
-                            stage.close();
-                            if (onSave != null) onSave.accept(origin);
-                        }
-                    });
-                } catch (Exception ex) {
-                    javafx.application.Platform.runLater(() -> {
-                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR, "操作失败: " + ex.getMessage());
-                        alert.showAndWait();
-                    });
-                }
-            }).start();
+            final float credit = 1.0f; // 可扩展为输入项
+            CourseAdminPanel.Course courseObj = origin == null ? new CourseAdminPanel.Course() : origin;
+            courseObj.courseId = courseId;
+            courseObj.courseName = courseName;
+            courseObj.teacher = teacherName;
+            courseObj.clazz = clazzName;
+            courseObj.room = roomName;
+            courseObj.capacity = courseCapacity;
+            courseObj.schedule = courseSchedule;
+            courseObj.students = new java.util.ArrayList<>(studentList);
+            courseObj.school = school;
+            courseObj.credit = credit;
+            if (onSave != null) onSave.accept(courseObj);
+            stage.close();
         });
         cancel.setOnAction(e -> stage.close());
 

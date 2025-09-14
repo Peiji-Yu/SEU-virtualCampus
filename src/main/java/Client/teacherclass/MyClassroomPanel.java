@@ -46,7 +46,7 @@ public class MyClassroomPanel extends BorderPane {
         }
     }
 
-    private final String teacherCardNumber;
+    private final String teacherName;
     private final ObservableList<Course> myCourses = FXCollections.observableArrayList();
 
     private final ListView<Course> courseListView = new ListView<>();
@@ -55,8 +55,8 @@ public class MyClassroomPanel extends BorderPane {
     private final Label courseStats = new Label();
     private final TableView<Student> studentTable = new TableView<>();
 
-    public MyClassroomPanel(String teacherId) {
-        this.teacherCardNumber = teacherId;
+    public MyClassroomPanel(String teacherName) {
+        this.teacherName = teacherName;
         setStyle("-fx-background-color: " + BG + ";");
         setPadding(new Insets(10));
         setPrefSize(900, 600);
@@ -73,7 +73,7 @@ public class MyClassroomPanel extends BorderPane {
     private void loadMyCoursesFromServer() throws Exception {
         new Thread(() -> {
             try {
-                String resp = ClientNetworkHelper.getTeachingClassesByTeacherId(teacherCardNumber);
+                String resp = ClientNetworkHelper.getTeachingClassesByTeacherName(teacherName);
                 Map<String, Object> result = new com.google.gson.Gson().fromJson(resp, Map.class);
                 if (Boolean.TRUE.equals(result.get("success"))) {
                     List<Map<String, Object>> classList = (List<Map<String, Object>>) result.get("data");

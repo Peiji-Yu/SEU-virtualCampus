@@ -1,10 +1,10 @@
 package Server.service.course;
 
+import Server.dao.course.CourseMapper;
 import Server.dao.course.TeachingClassMapper;
 import Server.model.course.TeachingClass;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
+import Server.util.DatabaseUtil;
+import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
 
@@ -12,6 +12,10 @@ public class TeachingClassService {
 
     private TeachingClassMapper teachingClassMapper;
 
+    public TeachingClassService() {
+        SqlSession sqlSession = DatabaseUtil.getSqlSession();
+        this.teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
+    }
     public TeachingClass findByUuid(String uuid) {
         try {
             return teachingClassMapper.findByUuid(uuid);
@@ -23,7 +27,14 @@ public class TeachingClassService {
 
     public List<TeachingClass> findByCourseId(String courseId) {
         try {
-            return teachingClassMapper.findByCourseId(courseId);
+            SqlSession sqlSession = DatabaseUtil.getSqlSession();
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
+            CourseMapper courseMapper = sqlSession.getMapper(CourseMapper.class);List<TeachingClass> list = teachingClassMapper.findByCourseId(courseId);
+            for (TeachingClass tc : list) {
+                // 补充 Course 信息
+                tc.setCourse(courseMapper.findByCourseId(tc.getCourseId()));
+            }
+            return list;
         } catch (Exception e) {
             System.err.println("根据课程ID查询教学班失败: " + e.getMessage());
             return null;
@@ -90,11 +101,11 @@ public class TeachingClassService {
         }
     }
 
-    public List<TeachingClass> getTeachingClassesByTeacherId(Integer teacherId) {
+    public List<TeachingClass> getTeachingClassesByTeacherName(String teacherName) {
         try {
-            return teachingClassMapper.findByTeacherId(teacherId);
+            return teachingClassMapper.findByTeacherName(teacherName);
         } catch (Exception e) {
-            System.err.println("根据教师ID查询教学班失败: " + e.getMessage());
+            System.err.println("根据教师姓名查询教学班失败: " + e.getMessage());
             return null;
         }
     }

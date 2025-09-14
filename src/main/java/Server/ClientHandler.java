@@ -264,10 +264,10 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取课程教学班成功", courseTeachingClasses);
                         break;
 
-                    // 根据教师ID获取教学班
-                    case "getTeachingClassesByTeacherId":
-                        Integer teacherId = ((Double) request.getData().get("teacherId")).intValue();
-                        List<TeachingClass> teacherTeachingClasses = teachingClassService.getTeachingClassesByTeacherId(teacherId);
+                    // 根据教师姓名获取教学班
+                    case "getTeachingClassesByTeacherName":
+                        String teacherName = (String) request.getData().get("teacherName");
+                        List<TeachingClass> teacherTeachingClasses = teachingClassService.getTeachingClassesByTeacherName(teacherName);
                         response = Response.success("获取教师教学班成功", teacherTeachingClasses);
                         break;
 
@@ -293,7 +293,7 @@ public class ClientHandler implements Runnable {
 
                             // 创建选课关系
                             boolean selectResult = studentTeachingClassService.addStudentTeachingClass(
-                                new StudentTeachingClass(selectCardNumber, teachingClassUuid));
+                                    new StudentTeachingClass(selectCardNumber, teachingClassUuid));
 
                             if (selectResult) {
                                 // 更新教学班选课人数
@@ -383,7 +383,12 @@ public class ClientHandler implements Runnable {
 
                     // 添加课程（管理员功能）
                     case "addCourse":
-                        Map<String, Object> courseData = (Map<String, Object>) request.getData().get("course");
+                        Map<String, Object> courseData;
+                        if (request.getData().containsKey("course")) {
+                            courseData = (Map<String, Object>) request.getData().get("course");
+                        } else {
+                            courseData = request.getData();
+                        }
                         Course newCourse = createCourseFromMap(courseData);
 
                         boolean addCourseResult = courseService.addCourse(newCourse);
@@ -395,15 +400,18 @@ public class ClientHandler implements Runnable {
                     // 更新课程（部分更新）
                     case "updateCourse":
                         String updateCourseId = (String) request.getData().get("courseId");
-                        Map<String, Object> courseUpdates = (Map<String, Object>) request.getData().get("updates");
-
+                        Map<String, Object> courseUpdates;
+                        if (request.getData().containsKey("updates")) {
+                            courseUpdates = (Map<String, Object>) request.getData().get("updates");
+                        } else {
+                            courseUpdates = request.getData();
+                        }
                         // 获取现有课程信息
                         Course existingCourse = courseService.findByCourseId(updateCourseId);
                         if (existingCourse == null) {
                             response = Response.error("课程不存在");
                             break;
                         }
-
                         // 应用更新 - 检查并更新所有可能的字段
                         if (courseUpdates.containsKey("courseName")) {
                             existingCourse.setCourseName((String) courseUpdates.get("courseName"));
@@ -459,8 +467,8 @@ public class ClientHandler implements Runnable {
                         if (updates.containsKey("courseId")) {
                             existingTeachingClass.setCourseId((String) updates.get("courseId"));
                         }
-                        if (updates.containsKey("teacherId")) {
-                            existingTeachingClass.setTeacherId(((Double) updates.get("teacherId")).intValue());
+                        if (updates.containsKey("teacherName")) {
+                            existingTeachingClass.setTeacherName((String) updates.get("teacherName"));
                         }
                         if (updates.containsKey("schedule")) {
                             existingTeachingClass.setSchedule((String) updates.get("schedule"));
@@ -772,108 +780,108 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
-                        // 🔍 搜索书籍（通过书名）
-                    case "searchBooks": 
+                    // 🔍 搜索书籍（通过书名）
+                    case "searchBooks":
                         String searchBookText = (String) request.getData().get("searchText");
                         if (searchBookText == null) {
                             response = Response.error("搜索参数不完整");
                             break;
                         }
                         try {
-                                List<Book> books = bookService.searchBooks(searchBookText);
-                                response = Response.success("搜索完成", books);
-                            } catch (Exception e) {
-                                response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
-                            }
+                            List<Book> books = bookService.searchBooks(searchBookText);
+                            response = Response.success("搜索完成", books);
+                        } catch (Exception e) {
+                            response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
+                        }
                         break;
-            
 
-                        // 📖 获取个人借阅记录（通过 userId）
-                        case "getOwnRecords": {
-                            Integer userId = ((Double) request.getData().get("userId")).intValue();
-                            if (userId == null) {
-                                response = Response.error("缺少 userId 参数");
-                                break;
-                            }
-                            try {
-                                List<BookRecord> records = bookService.userRecords(userId);
-                                response = Response.success("查询成功", records);
-                            } catch (Exception e) {
-                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
-                            }
+
+                    // 📖 获取个人借阅记录（通过 userId）
+                    case "getOwnRecords": {
+                        Integer userId = ((Double) request.getData().get("userId")).intValue();
+                        if (userId == null) {
+                            response = Response.error("缺少 userId 参数");
                             break;
                         }
+                        try {
+                            List<BookRecord> records = bookService.userRecords(userId);
+                            response = Response.success("查询成功", records);
+                        } catch (Exception e) {
+                            response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+                    }
 
-                        // 🔄 续借图书
-                        case "renewBook": {
-                            String uuid = (String) request.getData().get("uuid");
-                            if (uuid == null) {
-                                response = Response.error("缺少图书 uuid 参数");
-                                break;
-                            }
-                            try {
-                                boolean result = bookService.renewBook(uuid);
-                                response = result ? Response.success("续借成功") : Response.error("续借失败");
-                            } catch (Exception e) {
-                                response = Response.error(500, "续借过程中发生错误: " + e.getMessage());
-                            }
+                    // 🔄 续借图书
+                    case "renewBook": {
+                        String uuid = (String) request.getData().get("uuid");
+                        if (uuid == null) {
+                            response = Response.error("缺少图书 uuid 参数");
                             break;
                         }
+                        try {
+                            boolean result = bookService.renewBook(uuid);
+                            response = result ? Response.success("续借成功") : Response.error("续借失败");
+                        } catch (Exception e) {
+                            response = Response.error(500, "续借过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+                    }
 
-                        // ✏ 更新书籍信息
-                        case "updateBook": {
-                            Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
-                            Book bookUpdate = createBookFromMap(bookData);
-                            boolean result = bookService.updateBook(bookUpdate);
-                            response = result ? Response.success("更新成功") : Response.error("更新失败");
+                    // ✏ 更新书籍信息
+                    case "updateBook": {
+                        Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
+                        Book bookUpdate = createBookFromMap(bookData);
+                        boolean result = bookService.updateBook(bookUpdate);
+                        response = result ? Response.success("更新成功") : Response.error("更新失败");
+                        break;
+                    }
+
+                    // ❌ 删除书籍（根据 ISBN）
+                    case "deleteBook": {
+                        String isbn = (String) request.getData().get("isbn");
+                        if (isbn == null) {
+                            response = Response.error("缺少 ISBN 参数");
                             break;
                         }
+                        boolean result = bookService.deleteBook(isbn);
+                        response = result ? Response.success("删除成功") : Response.error("删除失败");
+                        break;
+                    }
 
-                        // ❌ 删除书籍（根据 ISBN）
-                        case "deleteBook": {
-                            String isbn = (String) request.getData().get("isbn");
-                            if (isbn == null) {
-                                response = Response.error("缺少 ISBN 参数");
-                                break;
-                            }
-                            boolean result = bookService.deleteBook(isbn);
-                            response = result ? Response.success("删除成功") : Response.error("删除失败");
+                    // ➕ 添加书籍
+                    case "addBook": {
+                        Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
+                        Book newBook = createBookFromMap(bookData);
+                        boolean result = bookService.addBook(newBook);
+                        response = result ? Response.success("添加成功", newBook.getIsbn()) : Response.error("添加失败");
+                        break;
+                    }
+
+                    // 📚 借书
+                    case "borrowBook": {
+                        String isbn = (String) request.getData().get("isbn");
+                        Integer userId = ((Double) request.getData().get("userId")).intValue();
+                        if (isbn == null || userId == null) {
+                            response = Response.error("缺少 uuid 或 userId 参数");
                             break;
                         }
+                        boolean result = bookService.borrowBook(userId, isbn);
+                        response = result ? Response.success("借书成功") : Response.error("借书失败");
+                        break;
+                    }
 
-                        // ➕ 添加书籍
-                        case "addBook": {
-                            Map<String, Object> bookData = (Map<String, Object>) request.getData().get("book");
-                            Book newBook = createBookFromMap(bookData);
-                            boolean result = bookService.addBook(newBook);
-                            response = result ? Response.success("添加成功", newBook.getIsbn()) : Response.error("添加失败");
+                    // 🔙 还书
+                    case "returnBook": {
+                        String uuid = (String) request.getData().get("uuid");
+                        if (uuid == null) {
+                            response = Response.error("缺少 uuid 参数");
                             break;
                         }
-
-                        // 📚 借书
-                        case "borrowBook": {
-                            String isbn = (String) request.getData().get("isbn");
-                            Integer userId = ((Double) request.getData().get("userId")).intValue();
-                            if (isbn == null || userId == null) {
-                                response = Response.error("缺少 uuid 或 userId 参数");
-                                break;
-                            }
-                            boolean result = bookService.borrowBook(userId, isbn);
-                            response = result ? Response.success("借书成功") : Response.error("借书失败");
-                            break;
-                        }
-
-                        // 🔙 还书
-                        case "returnBook": {
-                            String uuid = (String) request.getData().get("uuid");
-                            if (uuid == null) {
-                                response = Response.error("缺少 uuid 参数");
-                                break;
-                            }
-                            boolean result = bookService.returnBook(uuid);
-                            response = result ? Response.success("还书成功") : Response.error("还书失败");
-                            break;
-                        }
+                        boolean result = bookService.returnBook(uuid);
+                        response = result ? Response.success("还书成功") : Response.error("还书失败");
+                        break;
+                    }
 
                     default:
                         response = Response.error("不支持的请求类型: " + request.getType());
@@ -951,7 +959,7 @@ public class ClientHandler implements Runnable {
 
         if (data.containsKey("uuid")) teachingClass.setUuid((String) data.get("uuid"));
         if (data.containsKey("courseId")) teachingClass.setCourseId((String) data.get("courseId"));
-        if (data.containsKey("teacherId")) teachingClass.setTeacherId(((Double) data.get("teacherId")).intValue());
+        if (data.containsKey("teacherNamed")) teachingClass.setTeacherName(((String) data.get("teacherName")));
         if (data.containsKey("schedule")) teachingClass.setSchedule((String) data.get("schedule"));
         if (data.containsKey("place")) teachingClass.setPlace((String) data.get("place"));
         if (data.containsKey("capacity")) teachingClass.setCapacity(((Double) data.get("capacity")).intValue());

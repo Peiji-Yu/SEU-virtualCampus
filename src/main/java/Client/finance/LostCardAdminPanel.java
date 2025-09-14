@@ -39,19 +39,31 @@ public class LostCardAdminPanel extends VBox {
 
         TableColumn<Map<String, Object>, String> cardCol = new TableColumn<>("一卡通号");
         cardCol.setCellValueFactory(data -> {
+            if (data == null || data.getValue() == null) {
+                return new SimpleStringProperty("");
+            }
             Object value = data.getValue().get("cardNumber");
+            if (value == null) {
+                return new SimpleStringProperty("");
+            }
             if (value instanceof Number) {
-                // 使用不带科学计数法的字符串显示
-                return new SimpleStringProperty(String.format("%d", ((Number) value).longValue()));
+                return new SimpleStringProperty(String.valueOf(((Number) value).longValue()));
             }
             return new SimpleStringProperty(String.valueOf(value));
         });
         cardCol.setPrefWidth(120);
+
         TableColumn<Map<String, Object>, String> nameCol = new TableColumn<>("姓名");
-        nameCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("name"))));
+        nameCol.setCellValueFactory(data -> {
+            if (data == null || data.getValue() == null) return new SimpleStringProperty("");
+            Object v = data.getValue().get("name");
+            return new SimpleStringProperty(v == null ? "" : String.valueOf(v));
+        });
         nameCol.setPrefWidth(80);
+
         TableColumn<Map<String, Object>, String> balanceCol = new TableColumn<>("余额");
         balanceCol.setCellValueFactory(data -> {
+            if (data == null || data.getValue() == null) return new SimpleStringProperty("0.00元");
             Object value = data.getValue().get("balance");
             if (value instanceof Number) {
                 double yuan = ((Number) value).doubleValue() / 100.0;
@@ -60,24 +72,39 @@ public class LostCardAdminPanel extends VBox {
             return new SimpleStringProperty("0.00元");
         });
         balanceCol.setPrefWidth(80);
+
         TableColumn<Map<String, Object>, String> statusCol = new TableColumn<>("状态");
-        statusCol.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().get("status"))));
+        statusCol.setCellValueFactory(data -> {
+            if (data == null || data.getValue() == null) return new SimpleStringProperty("");
+            Object v = data.getValue().get("status");
+            return new SimpleStringProperty(v == null ? "" : String.valueOf(v));
+        });
         statusCol.setPrefWidth(80);
 
         TableColumn<Map<String, Object>, Void> actionCol = new TableColumn<>("操作");
         actionCol.setPrefWidth(100);
-        actionCol.setCellFactory(col -> new TableCell<>() {
+        actionCol.setCellFactory(col -> new TableCell<Map<String, Object>, Void>() {
             private final Button btn = new Button("解除挂失");
             {
                 btn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 14px;");
                 btn.setOnAction(e -> {
                     Map<String, Object> item = getTableView().getItems().get(getIndex());
+                    if (item == null) return;
                     Object cardObj = item.get("cardNumber");
                     long cardNumber;
-                    if (cardObj instanceof Number) {
-                        cardNumber = ((Number) cardObj).longValue();
-                    } else {
-                        cardNumber = Long.parseLong(cardObj.toString());
+                    try {
+                        if (cardObj instanceof Number) {
+                            cardNumber = ((Number) cardObj).longValue();
+                        } else {
+                            cardNumber = Long.parseLong(String.valueOf(cardObj));
+                        }
+                    } catch (Exception ex) {
+                        // 如果解析失败，提示并返回
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "卡号解析错误，无法解除挂失", ButtonType.OK);
+                            alert.showAndWait();
+                        });
+                        return;
                     }
                     cancelReportLoss(cardNumber);
                 });
@@ -121,10 +148,16 @@ public class LostCardAdminPanel extends VBox {
     private void refreshList() {
         statusLabel.setText("正在加载挂失账号...");
         new Thread(() -> {
-            var result = ClientNetworkHelper.findAllLostCards();
+            Map<String, Object> result = ClientNetworkHelper.findAllLostCards();
             Platform.runLater(() -> {
-                Number code = (Number) result.get("code");
-                if (result == null || code == null || code.intValue() != 200) {
+                if (result == null) {
+                    statusLabel.setText("加载失败，请重试。");
+                    tableView.getItems().clear();
+                    return;
+                }
+                Object codeObj = result.get("code");
+                int code = (codeObj instanceof Number) ? ((Number) codeObj).intValue() : -1;
+                if (code != 200) {
                     statusLabel.setText("加载失败，请重试。");
                     tableView.getItems().clear();
                     return;
@@ -145,7 +178,7 @@ public class LostCardAdminPanel extends VBox {
         statusLabel.setText("正在解除挂失...");
         new Thread(() -> {
             try {
-                var resp = ClientNetworkHelper.cancelReportLoss(cardNumber);
+                Map<String, Object> resp = ClientNetworkHelper.cancelReportLoss(cardNumber);
                 Platform.runLater(() -> {
                     Alert alert;
                     Object codeObj = resp != null ? resp.get("code") : null;

@@ -28,7 +28,7 @@ import javafx.scene.Node; // 新增
 import java.util.*;
 
 /**
- * 应用主界面：左侧功能导航 + 右侧内容区（当前只包含学籍管理模块）。
+ * 应用主界面：左侧功能导�� + 右侧内容区（当前只包含学籍管理模块）。
  * 根据 userType(student/admin/teacher) 动态加载不同面板。
  * 注意：仅调整结构与注释，不修改原有UI与行为。
  * @author Msgo-srAm
@@ -425,7 +425,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseSelectBtn);
                 currentSelectedButton = courseSelectBtn;
-                setCenterContent(new CourseSelectPanel(cardNumber));
+                setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
             });
 
             // 教师-我的课堂
@@ -533,7 +533,7 @@ public class MainFrame {
             VBox.setVgrow(functionSpacer, Priority.ALWAYS);
             leftBar.getChildren().add(functionSpacer);
 
-            // 新增：左下角"修改密码"按钮
+            // 新增：左下角"修改��码"按钮
             Button changePwdSidebarBtn = new Button();
             changePwdSidebarBtn.setPrefWidth(40);
             changePwdSidebarBtn.setPrefHeight(40);
@@ -594,7 +594,7 @@ public class MainFrame {
             noFunctionBox.setAlignment(Pos.CENTER);
             noFunctionBox.setStyle("-fx-background-color: " + BACKGROUND_COLOR + "; -fx-background-radius: 12; " +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0, 0, 2); -fx-padding: 40;");
-            Label noFunctionTitle = new Label("欢迎使用智慧校园系统");
+            Label noFunctionTitle = new Label("欢迎使用智慧���园系统");
             noFunctionTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
             Label noFunctionDesc = new Label("您当前的账户类型暂无可用功能模块");
             noFunctionDesc.setStyle("-fx-font-size: 16px; -fx-text-fill: " + SECONDARY_TEXT_COLOR + ";");
