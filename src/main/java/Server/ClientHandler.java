@@ -955,10 +955,6 @@ public class ClientHandler implements Runnable {
                             response = Response.error(500, "搜索过程中发生���误: " + e.getMessage());
                         }
                         break;
-<<<<<<< HEAD
-
-=======
->>>>>>> c1da06908c511561928644c67328bfb1ebe3a60c
 
 
                     // 📖 获取个人借阅记录（通过 userId）

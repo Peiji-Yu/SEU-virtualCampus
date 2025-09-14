@@ -112,11 +112,6 @@ book_item表：书籍副本表
             CONSTRAINT fk_book_item_book FOREIGN KEY (isbn) REFERENCES book(isbn)
         );
 
-
-lib_user表：用户表
-
-<<<<<<< HEAD
--- 借阅记录表
 CREATE TABLE book_record (
     uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
     user_id INT NOT NULL,                 -- 用户一卡通号
@@ -124,7 +119,7 @@ CREATE TABLE book_record (
     due_time DATE NOT NULL,               -- 到期时间
     name VARCHAR(255) NOT NULL,           -- 书名
 );
-=======
+
         CREATE TABLE lib_user (
             user_id INT PRIMARY KEY,              -- 用户一卡通号
             borrowed INT NOT NULL DEFAULT 0,      -- 当前已借书数量
@@ -132,17 +127,7 @@ CREATE TABLE book_record (
             user_status VARCHAR(20) NOT NULL      -- 用户状态 (BORROWING, FREE, OVERDUE, TRUSTBREAK)
         );
 
-book_record表：借阅记录表
 
-        CREATE TABLE book_record (
-            uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
-            user_id INT NOT NULL,                 -- 用户一卡通号
-            book_item_uuid CHAR(36) NOT NULL,     -- 借阅的书本副本UUID
-            borrow_time DATE NOT NULL,            -- 借书时间
-            due_time DATE NOT NULL,               -- 到期时间
-            return_time DATE,                     -- 归还时间（可为空）
-            CONSTRAINT fk_book_record_item FOREIGN KEY (book_item_uuid) REFERENCES book_item(uuid)
-        );
 
 students表: 学生表
 
@@ -233,5 +218,5 @@ student_selected_courses图：学生已选课程视图
         FROM student_teaching_class stc
         JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
         JOIN courses c ON tc.course_id = c.course_id;
->>>>>>> c1da06908c511561928644c67328bfb1ebe3a60c
+
 
