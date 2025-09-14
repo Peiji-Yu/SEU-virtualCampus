@@ -572,8 +572,7 @@ public class ClientHandler implements Runnable {
 
                     case "findAllLostCards":
                         // 管理员查询所有挂失的一卡通账号
-                        Response lostCardsResult = financeService.findAllLostCards();
-                        response = lostCardsResult;
+                        response = financeService.findAllLostCards();
                         break;
 
                     case "getTransactions":
@@ -773,10 +772,22 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取销售统计成功", salesStats);
                         break;
 
+                    case "getTodaySalesStats":
+                        // 管理员功能：获取今日销售统计
+                        List<StoreMapper.SalesStats> todaySalesStats = storeService.getTodaySalesStatistics();
+                        response = Response.success("获取销售统计成功", todaySalesStats);
+                        break;
+
                     case "getTodaySales":
                         // 管理员功能：获取今日销售总额
                         Integer todaySales = storeService.getTodaySalesRevenue();
                         response = Response.success("获取今日销售总额成功", todaySales);
+                        break;
+
+                    case "getSales":
+                        // 管理员功能：获取销售总额
+                        Integer Sales = storeService.getSalesRevenue();
+                        response = Response.success("获取销售总额成功", Sales);
                         break;
 
                     case "refundOrder":
@@ -817,7 +828,7 @@ public class ClientHandler implements Runnable {
                     // 📖 获取个人借阅记录（通过 userId）
                     case "getOwnRecords": {
                         Integer userId = ((Double) request.getData().get("userId")).intValue();
-                        if (userId == null) {
+                        if (userId == 0) {
                             response = Response.error("缺少 userId 参数");
                             break;
                         }
@@ -880,7 +891,7 @@ public class ClientHandler implements Runnable {
                     case "borrowBook": {
                         String isbn = (String) request.getData().get("isbn");
                         Integer userId = ((Double) request.getData().get("userId")).intValue();
-                        if (isbn == null || userId == null) {
+                        if (isbn == null || userId == 0) {
                             response = Response.error("缺少 uuid 或 userId 参数");
                             break;
                         }
