@@ -74,17 +74,19 @@ public class BookService {
     public boolean addBookItem(BookItem bookItem) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
-
+            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
             // 生成 UUID（如果没有）
             if (bookItem.getUuid() == null || bookItem.getUuid().isEmpty()) {
                 bookItem.setUuid(UUID.randomUUID().toString());
             }
-
+            Book book = bookMapper.findByIsbn(bookItem.getIsbn());
+            book.setInventory(book.getInventory() + 1);
+            int resb = bookMapper.updateBook(book);
             // 插入实体记录
             int res = bookItemMapper.insertBookItem(bookItem);
 
             sqlSession.commit();
-            return res > 0;
+            return res > 0 && resb > 0;
         }
     }
 
@@ -102,12 +104,15 @@ public class BookService {
     public boolean deleteBookItem(String uuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookItemMapper bookItemMapper = sqlSession.getMapper(BookItemMapper.class);
-
+            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
             // 删除实体
+            BookItem bookItem = bookItemMapper.findByUuid(uuid);
+            Book book = bookMapper.findByIsbn(bookItem.getIsbn());
+            book.setInventory(book.getInventory() - 1);
+            int resb = bookMapper.updateBook(book);
             int res = bookItemMapper.deleteBookItem(uuid);
-
             sqlSession.commit();
-            return res > 0;
+            return res > 0 && resb > 0;
         }
     }
 
