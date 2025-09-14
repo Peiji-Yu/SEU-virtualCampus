@@ -73,6 +73,9 @@ public class CustomerOrderPanel extends BorderPane {
         searchField.setPromptText("输入订单UUID搜索...");
         searchField.setPrefHeight(40);
         searchField.setStyle("-fx-font-size: 16px; -fx-padding: 0 10px;");
+        // 在搜索框初始化后添加监听器，实现输入即搜索
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> searchOrders());
+
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         // 监听输入，限制只能输入UUID格式字符
@@ -92,7 +95,15 @@ public class CustomerOrderPanel extends BorderPane {
         refreshBtn.setStyle("-fx-font-size: 16px; -fx-background-color: #2ecc71; -fx-text-fill: white;");
         refreshBtn.setOnAction(e -> loadOrders());
 
-        searchBar.getChildren().addAll(searchField, searchBtn, refreshBtn);
+        Button resetBtn = new Button("重置");
+        resetBtn.setPrefSize(100, 40);
+        resetBtn.setStyle("-fx-font-size: 16px; -fx-background-color: #2ecc71; -fx-text-fill: white;");
+        resetBtn.setOnAction(e -> {
+            searchField.clear();
+            displayOrders(orders); // 显示所有订单
+        });
+
+        searchBar.getChildren().addAll(searchField, searchBtn, resetBtn);
 
         searchBox.getChildren().addAll(searchBar);
         topContainer.getChildren().addAll(titleLabel, searchBox);
@@ -226,7 +237,8 @@ public class CustomerOrderPanel extends BorderPane {
         Label idLabel = new Label("订单号: " + order.getUuid());
         idLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
-        Label timeLabel = new Label("时间: " + order.getTime());
+        // 修改时间显示格式
+        Label timeLabel = new Label("时间: " + order.getTime().replace("T", " "));
         timeLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
 
         infoBox.getChildren().addAll(idLabel, timeLabel);
@@ -332,7 +344,7 @@ public class CustomerOrderPanel extends BorderPane {
         detailGrid.add(new Label(order.getUuid().toString()), 1, 0);
 
         detailGrid.add(new Label("订单时间:"), 0, 1);
-        detailGrid.add(new Label(order.getTime()), 1, 1);
+        detailGrid.add(new Label(order.getTime().replace("T", " ")), 1, 1);
 
         detailGrid.add(new Label("订单状态:"), 0, 2);
         Label statusDetailLabel = new Label(order.getStatus());

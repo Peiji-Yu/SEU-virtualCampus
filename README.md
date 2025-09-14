@@ -112,6 +112,7 @@ book_item表：书籍副本表
             CONSTRAINT fk_book_item_book FOREIGN KEY (isbn) REFERENCES book(isbn)
         );
 
+<<<<<<< HEAD
 CREATE TABLE book_record (
     uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
     user_id INT NOT NULL,                 -- 用户一卡通号
@@ -128,6 +129,17 @@ CREATE TABLE book_record (
         );
 
 
+=======
+book_record表：借阅记录表
+
+        CREATE TABLE book_record (
+            uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
+            user_id INT NOT NULL,                 -- 用户一卡通号
+            borrow_time DATE NOT NULL,            -- 借书时间
+            due_time DATE NOT NULL,               -- 到期时间
+            name VARCHAR(255) NOT NULL            -- 书名
+        );
+>>>>>>> 4754b8772aa31ff689fccd1fb7c685437413d647
 
 students表: 学生表
 
@@ -218,5 +230,8 @@ student_selected_courses图：学生已选课程视图
         FROM student_teaching_class stc
         JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
         JOIN courses c ON tc.course_id = c.course_id;
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 4754b8772aa31ff689fccd1fb7c685437413d647

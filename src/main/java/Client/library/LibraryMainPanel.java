@@ -6,14 +6,15 @@ import Client.library.admin.ModifyBookPanel;
 import Client.library.admin.ReturnBookPanel;
 import Client.library.student.LibrarySearchPanel;
 import Client.library.student.MyBorrowingsPanel;
+import Client.library.student.PaperSketchPanel;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
 public class LibraryMainPanel extends BorderPane {
     private LibrarySearchPanel searchPanel;
+    private PaperSketchPanel paperSketchPanel;
     private MyBorrowingsPanel borrowingsPanel;
     private AddBookPanel addBookPanel;
     private ModifyBookPanel modifyBookPanel;
@@ -145,6 +146,24 @@ public class LibraryMainPanel extends BorderPane {
                 }
             });
 
+            // 文献检索按钮
+            Button papersketchButton = new Button("文献检索");
+            papersketchButton.setPrefWidth(120);
+            papersketchButton.setPrefHeight(40);
+            resetButtonStyle(papersketchButton);
+
+            papersketchButton.setOnAction(e -> {
+                if (currentSelectedButton != papersketchButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(papersketchButton);
+                    currentSelectedButton = papersketchButton;
+
+                    // 初始化文献检索页面
+                    paperSketchPanel = new PaperSketchPanel();
+                    setCenter(paperSketchPanel);
+                }
+            });
+
             // 我的借阅按钮
             Button borrowingsButton = new Button("我的借阅");
             borrowingsButton.setPrefWidth(120);
@@ -167,18 +186,13 @@ public class LibraryMainPanel extends BorderPane {
                 }
             });
 
-            leftBar.getChildren().addAll(searchButton, borrowingsButton);
+            leftBar.getChildren().addAll(searchButton, papersketchButton, borrowingsButton);
             setLeft(leftBar);
 
             // 初始化面板
             searchPanel = new LibrarySearchPanel();
             setCenter(searchPanel);
         }
-
-        // 顶部标题
-        Label titleLabel = new Label("图书馆管理系统" + (isAdmin ? " (管理员)" : ""));
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-padding: 15;");
-        setTop(titleLabel);
     }
 
     private void setSelectedButtonStyle(Button button) {

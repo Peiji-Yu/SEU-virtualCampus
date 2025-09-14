@@ -1,8 +1,7 @@
 package Client.library.student;
 
 import Client.ClientNetworkHelper;
-import Client.library.util.component.BorrowedBookCard;
-import Client.library.util.model.BorrowedBook;
+import Client.library.util.model.BookRecord;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
@@ -10,30 +9,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 
 import java.lang.reflect.Type;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class MyBorrowingsPanel extends BorderPane {
-    private String cardNumber;
+    private final String cardNumber;
+    private final ObservableList<BookRecord> bookRecords = FXCollections.observableArrayList();
+    private VBox recordsContainer;
+    private TextField searchField;
     private Label statusLabel;
     private Label resultsLabel;
-    private VBox booksContainer;
-    private ScrollPane scrollPane;
-    private Button refreshButton;
+    private Button refreshBtn;
 
     private Gson gson;
 
@@ -51,34 +46,59 @@ public class MyBorrowingsPanel extends BorderPane {
     }
 
     private void initializeUI() {
-        setPadding(new Insets(15));
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: #f5f7fa;");
 
-        // 顶部标题和刷新按钮区域
-        HBox topBox = new HBox(15);
-        topBox.setAlignment(Pos.CENTER_LEFT);
+        // 顶部标题和搜索区域
+        VBox topContainer = new VBox(20);
+        topContainer.setPadding(new Insets(0, 0, 20, 0));
 
+        // 标题
         Label titleLabel = new Label("我的借阅");
-        titleLabel.setFont(Font.font(20));
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        titleLabel.setFont(Font.font(24));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        refreshButton = new Button("刷新");
-        refreshButton.setPrefWidth(80);
-        refreshButton.setPrefHeight(35);
-        refreshButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-        refreshButton.setOnAction(event -> loadBorrowedBooks());
+        // 顶部搜索区域
+        VBox searchBox = new VBox(15);
+        searchBox.setPadding(new Insets(20));
+        searchBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
 
-        topBox.getChildren().addAll(titleLabel, refreshButton);
-        setTop(topBox);
+        HBox searchBar = new HBox(15);
+        searchBar.setAlignment(Pos.CENTER_LEFT);
+
+        // 搜索框
+        searchField = new TextField();
+        searchField.setPromptText("输入书籍名称搜索...");
+        searchField.setPrefHeight(40);
+        searchField.setStyle("-fx-font-size: 16px; -fx-padding: 0 10px;");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+
+        Button searchBtn = new Button("搜索");
+        searchBtn.setPrefSize(100, 40);
+        searchBtn.setStyle("-fx-font-size: 16px; -fx-background-color: #3498db; -fx-text-fill: white;");
+        searchBtn.setOnAction(e -> searchBooks());
+
+        refreshBtn = new Button("刷新");
+        refreshBtn.setPrefSize(100, 40);
+        refreshBtn.setStyle("-fx-font-size: 16px; -fx-background-color: #2ecc71; -fx-text-fill: white;");
+        refreshBtn.setOnAction(e -> loadBorrowedBooks());
+
+        searchBar.getChildren().addAll(searchField, searchBtn, refreshBtn);
+
+        searchBox.getChildren().addAll(searchBar);
+        topContainer.getChildren().addAll(titleLabel, searchBox);
+        setTop(topContainer);
 
         // 结果数量标签
         resultsLabel = new Label("加载中...");
         resultsLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
 
-        // 中心图书列表区域
-        booksContainer = new VBox(15);
-        booksContainer.setPadding(new Insets(10, 0, 10, 0));
+        // 中心借阅记录展示区域
+        recordsContainer = new VBox(15);
+        recordsContainer.setPadding(new Insets(10));
 
-        scrollPane = new ScrollPane(booksContainer);
+        ScrollPane scrollPane = new ScrollPane(recordsContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
@@ -89,34 +109,23 @@ public class MyBorrowingsPanel extends BorderPane {
         // 底部状态栏
         statusLabel = new Label("就绪");
         statusLabel.setPadding(new Insets(10, 0, 0, 0));
-        statusLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
         setBottom(statusLabel);
     }
 
     public void loadBorrowedBooks() {
+        setStatus("加载借阅记录中...", "info");
+        refreshBtn.setDisable(true);
 
         new Thread(() -> {
             try {
-                Platform.runLater(() -> {
-                    setStatus("加载中...");
-                    refreshButton.setDisable(true);
-                });
-
                 // 构建获取借阅记录请求
                 Map<String, Object> data = new HashMap<>();
-                data.put("user_id", Integer.parseInt(cardNumber));
-                Request request = new Request("getBorrowedBooks", data);
+                data.put("userId", Integer.parseInt(cardNumber));
+                Request request = new Request("getOwnRecords", data);
 
-//                // 使用ClientNetworkHelper发送请求
-//                String response = ClientNetworkHelper.send(request);
-//                System.out.println("服务器响应: " + response);
-
-                // 模拟服务器响应
-                String response = "{\"code\":200,\"message\":\"success\",\"data\":[" +
-                        "{\"recordId\":1001,\"bookTitle\":\"Java编程思想\",\"author\":\"Bruce Eckel\",\"copyId\":\"123e4567-e89b-12d3-a456-426614174000\",\"location\":\"A区-3排-2架\",\"borrowDate\":\"2024-01-15\",\"dueDate\":\"2024-02-15\",\"canRenew\":true,\"totalBorrowDays\":30}," +
-                        "{\"recordId\":1002,\"bookTitle\":\"深入理解计算机系统\",\"author\":\"Randal E. Bryant\",\"copyId\":\"223e4567-e89b-12d3-a456-426614174001\",\"location\":\"B区-1排-4架\",\"borrowDate\":\"2024-01-10\",\"dueDate\":\"2024-03-10\",\"canRenew\":false,\"totalBorrowDays\":60}," +
-                        "{\"recordId\":1003,\"bookTitle\":\"设计模式：可复用面向对象软件的基础\",\"author\":\"Erich Gamma\",\"copyId\":\"323e4567-e89b-12d3-a456-426614174002\",\"location\":\"C区-2排-1架\",\"borrowDate\":\"2024-01-20\",\"dueDate\":\"2024-02-20\",\"canRenew\":true,\"totalBorrowDays\":30}" +
-                        "]}";
+                // 使用ClientNetworkHelper发送请求
+                String response = ClientNetworkHelper.send(request);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
@@ -124,68 +133,123 @@ public class MyBorrowingsPanel extends BorderPane {
 
                 if (code == 200) {
                     // 提取借阅记录列表
-                    Type bookListType = new TypeToken<List<BorrowedBook>>(){}.getType();
-                    List<BorrowedBook> borrowedBooks = gson.fromJson(gson.toJson(responseMap.get("data")), bookListType);
+                    Type recordListType = new TypeToken<List<BookRecord>>(){}.getType();
+                    List<BookRecord> recordList = gson.fromJson(gson.toJson(responseMap.get("data")), recordListType);
+
+                    bookRecords.setAll(recordList);
 
                     // 在UI线程中更新界面
                     Platform.runLater(() -> {
-                        updateBorrowedBooksUI(borrowedBooks);
-                        setStatus("加载完成");
-                        refreshButton.setDisable(false);
+                        displayRecords(bookRecords);
+                        setStatus("成功加载 " + recordList.size() + " 条借阅记录", "success");
+                        refreshBtn.setDisable(false);
                     });
                 } else {
                     Platform.runLater(() -> {
-                        setStatus("加载失败: " + responseMap.get("message"));
-                        resultsLabel.setText("加载失败");
-                        refreshButton.setDisable(false);
+                        setStatus("加载失败: " + responseMap.get("message"), "error");
+                        refreshBtn.setDisable(false);
                     });
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    setStatus("通信错误: " + e.getMessage());
-                    resultsLabel.setText("通信错误");
-                    refreshButton.setDisable(false);
+                    setStatus("通信错误: " + e.getMessage(), "error");
+                    refreshBtn.setDisable(false);
                 });
                 e.printStackTrace();
             }
         }).start();
     }
 
-    private void updateBorrowedBooksUI(List<BorrowedBook> borrowedBooks) {
-        booksContainer.getChildren().clear();
-
-        if (borrowedBooks.isEmpty()) {
-            Label noResults = new Label("您当前没有借阅任何图书");
-            noResults.setStyle("-fx-text-fill: #666; -fx-font-size: 16px; -fx-padding: 20;");
-            booksContainer.getChildren().add(noResults);
-            resultsLabel.setText("找到 0 条借阅记录");
-        } else {
-            for (BorrowedBook book : borrowedBooks) {
-                // 创建final引用以避免lambda表达式中的变量初始化问题
-                final BorrowedBook finalBook = book;
-                BorrowedBookCard card = new BorrowedBookCard(finalBook, () -> {
-                    renewBook(finalBook.getRecordId());
-                });
-                booksContainer.getChildren().add(card);
-            }
-            resultsLabel.setText("找到 " + borrowedBooks.size() + " 条借阅记录");
+    private void searchBooks() {
+        String keyword = searchField.getText().trim().toLowerCase();
+        if (keyword.isEmpty()) {
+            displayRecords(bookRecords);
+            return;
         }
+
+        List<BookRecord> filteredRecords = new ArrayList<>();
+        for (BookRecord record : bookRecords) {
+            if (record.getName() != null && record.getName().toLowerCase().contains(keyword)) {
+                filteredRecords.add(record);
+            }
+        }
+
+        displayRecords(filteredRecords);
     }
 
-    private void renewBook(int recordId) {
+    private void displayRecords(List<BookRecord> recordList) {
+        Platform.runLater(() -> {
+            recordsContainer.getChildren().clear();
+
+            if (recordList.isEmpty()) {
+                Label emptyLabel = new Label("没有找到借阅记录");
+                emptyLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #666; -fx-padding: 20;");
+                recordsContainer.getChildren().add(emptyLabel);
+                resultsLabel.setText("找到 0 条借阅记录");
+                return;
+            }
+
+            for (BookRecord record : recordList) {
+                HBox recordCard = createRecordCard(record);
+                recordsContainer.getChildren().add(recordCard);
+            }
+
+            resultsLabel.setText("找到 " + recordList.size() + " 条借阅记录");
+        });
+    }
+
+    private HBox createRecordCard(BookRecord record) {
+        HBox card = new HBox(15);
+        card.setPadding(new Insets(15));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
+                "-fx-border-color: #e0e0e0; -fx-border-radius: 10; -fx-border-width: 1; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        // 左侧书籍信息区域
+        VBox infoBox = new VBox(8);
+        infoBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+        Label titleLabel = new Label(record.getName() != null ? record.getName() : "未知书籍");
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+
+        Label uuidLabel = new Label("副本ID: " + record.getUuid());
+        uuidLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+
+        Label borrowLabel = new Label("借阅时间: " +
+                (record.getBorrowTime() != null ? record.getBorrowTime().toString() : "未知"));
+        borrowLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+
+        Label dueLabel = new Label("应还时间: " +
+                (record.getDueTime() != null ? record.getDueTime().toString() : "未知"));
+        dueLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+
+        infoBox.getChildren().addAll(titleLabel, uuidLabel, borrowLabel, dueLabel);
+
+        // 右侧续借按钮
+        Button renewBtn = new Button("续借");
+        renewBtn.setPrefSize(80, 40);
+        renewBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #3498db; -fx-text-fill: white;");
+        renewBtn.setOnAction(e -> renewBook(record.getUuid()));
+
+        card.getChildren().addAll(infoBox, renewBtn);
+
+        return card;
+    }
+
+    private void renewBook(String uuid) {
         new Thread(() -> {
             try {
-                Platform.runLater(() -> setStatus("续借中..."));
+                Platform.runLater(() -> setStatus("续借中...", "info"));
 
                 // 构建续借请求
                 Map<String, Object> data = new HashMap<>();
-                data.put("record_id", recordId);
-                data.put("user_id", Integer.parseInt(cardNumber));
+                data.put("uuid", uuid);
                 Request request = new Request("renewBook", data);
 
                 // 使用ClientNetworkHelper发送请求
                 String response = ClientNetworkHelper.send(request);
-                System.out.println("续借响应: " + response);
 
                 // 解析响应
                 Map<String, Object> responseMap = gson.fromJson(response, Map.class);
@@ -193,23 +257,54 @@ public class MyBorrowingsPanel extends BorderPane {
 
                 if (code == 200) {
                     Platform.runLater(() -> {
-                        setStatus("续借成功");
-                        // 刷新借阅列表以更新UI
+                        setStatus("续借成功", "success");
+                        showAlert("成功", "书籍续借成功");
+                        // 刷新借阅记录列表
                         loadBorrowedBooks();
                     });
                 } else {
-                    Platform.runLater(() ->
-                            setStatus("续借失败: " + responseMap.get("message")));
+                    Platform.runLater(() -> {
+                        setStatus("续借失败: " + responseMap.get("message"), "error");
+                        showAlert("错误", "续借失败: " + responseMap.get("message"));
+                    });
                 }
             } catch (Exception e) {
-                Platform.runLater(() ->
-                        setStatus("续借错误: " + e.getMessage()));
+                Platform.runLater(() -> {
+                    setStatus("续借错误: " + e.getMessage(), "error");
+                    showAlert("错误", "续借过程中发生错误: " + e.getMessage());
+                });
                 e.printStackTrace();
             }
         }).start();
     }
 
-    private void setStatus(String message) {
-        statusLabel.setText(message);
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // 设置对话框样式
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setStyle("-fx-font-size: 14px;");
+
+        alert.showAndWait();
+    }
+
+    private void setStatus(String message, String type) {
+        Platform.runLater(() -> {
+            statusLabel.setText(message);
+            switch (type) {
+                case "error":
+                    statusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 14px;");
+                    break;
+                case "success":
+                    statusLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 14px;");
+                    break;
+                default:
+                    statusLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
+                    break;
+            }
+        });
     }
 }

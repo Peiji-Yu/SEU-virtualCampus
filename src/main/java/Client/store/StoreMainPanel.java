@@ -8,7 +8,6 @@ import  Client.store.admin.AdminAddProductPanel;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
@@ -68,11 +67,6 @@ public class StoreMainPanel extends BorderPane {
             // 默认显示商品浏览面板
             switchToPanel("product");
         }
-
-        // 顶部标题
-        Label titleLabel = new Label("超市");
-        titleLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-padding: 15;");
-        setTop(titleLabel);
     }
 
     private Button createNavButton(String text) {
@@ -120,13 +114,6 @@ public class StoreMainPanel extends BorderPane {
                 setCenter(adminManageOrderPanel);
                 break;
         }
-    }
-
-    private void setSelectedButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
-                "-fx-border-color: #4e8cff; -fx-border-width: 2; -fx-border-radius: 10; " +
-                "-fx-background-color: #f8fbff; -fx-text-fill: #4e8cff; " +
-                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
     }
 
     private void resetButtonStyle(Button button) {
