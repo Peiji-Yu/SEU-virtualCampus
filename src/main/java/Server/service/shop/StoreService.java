@@ -96,15 +96,15 @@ public class StoreService {
         }
     }
 
-    /**
-     * 获取所有商品类别
-     */
-    public List<String> getAllCategories() {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-            return storeMapper.findAllCategories();
-        }
-    }
+//    /**
+//     * 获取所有商品类别
+//     */
+//    public List<String> getAllCategories() {
+//        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+//            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
+//            return storeMapper.findAllCategories();
+//        }
+//    }
 
     /**
      * 按类别和关键词搜索商品

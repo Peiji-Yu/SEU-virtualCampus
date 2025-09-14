@@ -77,11 +77,11 @@ public interface StoreMapper {
     @Select("SELECT * FROM store_item WHERE category = #{category}")
     List<StoreItem> findItemsByCategory(@Param("category") String category);
 
-    /**
-     * 获取所有商品类别
-     */
-    @Select("SELECT DISTINCT category FROM store_item")
-    List<String> findAllCategories();
+//    /**
+//     * 获取所有商品类别
+//     */
+//    @Select("SELECT DISTINCT category FROM store_item")
+//    List<String> findAllCategories();
 
     /**
      * 按类别和关键词搜索商品
