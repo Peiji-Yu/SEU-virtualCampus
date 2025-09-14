@@ -16,13 +16,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-
 import Client.ClientNetworkHelper;
 import Client.util.Config;
-import Server.model.Request; 
-
-import Client.util.Config;
-
+import Server.model.Request;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -68,7 +64,6 @@ public class AIChatPanel extends BorderPane {
 
     public AIChatPanel(String userDisplayName){
         this.userDisplayName = userDisplayName == null ? "未知用户" : userDisplayName;
-
         // 加载头像
         try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
         try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
@@ -90,16 +85,16 @@ public class AIChatPanel extends BorderPane {
 
     /** 初始化系统上下文 */
     private void initSystemContext() {
-        String systemPrompt = 
-            "你是东南大学虚拟校园系统的智能助手。\n" +
-            "该系统模块包括：\n" +
-            "1. 用户管理模块：用户登录、登出、修改/忘记密码。\n" +
-            "2. 学籍管理模块：学生可查看姓名、性别、出生日期、身份证号、一卡通号、学号、学院、专业、学籍状态、入学时间、籍贯、政治面貌；管理员可操作学籍信息。\n" +
-            "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
-            "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
-            "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
-            "\n" +
-            "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
+        String systemPrompt =
+                "你是东南大学虚拟校园系统的智能助手。\n" +
+                        "该系统模块包括：\n" +
+                        "1. 用户管理模块：用户登录、登出、修改/忘记密码。\n" +
+                        "2. 学籍管理模块：学生可查看姓名、性别、出生日期、身份证号、一卡通号、学号、学院、专业、学籍状态、入学时间、籍贯、政治面貌；管理员可操作学籍信息。\n" +
+                        "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
+                        "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
+                        "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
+                        "\n" +
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
@@ -107,7 +102,6 @@ public class AIChatPanel extends BorderPane {
 
         conversationHistory.add(systemMsg);
     }
-
     /**
      * 动态拼接 5 个模块的上下文信息
      */
@@ -166,7 +160,6 @@ public class AIChatPanel extends BorderPane {
 
         return sb.toString();
     }
-
 
     /** 构建界面 */
     private void buildUI(){
@@ -291,9 +284,9 @@ public class AIChatPanel extends BorderPane {
         String dynamicContext = fetchDynamicContext();
 
         // 删除旧的动态上下文
-        conversationHistory.removeIf(ctx -> 
-            "system".equals(ctx.get("role").getAsString()) &&
-            ctx.get("content").getAsString().startsWith("以下是学生最新的系统信息")
+        conversationHistory.removeIf(ctx ->
+                "system".equals(ctx.get("role").getAsString()) &&
+                        ctx.get("content").getAsString().startsWith("以下是学生最新的系统信息")
         );
 
         // 添加新的动态上下文
@@ -332,14 +325,12 @@ public class AIChatPanel extends BorderPane {
         box.getChildren().addAll(content, userAvatarNode);
         chatContainer.getChildren().add(box);
 
-
-        FadeTransition ft = new FadeTransition(Duration.millis(300), box); 
+        FadeTransition ft = new FadeTransition(Duration.millis(300), box);
         ft.setFromValue(0); ft.setToValue(1); ft.play();
 
-        JsonObject obj = new JsonObject(); 
-        obj.addProperty("role","user"); 
-        obj.addProperty("content", message); 
-
+        JsonObject obj = new JsonObject();
+        obj.addProperty("role","user");
+        obj.addProperty("content", message);
         conversationHistory.add(obj);
     }
 
@@ -436,21 +427,5 @@ public class AIChatPanel extends BorderPane {
             return iv;
         }
         Circle fallback = new Circle(20); fallback.getStyleClass().add("user-avatar"); return fallback;
-    }
-    /**
-     * 设置学生信息，用于更新系统上下文
-     */
-    public void setStudentInfo(String name, String studentNumber) {
-        // 更新系统上下文中的学生信息提示
-        String studentInfo = String.format("当前学生姓名：%s，学号：%s。", name, studentNumber);
-
-        // 找到系统消息（假设是 conversationHistory 的第一个元素）
-        if (!conversationHistory.isEmpty()) {
-            JsonObject systemMsg = conversationHistory.get(0);
-            if ("system".equals(systemMsg.get("role").getAsString())) {
-                String oldContent = systemMsg.get("content").getAsString();
-                systemMsg.addProperty("content", oldContent + "\n" + studentInfo);
-            }
-        }
     }
 }

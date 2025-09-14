@@ -263,7 +263,7 @@ public class StoreService {
             );
 
             if (refundResult) {
-                String newRemark = "退款原因" + (refundReason != null && !refundReason.isBlank() ? refundReason : "");
+                String newRemark = "退款原因：" + (refundReason != null && !refundReason.isBlank() ? refundReason : "");
                 int updateResult = storeMapper.updateOrderStatusAndRemark(orderUuid, STATUS_REFUNDED, newRemark);
 
                 for (StoreOrderItem item : order.getItems()) {

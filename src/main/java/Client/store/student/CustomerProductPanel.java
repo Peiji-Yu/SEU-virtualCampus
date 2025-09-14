@@ -79,6 +79,10 @@ public class CustomerProductPanel extends BorderPane {
         searchField.setPromptText("搜索商品名称...");
         searchField.setPrefHeight(40);
         searchField.setStyle("-fx-font-size: 14px; -fx-background-radius: 5;");
+
+    // 在搜索框初始化后添加监听器
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> performSearch());
+
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         Button searchBtn = new Button("搜索");
@@ -86,12 +90,22 @@ public class CustomerProductPanel extends BorderPane {
         searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
         searchBtn.setOnAction(e -> performSearch());
 
-        Button refreshBtn = new Button("刷新");
-        refreshBtn.setPrefSize(100, 40);
-        refreshBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
-        refreshBtn.setOnAction(e -> loadAllItems());
+//        Button refreshBtn = new Button("刷新");
+//        refreshBtn.setPrefSize(100, 40);
+//        refreshBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+//        refreshBtn.setOnAction(e -> loadAllItems());
 
-        searchBar.getChildren().addAll(searchField, searchBtn, refreshBtn);
+        // 将“刷新”按钮改为“重置”按钮
+        Button resetBtn = new Button("重置");
+        resetBtn.setPrefSize(100, 40);
+        resetBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-radius: 5;");
+        resetBtn.setOnAction(e -> {
+            searchField.clear();
+            categoryCombo.getSelectionModel().selectFirst();
+            loadAllItems();
+        });
+
+        searchBar.getChildren().addAll(searchField, searchBtn, resetBtn);
 
         // 类别下拉框
         HBox categoryBox = new HBox(10);
@@ -110,6 +124,10 @@ public class CustomerProductPanel extends BorderPane {
         categoryCombo.getItems().add("所有类别");
         categoryCombo.getItems().addAll(categories);
         categoryCombo.getSelectionModel().selectFirst();
+
+        // 在类别下拉框初始化后添加监听器
+        categoryCombo.valueProperty().addListener((obs, oldVal, newVal) -> performSearch());
+
 
         categoryBox.getChildren().addAll(categoryLabel, categoryCombo);
 
