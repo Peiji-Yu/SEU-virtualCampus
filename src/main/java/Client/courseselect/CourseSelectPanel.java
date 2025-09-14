@@ -227,13 +227,13 @@ public class CourseSelectPanel extends BorderPane {
                         // 保证切换按钮样式与当前视图一致
                         allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
                         selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
-                     });
-                 } else {
-                     Platform.runLater(() -> {
-                         statusLabel.setText("加载失败: " + courseResponse.getMessage());
-                         showAlert("错误", "加载课程数据失败: " + courseResponse.getMessage(), Alert.AlertType.ERROR);
-                     });
-                 }
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        statusLabel.setText("加载失败: " + courseResponse.getMessage());
+                        showAlert("错误", "加载课程数据失败: " + courseResponse.getMessage(), Alert.AlertType.ERROR);
+                    });
+                }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     statusLabel.setText("网络错误: " + e.getMessage());
@@ -320,133 +320,133 @@ public class CourseSelectPanel extends BorderPane {
 
     // 创建单个教学班卡片（用于课程详情展开内显示）
     private Node createTeachingClassCard(TeachingClass tc, FlowPane parent) {
-         boolean isSelected = isCourseSelected(tc.getUuid());
-         // 判断是否与任一已选教学班冲突（仅对未选中的教学班进行高亮）
-         boolean isConflict = false;
-         try {
-             if (!isSelected && tc != null && tc.getSchedule() != null && !selectedUuids.isEmpty()) {
-                 for (String selUuid : selectedUuids) {
-                     if (selUuid == null) continue;
-                     TeachingClass existTc = teachingClassMap.get(selUuid.trim().toLowerCase());
-                     if (existTc == null) continue;
-                     if (schedulesConflict(existTc.getSchedule(), tc.getSchedule())) {
-                         isConflict = true;
-                         break;
-                     }
-                 }
-             }
-         } catch (Exception ignored) {}
+        boolean isSelected = isCourseSelected(tc.getUuid());
+        // 判断是否与任一已选教学班冲突（仅对未选中的教学班进行高亮）
+        boolean isConflict = false;
+        try {
+            if (!isSelected && tc != null && tc.getSchedule() != null && !selectedUuids.isEmpty()) {
+                for (String selUuid : selectedUuids) {
+                    if (selUuid == null) continue;
+                    TeachingClass existTc = teachingClassMap.get(selUuid.trim().toLowerCase());
+                    if (existTc == null) continue;
+                    if (schedulesConflict(existTc.getSchedule(), tc.getSchedule())) {
+                        isConflict = true;
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
 
-         VBox card = new VBox(8);
-         card.setPadding(new Insets(12));
-         // 默认样式
-         card.setStyle("-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #f7f9fc;");
-         if (isSelected) {
-             // 已选：绿色背景
-             card.setStyle("-fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #e6f6ec;");
-         } else if (isConflict) {
-             // 冲突：红色提示背景（不改变按钮逻辑）
-             card.setStyle("-fx-background-radius: 6; -fx-border-color: #f5c2c7; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #fdecec;");
-         }
-         card.setAlignment(Pos.TOP_LEFT);
-         // 固定高度让每行卡片纵向对齐，按钮能靠底部显示
-         card.setPrefHeight(160);
+        VBox card = new VBox(8);
+        card.setPadding(new Insets(12));
+        // 默认样式
+        card.setStyle("-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #f7f9fc;");
+        if (isSelected) {
+            // 已选：绿色背景
+            card.setStyle("-fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #e6f6ec;");
+        } else if (isConflict) {
+            // 冲突：红色提示背景（不改变按钮逻辑）
+            card.setStyle("-fx-background-radius: 6; -fx-border-color: #f5c2c7; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #fdecec;");
+        }
+        card.setAlignment(Pos.TOP_LEFT);
+        // 固定高度让每行卡片纵向对齐，按钮能靠底部显示
+        card.setPrefHeight(160);
 
-         // 绑定卡片宽度到父容器，确保四列均匀分布
-         try {
-             card.prefWidthProperty().bind(parent.widthProperty()
-                     .subtract(32)
-                     .subtract(parent.getHgap() * 3)
-                     .divide(4));
-             card.minWidthProperty().bind(card.prefWidthProperty().multiply(0.75));
-             card.maxWidthProperty().bind(card.prefWidthProperty().multiply(1.05));
-         } catch (Exception ex) {
-             card.setPrefWidth(230);
-             card.setMinWidth(200);
-         }
+        // 绑定卡片宽度到父容器，确保四列均匀分布
+        try {
+            card.prefWidthProperty().bind(parent.widthProperty()
+                    .subtract(32)
+                    .subtract(parent.getHgap() * 3)
+                    .divide(4));
+            card.minWidthProperty().bind(card.prefWidthProperty().multiply(0.75));
+            card.maxWidthProperty().bind(card.prefWidthProperty().multiply(1.05));
+        } catch (Exception ex) {
+            card.setPrefWidth(230);
+            card.setMinWidth(200);
+        }
 
-         VBox info = new VBox(8);
-         Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
-         teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
+        VBox info = new VBox(8);
+        Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
+        teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
 
-         VBox scheduleBox = new VBox(2);
-         scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-         String scheduleJson = tc.getSchedule();
-         if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
-             try {
-                 java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
-                 Map<String, String> scheduleMap = new Gson().fromJson(scheduleJson, mapType);
-                 if (scheduleMap != null && !scheduleMap.isEmpty()) {
-                     for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
-                         String formatted = formatScheduleValue(e.getValue());
-                         Label dayLine = new Label(e.getKey() + ": " + formatted);
-                         dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                         scheduleBox.getChildren().add(dayLine);
-                     }
-                 } else {
-                     Label dayLine = new Label(scheduleJson);
-                     dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                     scheduleBox.getChildren().add(dayLine);
-                 }
-             } catch (Exception ex) {
-                 Label dayLine = new Label(scheduleJson);
-                 dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                 scheduleBox.getChildren().add(dayLine);
-             }
-         }
-         Label timeTitle = new Label("时间:");
-         timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
-         HBox timeRow = new HBox(6);
-         timeRow.getChildren().addAll(timeTitle, scheduleBox);
+        VBox scheduleBox = new VBox(2);
+        scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        String scheduleJson = tc.getSchedule();
+        if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
+            try {
+                java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+                Map<String, String> scheduleMap = new Gson().fromJson(scheduleJson, mapType);
+                if (scheduleMap != null && !scheduleMap.isEmpty()) {
+                    for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
+                        String formatted = formatScheduleValue(e.getValue());
+                        Label dayLine = new Label(e.getKey() + ": " + formatted);
+                        dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                        scheduleBox.getChildren().add(dayLine);
+                    }
+                } else {
+                    Label dayLine = new Label(scheduleJson);
+                    dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                    scheduleBox.getChildren().add(dayLine);
+                }
+            } catch (Exception ex) {
+                Label dayLine = new Label(scheduleJson);
+                dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                scheduleBox.getChildren().add(dayLine);
+            }
+        }
+        Label timeTitle = new Label("时间:");
+        timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
+        HBox timeRow = new HBox(6);
+        timeRow.getChildren().addAll(timeTitle, scheduleBox);
 
-         Label placeLabel = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
-         placeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-         Label capacity = new Label("容量: " + tc.getSelectedCount() + "/" + tc.getCapacity());
-         capacity.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-         info.getChildren().addAll(teacher, timeRow, placeLabel, capacity);
+        Label placeLabel = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
+        placeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        Label capacity = new Label("容量: " + tc.getSelectedCount() + "/" + tc.getCapacity());
+        capacity.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        info.getChildren().addAll(teacher, timeRow, placeLabel, capacity);
 
-         // 用可伸缩区域把按钮推到卡片底部
-         Region vSpacer = new Region();
-         VBox.setVgrow(vSpacer, Priority.ALWAYS);
+        // 用可伸缩区域把按钮推到卡片底部
+        Region vSpacer = new Region();
+        VBox.setVgrow(vSpacer, Priority.ALWAYS);
 
-         Button selectButton = new Button();
-         final Button selectButtonFinal = selectButton;
-         boolean isFull = tc.getSelectedCount() >= tc.getCapacity();
-         boolean isPending = pendingSelections.contains(tc.getUuid());
+        Button selectButton = new Button();
+        final Button selectButtonFinal = selectButton;
+        boolean isFull = tc.getSelectedCount() >= tc.getCapacity();
+        boolean isPending = pendingSelections.contains(tc.getUuid());
 
-         if (isSelected) {
-             selectButton.setText("退课");
-             selectButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;");
-             selectButton.setDisable(false);
-             selectButton.setOnAction(e -> {
-                 selectButtonFinal.setDisable(true);
-                 pendingSelections.add(tc.getUuid());
-                 dropCourse(tc, selectButtonFinal);
-             });
-         } else if (isFull) {
-             selectButton.setText("已满");
-             selectButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;");
-             selectButton.setDisable(true);
-         } else if (isPending) {
-             selectButton.setText("处理中");
-             selectButton.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-font-weight: bold;");
-             selectButton.setDisable(true);
-         } else {
-             selectButton.setText("选课");
-             selectButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-             selectButton.setOnAction(e -> {
-                 selectButtonFinal.setDisable(true);
-                 pendingSelections.add(tc.getUuid());
-                 selectCourse(tc, selectButtonFinal);
-             });
-         }
-         selectButton.setPrefWidth(90);
-         selectButton.setMaxWidth(Double.MAX_VALUE);
-         HBox buttonRow = new HBox(selectButton);
-         buttonRow.setAlignment(Pos.CENTER_RIGHT);
+        if (isSelected) {
+            selectButton.setText("退课");
+            selectButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;");
+            selectButton.setDisable(false);
+            selectButton.setOnAction(e -> {
+                selectButtonFinal.setDisable(true);
+                pendingSelections.add(tc.getUuid());
+                dropCourse(tc, selectButtonFinal);
+            });
+        } else if (isFull) {
+            selectButton.setText("已满");
+            selectButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;");
+            selectButton.setDisable(true);
+        } else if (isPending) {
+            selectButton.setText("处理中");
+            selectButton.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-font-weight: bold;");
+            selectButton.setDisable(true);
+        } else {
+            selectButton.setText("选课");
+            selectButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+            selectButton.setOnAction(e -> {
+                selectButtonFinal.setDisable(true);
+                pendingSelections.add(tc.getUuid());
+                selectCourse(tc, selectButtonFinal);
+            });
+        }
+        selectButton.setPrefWidth(90);
+        selectButton.setMaxWidth(Double.MAX_VALUE);
+        HBox buttonRow = new HBox(selectButton);
+        buttonRow.setAlignment(Pos.CENTER_RIGHT);
 
-         card.getChildren().addAll(info, vSpacer, buttonRow);
-         return card;
+        card.getChildren().addAll(info, vSpacer, buttonRow);
+        return card;
     }
 
     // 退课（带按钮引用，失败时恢复按钮）
@@ -476,11 +476,11 @@ public class CourseSelectPanel extends BorderPane {
                         EventBus.post("student:courseChanged");
                         // 在刷新之后再给出提示，避免样式被 alert 打断后意外恢复到默认
                         showAlert("成功", "退课成功！", Alert.AlertType.INFORMATION);
-                     } else {
-                         selectButton.setDisable(false);
-                         showAlert("退课失败", response.getMessage(), Alert.AlertType.ERROR);
-                     }
-                 });
+                    } else {
+                        selectButton.setDisable(false);
+                        showAlert("退课失败", response.getMessage(), Alert.AlertType.ERROR);
+                    }
+                });
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     pendingSelections.remove(tc.getUuid());
@@ -642,12 +642,12 @@ public class CourseSelectPanel extends BorderPane {
                         selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
                         allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
                     });
-                 } else {
+                } else {
                     Platform.runLater(() -> {
                         statusLabel.setText("加载已选课程失败: " + response.getMessage());
                         showAlert("错误", "加载已选课程失败: " + response.getMessage(), Alert.AlertType.ERROR);
                     });
-                 }
+                }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     statusLabel.setText("网络错误: " + e.getMessage());

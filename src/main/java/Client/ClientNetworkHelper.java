@@ -194,6 +194,23 @@ public final class ClientNetworkHelper {
         return send(req);
     }
 
+    // 尝试将 cardNumber 规范为数值(Double)以便服务端按 Double 处理；若无法解析则返回原始字符串
+    private static Object normalizeCardNumberValue(Object cardNumber) {
+        if (cardNumber == null) return null;
+        if (cardNumber instanceof Number) {
+            return ((Number) cardNumber).doubleValue();
+        }
+        String s = String.valueOf(cardNumber).trim();
+        if (s.isEmpty()) return null;
+        try {
+            java.math.BigDecimal bd = new java.math.BigDecimal(s);
+            return bd.doubleValue();
+        } catch (Exception ex) {
+            // 回退为原始字符串（不可解析为数值）
+            return s;
+        }
+    }
+
     // 选课相关接口
     public static String getTeachingClassesByCourseId(String courseId) throws IOException {
         Request req = new Request();
@@ -207,7 +224,7 @@ public final class ClientNetworkHelper {
         Request req = new Request();
         req.setType("getStudentSelectedCourses");
         Map<String, Object> data = new HashMap<>();
-        data.put("cardNumber", cardNumber);
+        data.put("cardNumber", normalizeCardNumberValue(cardNumber));
         req.setData(data);
         return send(req);
     }
@@ -215,7 +232,7 @@ public final class ClientNetworkHelper {
         Request req = new Request();
         req.setType("dropCourse");
         Map<String, Object> data = new HashMap<>();
-        data.put("cardNumber", cardNumber);
+        data.put("cardNumber", normalizeCardNumberValue(cardNumber));
         data.put("courseId", courseId);
         req.setData(data);
         return send(req);
@@ -224,7 +241,7 @@ public final class ClientNetworkHelper {
         Request req = new Request();
         req.setType("selectCourse");
         Map<String, Object> data = new HashMap<>();
-        data.put("cardNumber", cardNumber);
+        data.put("cardNumber", normalizeCardNumberValue(cardNumber));
         data.put("courseId", courseId);
         req.setData(data);
         return send(req);
