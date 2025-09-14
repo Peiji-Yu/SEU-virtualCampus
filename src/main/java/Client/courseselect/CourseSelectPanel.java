@@ -27,12 +27,17 @@ public class CourseSelectPanel extends BorderPane {
     private VBox courseListContainer;
     private ScrollPane scrollPane;
     private Label statusLabel;
+    // 视图切换按钮：全部课程 / 已选课程
+    private Button allCoursesBtn;
+    private Button selectedCoursesBtn;
     private final Map<Integer, TeachingClass> teachingClassMap;
     private List<StudentTeachingClass> selectedClasses;
     // 防止重复提交的临时集合（线程安全）
     private final Set<String> pendingSelections = Collections.synchronizedSet(new HashSet<>());
     // 已选教学班 UUID 集合，兼容后端返回 TeachingClass 或 StudentTeachingClass 两种格式
     private final Set<String> selectedUuids = Collections.synchronizedSet(new HashSet<>());
+    // 当前是否显示已选课程视图
+    private boolean showingSelectedView = false;
 
     public CourseSelectPanel(int studentId) {
         this.studentId = studentId;
@@ -76,7 +81,27 @@ public class CourseSelectPanel extends BorderPane {
         buttonBox.setPadding(new Insets(10, 20, 20, 20));
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-        VBox mainContainer = new VBox(titleBox, statusBox, scrollPane, buttonBox);
+        // 视图切换按钮（全部课程 / 已选课程）
+        allCoursesBtn = new Button("全部课程");
+        selectedCoursesBtn = new Button("已选课程");
+        allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+        selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
+        allCoursesBtn.setOnAction(e -> {
+            allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+            selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
+            showingSelectedView = false;
+            loadCourseData();
+        });
+        selectedCoursesBtn.setOnAction(e -> {
+            selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+            allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
+            showingSelectedView = true;
+            loadSelectedCourses();
+        });
+        HBox viewToggle = new HBox(8, allCoursesBtn, selectedCoursesBtn);
+        viewToggle.setPadding(new Insets(0, 20, 10, 20));
+
+        VBox mainContainer = new VBox(titleBox, statusBox, viewToggle, scrollPane, buttonBox);
         mainContainer.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12;");
 
         this.setCenter(mainContainer);
@@ -195,13 +220,16 @@ public class CourseSelectPanel extends BorderPane {
                         // 显示课程为一级卡片，展开后显示该课程的教学班卡片
                         displayCoursesByCourse(courseListCopy, teachingClassesByCourseCopy);
                         statusLabel.setText("共加载 " + totalCount + " 个教学班，按课程分组显示");
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        statusLabel.setText("加载失败: " + courseResponse.getMessage());
-                        showAlert("错误", "加载课程数据失败: " + courseResponse.getMessage(), Alert.AlertType.ERROR);
-                    });
-                }
+                        // 保证切换按钮样式与当前视图一致
+                        allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+                        selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
+                     });
+                 } else {
+                     Platform.runLater(() -> {
+                         statusLabel.setText("加载失败: " + courseResponse.getMessage());
+                         showAlert("错误", "加载课程数据失败: " + courseResponse.getMessage(), Alert.AlertType.ERROR);
+                     });
+                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     statusLabel.setText("网络错误: " + e.getMessage());
@@ -243,16 +271,22 @@ public class CourseSelectPanel extends BorderPane {
 
             header.getChildren().addAll(title, spacer);
 
-            // 详情容器改为横向排列，包含该课程的所有教学班卡片（每个卡片加宽）
-            HBox details = new HBox(12);
+            // 详情容器改为可换行的 FlowPane，最多每行显示 4 个教学班卡片（每卡片宽度约 320）
+            FlowPane details = new FlowPane();
+            details.setHgap(12);
+            details.setVgap(12);
             details.setPadding(new Insets(10, 0, 0, 0));
+            // 设置换行宽度为课程卡片内部可用宽度（响应式绑定到 courseCard 宽度），
+            // 并将单个教学班卡片宽度减小到 ~230，使每行能放下4个卡片： 4*230 + 3*12 = 956 <= 可用宽度
+            details.prefWrapLengthProperty().bind(courseCard.widthProperty().subtract(32));
             // 默认不显示，除非该课程包含已选教学班
             details.setVisible(false);
             details.setManaged(false);
-            final HBox detailsFinal = details;
+            final FlowPane detailsFinal = details;
 
             for (TeachingClass tc : tcs) {
-                details.getChildren().add(createTeachingClassCard(tc));
+                // 传入父 FlowPane，使卡片可以根据父容器宽度动态计算宽度，保证一行最多显示 4 个
+                details.getChildren().add(createTeachingClassCard(tc, details));
             }
 
             // 如果该课程中存在已选教学班，则默认展开
@@ -281,100 +315,113 @@ public class CourseSelectPanel extends BorderPane {
     }
 
     // 创建单个教学班卡片（用于课程详情展开内显示）
-    private Node createTeachingClassCard(TeachingClass tc) {
-        boolean isSelected = isCourseSelected(tc.getUuid());
-        HBox card = new HBox(12);
-        card.setPadding(new Insets(12));
-        String baseStyle = "-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6;";
-        if (isSelected) {
-            card.setStyle("-fx-background-color: #e6f6ec; " + baseStyle); // 绿底
-        } else {
-            card.setStyle("-fx-background-color: #f7f9fc; " + baseStyle);
-        }
-        card.setAlignment(Pos.CENTER_LEFT);
+    private Node createTeachingClassCard(TeachingClass tc, FlowPane parent) {
+         boolean isSelected = isCourseSelected(tc.getUuid());
+         HBox card = new HBox(12);
+         card.setPadding(new Insets(12));
+         String baseStyle = "-fx-background-radius: 6; -fx-border-color: #e6eef8; -fx-border-width: 1; -fx-border-radius: 6;";
+         if (isSelected) {
+             card.setStyle("-fx-background-color: #e6f6ec; " + baseStyle); // 绿底
+         } else {
+             card.setStyle("-fx-background-color: #f7f9fc; " + baseStyle);
+         }
+         card.setAlignment(Pos.CENTER_LEFT);
 
-        // 建议卡片宽度，形成更明显的表格布局
-        card.setPrefWidth(320);
-        card.setMinWidth(280);
+         // 建议卡片宽度：缩小到 ~230 以便 FlowPane 每行最多显示 4 个卡片
+         // 绑定卡片宽度到父容器，计算：(父可用宽度 - 3*hgap) / 4
+         try {
+             // 使用 parent 的宽度作为参考，减去左右内边距与间距后平均分配给四个卡片
+             card.prefWidthProperty().bind(parent.widthProperty()
+                     .subtract(32) // 预留内边距估算
+                     .subtract(parent.getHgap() * 3)
+                     .divide(4));
+             // 限制最小宽度与最大宽度，防止在过窄或过宽时样式跑形
+             card.minWidthProperty().bind(card.prefWidthProperty().multiply(0.75));
+             card.maxWidthProperty().bind(card.prefWidthProperty().multiply(1.05));
+         } catch (Exception ex) {
+             // 回退到固定宽度，保证兼容性
+             card.setPrefWidth(230);
+             card.setMinWidth(200);
+         }
 
-        VBox info = new VBox(8);
-        Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
-        teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
-        // 解析 schedule JSON
-        VBox scheduleBox = new VBox(2);
-        scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-        String scheduleJson = tc.getSchedule();
-        if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
-            try {
-                java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
-                Map<String, String> scheduleMap = new Gson().fromJson(scheduleJson, mapType);
-                if (scheduleMap != null && !scheduleMap.isEmpty()) {
-                    for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
-                        Label dayLine = new Label(e.getKey() + ": " + e.getValue());
-                        dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                        scheduleBox.getChildren().add(dayLine);
-                    }
-                } else {
-                    Label dayLine = new Label(scheduleJson);
-                    dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                    scheduleBox.getChildren().add(dayLine);
-                }
-            } catch (Exception ex) {
-                Label dayLine = new Label(scheduleJson);
-                dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-                scheduleBox.getChildren().add(dayLine);
-            }
-        }
-        Label timeTitle = new Label("时间:");
-        timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
-        HBox timeRow = new HBox(6);
-        timeRow.getChildren().addAll(timeTitle, scheduleBox);
+         VBox info = new VBox(8);
+         Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "未知" : tc.getTeacherName()));
+         teacher.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
+         // 解析 schedule JSON
+         VBox scheduleBox = new VBox(2);
+         scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+         String scheduleJson = tc.getSchedule();
+         if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
+             try {
+                 java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+                 Map<String, String> scheduleMap = new Gson().fromJson(scheduleJson, mapType);
+                 if (scheduleMap != null && !scheduleMap.isEmpty()) {
+                     for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
+                         Label dayLine = new Label(e.getKey() + ": " + e.getValue());
+                         dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                         scheduleBox.getChildren().add(dayLine);
+                     }
+                 } else {
+                     Label dayLine = new Label(scheduleJson);
+                     dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                     scheduleBox.getChildren().add(dayLine);
+                 }
+             } catch (Exception ex) {
+                 Label dayLine = new Label(scheduleJson);
+                 dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                 scheduleBox.getChildren().add(dayLine);
+             }
+         }
+         Label timeTitle = new Label("时间:");
+         timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
+         HBox timeRow = new HBox(6);
+         timeRow.getChildren().addAll(timeTitle, scheduleBox);
 
-        Label placeLabel = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
-        placeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-        Label capacity = new Label("容量: " + tc.getSelectedCount() + "/" + tc.getCapacity());
-        capacity.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-        info.getChildren().addAll(teacher, timeRow, placeLabel, capacity);
+         Label placeLabel = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
+         placeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+         Label capacity = new Label("容量: " + tc.getSelectedCount() + "/" + tc.getCapacity());
+         capacity.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+         info.getChildren().addAll(teacher, timeRow, placeLabel, capacity);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+         Region spacer = new Region();
+         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button selectButton = new Button();
-        final Button selectButtonFinal = selectButton;
-        boolean isFull = tc.getSelectedCount() >= tc.getCapacity();
-        boolean isPending = pendingSelections.contains(tc.getUuid());
+         Button selectButton = new Button();
+         final Button selectButtonFinal = selectButton;
+         boolean isFull = tc.getSelectedCount() >= tc.getCapacity();
+         boolean isPending = pendingSelections.contains(tc.getUuid());
 
-        if (isSelected) {
-            // 已选：显示退课按钮
-            selectButton.setText("退课");
-            selectButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;");
-            selectButton.setDisable(false);
-            selectButton.setOnAction(e -> {
-                selectButtonFinal.setDisable(true);
-                pendingSelections.add(tc.getUuid());
-                dropCourse(tc, selectButtonFinal);
-            });
-        } else if (isFull) {
-            selectButton.setText("已满");
-            selectButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;");
-            selectButton.setDisable(true);
-        } else if (isPending) {
-            selectButton.setText("处理中");
-            selectButton.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-font-weight: bold;");
-            selectButton.setDisable(true);
-        } else {
-            selectButton.setText("选课");
-            selectButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-            selectButton.setOnAction(e -> {
-                selectButtonFinal.setDisable(true);
-                pendingSelections.add(tc.getUuid());
-                selectCourse(tc, selectButtonFinal);
-            });
-        }
-        selectButton.setPrefWidth(90);
+         if (isSelected) {
+             // 已选：显示退课按钮
+             selectButton.setText("退课");
+             selectButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;");
+             selectButton.setDisable(false);
+             selectButton.setOnAction(e -> {
+                 selectButtonFinal.setDisable(true);
+                 pendingSelections.add(tc.getUuid());
+                 dropCourse(tc, selectButtonFinal);
+             });
+         } else if (isFull) {
+             selectButton.setText("已满");
+             selectButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;");
+             selectButton.setDisable(true);
+         } else if (isPending) {
+             selectButton.setText("处理中");
+             selectButton.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-font-weight: bold;");
+             selectButton.setDisable(true);
+         } else {
+             selectButton.setText("选课");
+             selectButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+             selectButton.setOnAction(e -> {
+                 selectButtonFinal.setDisable(true);
+                 pendingSelections.add(tc.getUuid());
+                 selectCourse(tc, selectButtonFinal);
+             });
+         }
+         selectButton.setPrefWidth(90);
 
-        card.getChildren().addAll(info, spacer, selectButton);
-        return card;
+         card.getChildren().addAll(info, spacer, selectButton);
+         return card;
     }
 
     // 退课（带按钮引用，失败时恢复按钮）
@@ -392,13 +439,21 @@ public class CourseSelectPanel extends BorderPane {
                 Platform.runLater(() -> {
                     pendingSelections.remove(tc.getUuid());
                     if (response.getCode() == 200) {
+                        // 先更新本地已选集合，保证后续界面渲染以当前视图为准
+                        if (tc != null && tc.getUuid() != null) selectedUuids.remove(tc.getUuid().trim().toLowerCase());
+                        // 刷新当前视图：如果当前在已选课程视图，则刷新已选列表，否则刷新全部课程列表
+                        if (showingSelectedView) {
+                            loadSelectedCourses();
+                        } else {
+                            loadCourseData();
+                        }
+                        // 在刷新之后再给出提示，避免样式被 alert 打断后意外恢复到默认
                         showAlert("成功", "退课成功！", Alert.AlertType.INFORMATION);
-                        loadCourseData();
-                    } else {
-                        selectButton.setDisable(false);
-                        showAlert("退课失败", response.getMessage(), Alert.AlertType.ERROR);
-                    }
-                });
+                     } else {
+                         selectButton.setDisable(false);
+                         showAlert("退课失败", response.getMessage(), Alert.AlertType.ERROR);
+                     }
+                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     pendingSelections.remove(tc.getUuid());
@@ -482,5 +537,119 @@ public class CourseSelectPanel extends BorderPane {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    // 加载并显示学生已选课程视图
+    private void loadSelectedCourses() {
+        statusLabel.setText("正在加载已选课程...");
+        courseListContainer.getChildren().clear();
+
+        new Thread(() -> {
+            try {
+                Map<String, Object> data = new HashMap<>();
+                data.put("cardNumber", studentId);
+                Request request = new Request("getStudentSelectedCourses", data);
+                String responseStr = ClientNetworkHelper.send(request);
+                Response response = new Gson().fromJson(responseStr, Response.class);
+
+                if (response.getCode() == 200) {
+                    Object d = response.getData();
+                    List<TeachingClass> list = new ArrayList<>();
+                    if (d instanceof List) {
+                        String json = new Gson().toJson(d);
+                        list = new Gson().fromJson(json, new com.google.gson.reflect.TypeToken<List<TeachingClass>>(){}.getType());
+                    }
+
+                    // 更新内存中的 selectedUuids 与 selectedClasses，使状态一致
+                    selectedUuids.clear();
+                    selectedClasses = new ArrayList<>();
+                    for (TeachingClass t : list) {
+                        if (t != null && t.getUuid() != null) selectedUuids.add(t.getUuid().trim().toLowerCase());
+                        // create a minimal StudentTeachingClass wrapper so other logic can use it if needed
+                        StudentTeachingClass stc = new StudentTeachingClass();
+                        stc.setTeachingClassUuid(t == null ? null : t.getUuid());
+                        selectedClasses.add(stc);
+                    }
+
+                    final List<TeachingClass> finalList = list;
+                    Platform.runLater(() -> {
+                        displaySelectedCoursesList(finalList);
+                        statusLabel.setText("已选课程: " + finalList.size());
+                        // 保证切换按钮样式与当前视图一致
+                        selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+                        allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
+                    });
+                 } else {
+                    Platform.runLater(() -> {
+                        statusLabel.setText("加载已选课程失败: " + response.getMessage());
+                        showAlert("错误", "加载已选课程失败: " + response.getMessage(), Alert.AlertType.ERROR);
+                    });
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    statusLabel.setText("网络错误: " + e.getMessage());
+                    showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR);
+                });
+            }
+        }).start();
+    }
+
+    // 在 courseListContainer 中显示已选课程列表（卡片形式），并提供退课按钮
+    private void displaySelectedCoursesList(List<TeachingClass> list) {
+        courseListContainer.getChildren().clear();
+        if (list == null || list.isEmpty()) {
+            Label no = new Label("您尚未选任何课程");
+            no.setStyle("-fx-font-size: 16px; -fx-text-fill: #666666;");
+            courseListContainer.getChildren().add(no);
+            return;
+        }
+
+        for (TeachingClass tc : list) {
+            courseListContainer.getChildren().add(createSelectedCourseCard(tc));
+        }
+    }
+
+    // 创建已选课程卡片，显示详细信息并提供退课按钮
+    private Node createSelectedCourseCard(TeachingClass tc) {
+        HBox card = new HBox(10);
+        card.setPadding(new Insets(12));
+        card.setStyle("-fx-background-color: #e6f6ec; -fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6;");
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        VBox info = new VBox(6);
+        Label title = new Label(tc.getCourseId() + "  " + (tc.getCourse() != null ? tc.getCourse().getCourseName() : ""));
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "" : tc.getTeacherName()));
+        teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
+        VBox scheduleBox = new VBox(2);
+        try {
+            java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+            Map<String, String> scheduleMap = new Gson().fromJson(tc.getSchedule(), mapType);
+            if (scheduleMap != null) {
+                for (Map.Entry<String, String> e : scheduleMap.entrySet()) {
+                    Label line = new Label(e.getKey() + ": " + e.getValue());
+                    line.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                    scheduleBox.getChildren().add(line);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        Label place = new Label("地点: " + (tc.getPlace() == null ? "" : tc.getPlace()));
+        place.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        info.getChildren().addAll(title, teacher, scheduleBox, place);
+
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button dropBtn = new Button("退课");
+        dropBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+        dropBtn.setOnAction(e -> {
+            dropBtn.setDisable(true);
+            pendingSelections.add(tc.getUuid());
+            dropCourse(tc, dropBtn);
+        });
+        dropBtn.setPrefWidth(90);
+
+        card.getChildren().addAll(info, spacer, dropBtn);
+        return card;
     }
 }
