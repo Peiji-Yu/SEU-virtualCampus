@@ -39,6 +39,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -277,35 +278,52 @@ public class ClientHandler implements Runnable {
                         String teachingClassUuid = (String) request.getData().get("teachingClassUuid");
 
                         try {
-                            // 检查教学班是否有空位
-                            boolean hasSeats = teachingClassService.hasAvailableSeats(teachingClassUuid);
-                            if (!hasSeats) {
-                                response = Response.error("教学班已满，无法选课");
-                                break;
+                            // 时间冲突检测：获取目标教学班的 schedule，与学生已选教学班逐一对比
+                            TeachingClass targetTcForConflict = teachingClassService.findByUuid(teachingClassUuid);
+                            if (targetTcForConflict != null) {
+                                List<StudentTeachingClass> existingSelections = studentTeachingClassService.findByStudentCardNumber(selectCardNumber);
+                                if (existingSelections != null) {
+                                    for (StudentTeachingClass stc : existingSelections) {
+                                        if (stc == null || stc.getTeachingClassUuid() == null) continue;
+                                        TeachingClass existTc = teachingClassService.findByUuid(stc.getTeachingClassUuid());
+                                        if (existTc == null) continue;
+                                        if (schedulesConflict(existTc.getSchedule(), targetTcForConflict.getSchedule())) {
+                                            response = Response.error("选课失败: 与已选课程时间冲突");
+                                            break;
+                                        }
+                                    }
+                                    if (response != null && response.getCode() != 200) break; // 已设置冲突响应，跳出
+                                }
                             }
+                             // 检查教学班是否有空位
+                             boolean hasSeats = teachingClassService.hasAvailableSeats(teachingClassUuid);
+                             if (!hasSeats) {
+                                 response = Response.error("教学班已满，无法选课");
+                                 break;
+                             }
 
-                            // 检查是否已经选过该课程
-                            boolean alreadySelected = studentTeachingClassService.findByStudentAndTeachingClass(selectCardNumber, teachingClassUuid) != null;
-                            if (alreadySelected) {
-                                response = Response.error("您已经选过该课程");
-                                break;
-                            }
+                             // 检查是否已经选过该课程
+                             boolean alreadySelected = studentTeachingClassService.findByStudentAndTeachingClass(selectCardNumber, teachingClassUuid) != null;
+                             if (alreadySelected) {
+                                 response = Response.error("您已经选过该课程");
+                                 break;
+                             }
 
-                            // 创建选课关系
-                            boolean selectResult = studentTeachingClassService.addStudentTeachingClass(
-                                    new StudentTeachingClass(selectCardNumber, teachingClassUuid));
+                             // 创建选课关系
+                             boolean selectResult = studentTeachingClassService.addStudentTeachingClass(
+                                     new StudentTeachingClass(selectCardNumber, teachingClassUuid));
 
-                            if (selectResult) {
-                                // 更新教学班选课人数
-                                teachingClassService.incrementSelectedCount(teachingClassUuid);
-                                response = Response.success("选课成功");
-                            } else {
-                                response = Response.error("选课失败");
-                            }
-                        } catch (Exception e) {
-                            response = Response.error("选课过程中发生错误: " + e.getMessage());
-                        }
-                        break;
+                             if (selectResult) {
+                                 // 更新教学班选课人数
+                                 teachingClassService.incrementSelectedCount(teachingClassUuid);
+                                 response = Response.success("选课成功");
+                             } else {
+                                 response = Response.error("选课失败");
+                             }
+                         } catch (Exception e) {
+                             response = Response.error("选课过程中发生错误: " + e.getMessage());
+                         }
+                         break;
 
                     // 学生退课
                     case "dropCourse":
@@ -1038,4 +1056,76 @@ public class ClientHandler implements Runnable {
         return book;
     }
 
+    // 用于表示一个时间段
+    private static class TimeRange {
+        LocalTime start;
+        LocalTime end;
+        TimeRange(LocalTime s, LocalTime e) { start = s; end = e; }
+    }
+
+    // 将 schedule JSON 解析为 Map<day, List<TimeRange>>，兼容单个或逗号分隔的多个时间段
+    private Map<String, List<TimeRange>> parseSchedule(String scheduleJson) {
+        Map<String, List<TimeRange>> map = new HashMap<>();
+        if (scheduleJson == null || scheduleJson.trim().isEmpty()) return map;
+        try {
+            java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+            Map<String, String> raw = gson.fromJson(scheduleJson, mapType);
+            if (raw == null) return map;
+            for (Map.Entry<String, String> e : raw.entrySet()) {
+                String day = e.getKey();
+                String val = e.getValue();
+                if (val == null) continue;
+                // 支持逗号或分号分隔，允许空白符
+                String[] parts = val.split("[,;]\\s*");
+                List<TimeRange> ranges = new ArrayList<>();
+                for (String p : parts) {
+                    // 规范化中文标点与空白
+                    String rawPart = p.replace('：', ':').replace('－', '-').replace('—', '-').replace('–', '-').trim();
+                    if (rawPart.isEmpty()) continue;
+                    String[] se = rawPart.split("-");
+                    if (se.length != 2) continue;
+                    String startStr = se[0].trim();
+                    String endStr = se[1].trim();
+                    // 尝试多种时间格式解析（H:mm / HH:mm / H:mm:ss）
+                    LocalTime s = null, t = null;
+                    java.time.format.DateTimeFormatter[] fmts = new java.time.format.DateTimeFormatter[] {
+                            java.time.format.DateTimeFormatter.ofPattern("H:mm"),
+                            java.time.format.DateTimeFormatter.ofPattern("HH:mm"),
+                            java.time.format.DateTimeFormatter.ofPattern("H:mm:ss"),
+                            java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
+                    };
+                    for (java.time.format.DateTimeFormatter fmt : fmts) {
+                        if (s == null) {
+                            try { s = LocalTime.parse(startStr, fmt); } catch (Exception ignored) {}
+                        }
+                        if (t == null) {
+                            try { t = LocalTime.parse(endStr, fmt); } catch (Exception ignored) {}
+                        }
+                        if (s != null && t != null) break;
+                    }
+                    if (s != null && t != null) ranges.add(new TimeRange(s, t));
+                }
+                if (!ranges.isEmpty()) map.put(day, ranges);
+            }
+        } catch (Exception ex) {
+            // ignore parse errors
+        }
+        return map;
+    }
+
+    // 检查两个 schedule 是否有冲突（同一周日有重叠时间段即视为冲突）
+    private boolean schedulesConflict(String s1, String s2) {
+        if (s1 == null || s2 == null) return false;
+        Map<String, List<TimeRange>> m1 = parseSchedule(s1);
+        Map<String, List<TimeRange>> m2 = parseSchedule(s2);
+        for (String day : m1.keySet()) {
+            if (!m2.containsKey(day)) continue;
+            List<TimeRange> r1 = m1.get(day);
+            List<TimeRange> r2 = m2.get(day);
+            for (TimeRange a : r1) for (TimeRange b : r2) {
+                if (a.start.isBefore(b.end) && b.start.isBefore(a.end)) return true;
+            }
+        }
+        return false;
+    }
 }
