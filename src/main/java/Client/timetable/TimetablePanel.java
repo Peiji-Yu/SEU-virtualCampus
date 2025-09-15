@@ -264,23 +264,28 @@ public class TimetablePanel extends BorderPane {
             if (!schedule.contains(day)) continue;
             String timePart = schedule.replace(day, "").trim();
 
-            // 支持多种格式："1-2节"、"1-2"、"1节"、"1" 或 时间段 "08:00-09:40"
+            // 支持多种格式：单个或多个时间段，用逗号/分号分隔，例如 "1-2节,11-13节"
             String tp = timePart;
-            if (tp.endsWith("节")) tp = tp.substring(0, tp.length() - 1).trim();
+            // 将时间段按常见分隔符拆分
+            String[] segments = tp.split("\\s*[,，;；]\\s*");
+            for (String seg : segments) {
+                String part = seg.trim();
+                if (part.endsWith("节")) part = part.substring(0, part.length() - 1).trim();
 
-            int[] res = parseTimeToSlots(tp);
-            if (res != null) {
-                int startSlot = res[0];
-                int duration = res[1];
-                if (duration > 0 && startSlot >= 1) {
-                    CourseSlot slot = new CourseSlot(courseName, location, teacher, day, startSlot, duration,
-                            COURSE_COLORS[Math.abs(courseName.hashCode()) % COURSE_COLORS.length]);
-                    scheduleMap.computeIfAbsent(day, k -> new ArrayList<>()).add(slot);
-                    System.out.println("[Timetable] added slot -> " + day + " " + startSlot + "-" + (startSlot + duration - 1) + " for " + courseName);
-                    parsedAny = true;
+                int[] res = parseTimeToSlots(part);
+                if (res != null) {
+                    int startSlot = res[0];
+                    int duration = res[1];
+                    if (duration > 0 && startSlot >= 1) {
+                        CourseSlot slot = new CourseSlot(courseName, location, teacher, day, startSlot, duration,
+                                COURSE_COLORS[Math.abs(courseName.hashCode()) % COURSE_COLORS.length]);
+                        scheduleMap.computeIfAbsent(day, k -> new ArrayList<>()).add(slot);
+                        System.out.println("[Timetable] added slot -> " + day + " " + startSlot + "-" + (startSlot + duration - 1) + " for " + courseName);
+                        parsedAny = true;
+                    }
+                } else {
+                    System.err.println("[Timetable] 无法解析时间片段: '" + seg + "' for course: " + courseName);
                 }
-            } else {
-                System.err.println("[Timetable] 无法解析时间片: '" + timePart + "' for course: " + courseName);
             }
         }
 
@@ -751,7 +756,7 @@ public class TimetablePanel extends BorderPane {
                     String day = extractDayFromMap(s);
                     String time = extractTimeFromMap(s);
 
-                    // 如果这是一个多键的对象（可能是 day->time 映射，例如 {"周一":"9-11节","周日":"9-11节"})，应遍历每个条目而不是把整个 Map 当作单个 day/time 处理
+                    // 如果这是一个多键的对象（可能是 day->time 映射，例如 {"周一":"9-11节","周日":"9-11节"}），应遍历每个条目而不是把整个 Map 当作单个 day/time 处理
                     boolean multiKeyDayMap = false;
                     if (s.size() > 1) {
                         int dayLike = 0;
@@ -770,27 +775,41 @@ public class TimetablePanel extends BorderPane {
                             String val = v == null ? null : String.valueOf(v);
                             String norm = normalizeDay(key);
                             if (norm != null) {
-                                String timeStr = extractTimeFromString(val);
-                                if (timeStr != null) {
-                                    Map<String, Object> tmp = new HashMap<>();
-                                    tmp.put("courseName", courseName);
-                                    tmp.put("schedule", norm + timeStr);
-                                    tmp.put("place", place);
-                                    tmp.put("teacher", teacher);
-                                    parseCourseSchedule(tmp);
+                                // 如果值中包含多个时间段，用分隔符拆开并分别解析
+                                if (val != null && !val.trim().isEmpty()) {
+                                    String[] parts = val.split("\\s*[,，;；]\\s*");
+                                    for (String part : parts) {
+                                        if (part == null) continue;
+                                        String timeStr = part.trim();
+                                        if (timeStr.isEmpty()) continue;
+                                        Map<String, Object> tmp = new HashMap<>();
+                                        tmp.put("courseName", courseName);
+                                        tmp.put("schedule", norm + timeStr);
+                                        tmp.put("place", place);
+                                        tmp.put("teacher", teacher);
+                                        parseCourseSchedule(tmp);
+                                    }
                                 } else {
                                     unscheduledCourses.add(new CourseSlot(courseName, place, teacher, norm, 0, 0, COURSE_COLORS[Math.abs(courseName.hashCode()) % COURSE_COLORS.length]));
                                 }
                             } else {
                                 String timeStr = extractTimeFromString(val == null ? key : (key + " " + val));
                                 String dayFromKey = normalizeDay(key);
-                                if (dayFromKey != null && timeStr != null) {
-                                    Map<String, Object> tmp = new HashMap<>();
-                                    tmp.put("courseName", courseName);
-                                    tmp.put("schedule", dayFromKey + timeStr);
-                                    tmp.put("place", place);
-                                    tmp.put("teacher", teacher);
-                                    parseCourseSchedule(tmp);
+                                if (dayFromKey != null) {
+                                    // 如果 key 是可解析为 day 的形式，优先使用原始值作为时间段（可能包含多个段）
+                                    String rawTime = val == null ? key : val;
+                                    String[] parts = rawTime.split("\\s*[,，;；]\\s*");
+                                    for (String part : parts) {
+                                        if (part == null) continue;
+                                        String timePart = part.trim();
+                                        if (timePart.isEmpty()) continue;
+                                        Map<String, Object> tmp = new HashMap<>();
+                                        tmp.put("courseName", courseName);
+                                        tmp.put("schedule", dayFromKey + timePart);
+                                        tmp.put("place", place);
+                                        tmp.put("teacher", teacher);
+                                        parseCourseSchedule(tmp);
+                                    }
                                 } else if (timeStr != null) {
                                     int[] res = parseTimeToSlots(timeStr);
                                     if (res != null) {
@@ -845,7 +864,7 @@ public class TimetablePanel extends BorderPane {
             }
         }
 
-        // 不是 JSON 或 JSON 解析失败，按纯文本尝试解析（例如: "周一1-2节"、"周二5节"、"周三3-4"、或者只有时间段）
+        // 不是 JSON 或 JSON 解析失败，按纯文本尝试解析（例如: "周一1-2节","周二5节","周三3-4"、或者只有时间段）
         // 先尝试把字符串中的时间片提取出来
         String extractedTime = extractTimeFromString(schedule);
         String dayFound = null;

@@ -579,7 +579,16 @@ public class CourseAdminPanel extends BorderPane {
         dialog.setHeaderText("为课程 " + courseId + " 添加教学班");
 
         TextField teacherField = new TextField();
-        TextField scheduleField = new TextField();
+        // 新：以可编辑的 day 选择 + time 输入 + 列表方式管理多个上课日/时间
+        javafx.scene.control.ComboBox<String> dayChoice = new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList("周一","周二","周三","周四","周五","周六","周日"));
+        dayChoice.setEditable(true);
+        dayChoice.setPrefWidth(140);
+        TextField timeInput = new TextField();
+        timeInput.setPromptText("例如: 9-11节 或 09:00-10:40");
+        Button addScheduleBtn = new Button("添加到列表");
+        ListView<String> scheduleList = new ListView<>(FXCollections.observableArrayList());
+        scheduleList.setPrefHeight(120);
+        Button removeScheduleBtn = new Button("移除所选");
         TextField placeField = new TextField();
         TextField capacityField = new TextField();
 
@@ -589,16 +598,42 @@ public class CourseAdminPanel extends BorderPane {
         grid.setPadding(new Insets(20, 150, 10, 10));
         grid.add(new Label("教师姓名:"), 0, 0);
         grid.add(teacherField, 1, 0);
-        grid.add(new Label("时间安排:"), 0, 1);
-        grid.add(scheduleField, 1, 1);
-        grid.add(new Label("地点:"), 0, 2);
-        grid.add(placeField, 1, 2);
-        grid.add(new Label("容量:"), 0, 3);
-        grid.add(capacityField, 1, 3);
+        grid.add(new Label("时间安排 (可添加多条):"), 0, 1);
+        HBox schedInputRow = new HBox(8, dayChoice, timeInput, addScheduleBtn, removeScheduleBtn);
+        schedInputRow.setAlignment(Pos.CENTER_LEFT);
+        grid.add(schedInputRow, 1, 1);
+        grid.add(scheduleList, 1, 2);
+        grid.add(new Label("地点:"), 0, 3);
+        grid.add(placeField, 1, 3);
+        grid.add(new Label("容量:"), 0, 4);
+        grid.add(capacityField, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
         ButtonType addType = new ButtonType("添加", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(addType, ButtonType.CANCEL);
+
+        // 添加 schedule 按钮逻辑
+        addScheduleBtn.setOnAction(e -> {
+            String day = dayChoice.getEditor().getText();
+            if (day == null || day.trim().isEmpty()) {
+                Alert a = new Alert(Alert.AlertType.ERROR, "请填写上课日（如 周一）", ButtonType.OK);
+                a.showAndWait();
+                return;
+            }
+            String time = timeInput.getText() == null ? "" : timeInput.getText().trim();
+            String display = day.trim() + (time.isEmpty() ? "" : " " + time);
+            // 内部存储格式为 day||time 以便序列化
+            scheduleList.getItems().add(day.trim() + "||" + time);
+            // 显示友好文本
+            int idx = scheduleList.getItems().size() - 1;
+            scheduleList.getSelectionModel().clearSelection();
+            // 清空输入
+            timeInput.clear();
+        });
+        removeScheduleBtn.setOnAction(e -> {
+            int sel = scheduleList.getSelectionModel().getSelectedIndex();
+            if (sel >= 0) scheduleList.getItems().remove(sel);
+        });
 
         dialog.setResultConverter(bt -> {
             if (bt == addType) {
@@ -607,7 +642,28 @@ public class CourseAdminPanel extends BorderPane {
                     tc.setUuid(UUID.randomUUID().toString());
                     tc.setCourseId(courseId);
                     tc.setTeacherName(teacherField.getText());
-                    tc.setSchedule(scheduleField.getText());
+                    // 将 scheduleList 条目转换为后端可接受的对象形式：Map<String, String>，同一天多条用逗号分隔
+                    Map<String, String> schedMap = new LinkedHashMap<>();
+                    for (String item : scheduleList.getItems()) {
+                        if (item == null) continue;
+                        String[] parts = item.split("\\|\\|", 2);
+                        String d = parts.length >= 1 ? parts[0].trim() : "";
+                        String t = parts.length >= 2 ? parts[1].trim() : "";
+                        if (d.isEmpty()) continue;
+                        if (t == null) t = "";
+                        String prev = schedMap.get(d);
+                        if (prev == null || prev.trim().isEmpty()) {
+                            schedMap.put(d, t);
+                        } else {
+                            // 避免重复
+                            List<String> list = new ArrayList<>(Arrays.asList(prev.split(",")));
+                            if (!t.isEmpty() && !list.contains(t)) {
+                                list.add(t);
+                                schedMap.put(d, String.join(",", list));
+                            }
+                        }
+                    }
+                    tc.setSchedule(new com.google.gson.Gson().toJson(schedMap));
                     tc.setPlace(placeField.getText());
                     tc.setCapacity(Integer.parseInt(capacityField.getText()));
                     tc.setSelectedCount(0);
@@ -630,7 +686,13 @@ public class CourseAdminPanel extends BorderPane {
                     data.put("uuid", tc.getUuid());
                     data.put("courseId", tc.getCourseId());
                     data.put("teacherName", tc.getTeacherName());
-                    data.put("schedule", tc.getSchedule());
+                    // 把 tc.getSchedule()（JSON 字符串）解析为对象后再发送，避免发送字符串或数组导致后端校验失败
+                    try {
+                        Map<String, Object> scheduleObj = new com.google.gson.Gson().fromJson(tc.getSchedule(), Map.class);
+                        data.put("schedule", scheduleObj == null ? new HashMap<>() : scheduleObj);
+                    } catch (Exception ignore) {
+                        data.put("schedule", tc.getSchedule());
+                    }
                     data.put("place", tc.getPlace());
                     data.put("capacity", tc.getCapacity());
                     Request r = new Request("addTeachingClass", data);
@@ -663,22 +725,112 @@ public class CourseAdminPanel extends BorderPane {
         dialog.setHeaderText("编辑教学班信息");
 
         TextField teacherField = new TextField(selected.getTeacherName());
-        TextField scheduleField = new TextField(selected.getSchedule());
+        // 编辑对话框中使用相同的多条 schedule 管理控件
+        javafx.scene.control.ComboBox<String> dayChoice = new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList("周一","周二","周三","周四","周五","周六","周日"));
+        dayChoice.setEditable(true);
+        TextField timeInput = new TextField();
+        timeInput.setPromptText("例如: 9-11节 或 09:00-10:40");
+        Button addScheduleBtn = new Button("添加到列表");
+        ListView<String> scheduleList = new ListView<>(FXCollections.observableArrayList());
+        scheduleList.setPrefHeight(120);
+        Button removeScheduleBtn = new Button("移除所选");
         TextField placeField = new TextField(selected.getPlace());
         TextField capacityField = new TextField(String.valueOf(selected.getCapacity()));
 
+        // 解析已有 schedule（可能为 JSON 对象或 JSON 数组）并填充列表
+        try {
+            String raw = selected.getSchedule();
+            if (raw == null || raw.trim().isEmpty()) {
+                // nothing
+            } else {
+                com.google.gson.Gson g = new com.google.gson.Gson();
+                String t = raw.trim();
+                if (t.startsWith("{")) {
+                    // 旧的对象形式 {"周一":"9-11节", ...} 或 {"周六":["1-2节","6-7节"]}
+                    Map<?, ?> m = g.fromJson(t, Map.class);
+                    if (m != null) {
+                        for (Map.Entry<?, ?> en : m.entrySet()) {
+                            String d = en.getKey() == null ? "" : String.valueOf(en.getKey()).trim();
+                            Object val = en.getValue();
+                            if (d.isEmpty() || val == null) continue;
+                            if (val instanceof java.util.List) {
+                                for (Object it : (java.util.List<?>) val) {
+                                    if (it == null) continue;
+                                    String ti = String.valueOf(it).trim();
+                                    if (!ti.isEmpty()) scheduleList.getItems().add(d + "||" + ti);
+                                }
+                            } else {
+                                String ti = String.valueOf(val).trim();
+                                // 如果是逗号分隔的多段，则拆开
+                                if (ti.contains(",")) {
+                                    String[] parts = ti.split("\\\\s*,\\\\s*");
+                                    for (String p : parts) {
+                                        if (!p.trim().isEmpty()) scheduleList.getItems().add(d + "||" + p.trim());
+                                    }
+                                } else {
+                                    scheduleList.getItems().add(d + "||" + ti);
+                                }
+                            }
+                        }
+                    }
+                } else if (t.startsWith("[")) {
+                    // 新的数组形式 [{"day":"周一","time":"9-11节"}, ...]
+                    java.util.List<Map> arr = g.fromJson(t, java.util.List.class);
+                    if (arr != null) {
+                        for (Map it : arr) {
+                            if (it == null) continue;
+                            Object od = it.get("day");
+                            Object ot = it.get("time");
+                            String d = od == null ? "" : String.valueOf(od).trim();
+                            String ti = ot == null ? "" : String.valueOf(ot).trim();
+                            if (d.isEmpty()) continue;
+                            if (ti.contains(",")) {
+                                String[] parts = ti.split("\\\\s*,\\\\s*");
+                                for (String p : parts) if (!p.trim().isEmpty()) scheduleList.getItems().add(d + "||" + p.trim());
+                            } else {
+                                scheduleList.getItems().add(d + "||" + ti);
+                            }
+                        }
+                    }
+                } else {
+                    // 退回兼容：把原始字符串作为单条项
+                    scheduleList.getItems().add(t + "||");
+                }
+            }
+        } catch (Exception ignored) {}
+
+        addScheduleBtn.setOnAction(e -> {
+            String day = dayChoice.getEditor().getText();
+            if (day == null || day.trim().isEmpty()) {
+                Alert a = new Alert(Alert.AlertType.ERROR, "请填写上课日（如 周一）", ButtonType.OK);
+                a.showAndWait();
+                return;
+            }
+            String time = timeInput.getText() == null ? "" : timeInput.getText().trim();
+            scheduleList.getItems().add(day.trim() + "||" + time);
+            timeInput.clear();
+        });
+        removeScheduleBtn.setOnAction(e -> {
+            int sel = scheduleList.getSelectionModel().getSelectedIndex();
+            if (sel >= 0) scheduleList.getItems().remove(sel);
+        });
+
+        // 构建布局并填充控件（与新增对话框保持一致的布局）
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
         grid.add(new Label("教师姓名:"), 0, 0);
         grid.add(teacherField, 1, 0);
-        grid.add(new Label("时间安排:"), 0, 1);
-        grid.add(scheduleField, 1, 1);
-        grid.add(new Label("地点:"), 0, 2);
-        grid.add(placeField, 1, 2);
-        grid.add(new Label("容量:"), 0, 3);
-        grid.add(capacityField, 1, 3);
+        grid.add(new Label("时间安排 (可添加多条):"), 0, 1);
+        HBox schedInputRow = new HBox(8, dayChoice, timeInput, addScheduleBtn, removeScheduleBtn);
+        schedInputRow.setAlignment(Pos.CENTER_LEFT);
+        grid.add(schedInputRow, 1, 1);
+        grid.add(scheduleList, 1, 2);
+        grid.add(new Label("地点:"), 0, 3);
+        grid.add(placeField, 1, 3);
+        grid.add(new Label("容量:"), 0, 4);
+        grid.add(capacityField, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
         ButtonType saveType = new ButtonType("保存", ButtonBar.ButtonData.OK_DONE);
@@ -691,7 +843,27 @@ public class CourseAdminPanel extends BorderPane {
                     tc.setUuid(selected.getUuid());
                     tc.setCourseId(selected.getCourseId());
                     tc.setTeacherName(teacherField.getText());
-                    tc.setSchedule(scheduleField.getText());
+                    // 将 scheduleList 条目转换为后端可接受的对象形式：Map<String, String>
+                    Map<String, String> schedMap = new LinkedHashMap<>();
+                    for (String item : scheduleList.getItems()) {
+                        if (item == null) continue;
+                        String[] parts = item.split("\\|\\|", 2);
+                        String d = parts.length >= 1 ? parts[0].trim() : "";
+                        String t = parts.length >= 2 ? parts[1].trim() : "";
+                        if (d.isEmpty()) continue;
+                        if (t == null) t = "";
+                        String prev = schedMap.get(d);
+                        if (prev == null || prev.trim().isEmpty()) {
+                            schedMap.put(d, t);
+                        } else {
+                            List<String> list = new ArrayList<>(Arrays.asList(prev.split(",")));
+                            if (!t.isEmpty() && !list.contains(t)) {
+                                list.add(t);
+                                schedMap.put(d, String.join(",", list));
+                            }
+                        }
+                    }
+                    tc.setSchedule(new com.google.gson.Gson().toJson(schedMap));
                     tc.setPlace(placeField.getText());
                     tc.setCapacity(Integer.parseInt(capacityField.getText()));
                     tc.setSelectedCount(selected.getSelectedCount());
@@ -707,35 +879,43 @@ public class CourseAdminPanel extends BorderPane {
 
         Optional<TeachingClass> res = dialog.showAndWait();
         res.ifPresent(tc -> {
-            new Thread(() -> {
-                try {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("uuid", tc.getUuid());
-                    data.put("teacherName", tc.getTeacherName());
-                    data.put("schedule", tc.getSchedule());
-                    data.put("place", tc.getPlace());
-                    data.put("capacity", tc.getCapacity());
-                    Request r = new Request("updateTeachingClass", data);
-                    String resp = ClientNetworkHelper.send(r);
-                    Response rr = new Gson().fromJson(resp, Response.class);
-                    Platform.runLater(() -> {
-                        if (rr.getCode() == 200) {
-                            Alert a = new Alert(Alert.AlertType.INFORMATION, "更新成功", ButtonType.OK);
-                            a.showAndWait();
-                            loadCourseData();
-                        } else {
-                            Alert a = new Alert(Alert.AlertType.ERROR, "更新失败: " + rr.getMessage(), ButtonType.OK);
-                            a.showAndWait();
-                        }
-                    });
-                } catch (Exception ex) {
-                    Platform.runLater(() -> {
-                        Alert a = new Alert(Alert.AlertType.ERROR, "网络异常: " + ex.getMessage(), ButtonType.OK);
-                        a.showAndWait();
-                    });
-                }
-            }).start();
-        });
+             new Thread(() -> {
+                 try {
+                     Map<String, Object> data = new HashMap<>();
+                     data.put("uuid", tc.getUuid());
+                     data.put("teacherName", tc.getTeacherName());
+                     // tc.getSchedule() is a JSON string representing an object; parse it so the request sends an object
+                     try {
+                         Map<String, Object> scheduleObj = new com.google.gson.Gson().fromJson(tc.getSchedule(), Map.class);
+                         data.put("schedule", scheduleObj == null ? new HashMap<>() : scheduleObj);
+                     } catch (Exception ignore) {
+                         data.put("schedule", tc.getSchedule());
+                     }
+                     // log payload for debugging
+                     System.out.println("[CourseAdmin] addTeachingClass payload: " + new com.google.gson.Gson().toJson(data));
+                     data.put("place", tc.getPlace());
+                     data.put("capacity", tc.getCapacity());
+                     Request r = new Request("updateTeachingClass", data);
+                     String resp = ClientNetworkHelper.send(r);
+                     Response rr = new Gson().fromJson(resp, Response.class);
+                     Platform.runLater(() -> {
+                         if (rr.getCode() == 200) {
+                             Alert a = new Alert(Alert.AlertType.INFORMATION, "更新成功", ButtonType.OK);
+                             a.showAndWait();
+                             loadCourseData();
+                         } else {
+                             Alert a = new Alert(Alert.AlertType.ERROR, "更新失败: " + rr.getMessage(), ButtonType.OK);
+                             a.showAndWait();
+                         }
+                     });
+                 } catch (Exception ex) {
+                     Platform.runLater(() -> {
+                         Alert a = new Alert(Alert.AlertType.ERROR, "网络异常: " + ex.getMessage(), ButtonType.OK);
+                         a.showAndWait();
+                     });
+                 }
+             }).start();
+         });
     }
 
     private void deleteTeachingClassConfirmed(TeachingClass tc) {
