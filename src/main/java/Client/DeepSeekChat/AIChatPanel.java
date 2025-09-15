@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import Server.model.Response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -102,6 +103,7 @@ public class AIChatPanel extends BorderPane {
 
         conversationHistory.add(systemMsg);
     }
+
     /**
      * 动态拼接 5 个模块的上下文信息
      */
@@ -109,49 +111,69 @@ public class AIChatPanel extends BorderPane {
         StringBuilder sb = new StringBuilder();
         sb.append("以下是学生最新的系统信息，请结合回答：\n\n");
         Integer cardNumber = Integer.valueOf(userDisplayName);
+        Gson gson = new Gson();
+
         try {
             // 2. 学籍管理模块
-            String studentInfo = ClientNetworkHelper.send(
+            String studentInfoJson = ClientNetworkHelper.send(
                     new Request("getSelf", Map.of("cardNumber", cardNumber))
             );
-            sb.append("【2. 学籍管理模块】\n").append(studentInfo).append("\n\n");
+            Response studentInfoResp = gson.fromJson(studentInfoJson, Response.class);
+            sb.append("【2. 学籍管理模块】\n")
+                    .append(studentInfoResp.isSuccess() ? studentInfoResp.getData() : studentInfoResp.getMessage())
+                    .append("\n\n");
 
             // 3. 选课系统模块
-            String courseInfo = ClientNetworkHelper.send(
+            String courseInfoJson = ClientNetworkHelper.send(
                     new Request("getStudentSelectedCourses", Map.of("cardNumber", cardNumber))
             );
-            sb.append("【3. 选课系统模块】\n").append(courseInfo).append("\n\n");
+            Response courseInfoResp = gson.fromJson(courseInfoJson, Response.class);
+            sb.append("【3. 选课系统模块】\n")
+                    .append(courseInfoResp.isSuccess() ? courseInfoResp.getData() : courseInfoResp.getMessage())
+                    .append("\n\n");
 
             // 4. 图书管理模块
-            String libraryInfo = ClientNetworkHelper.send(
+            String libraryInfoJson = ClientNetworkHelper.send(
                     new Request("getOwnRecords", Map.of("userId", cardNumber))
             );
-            sb.append("【4. 图书管理模块】\n").append(libraryInfo).append("\n\n");
+            Response libraryInfoResp = gson.fromJson(libraryInfoJson, Response.class);
+            sb.append("【4. 图书管理模块】\n")
+                    .append(libraryInfoResp.isSuccess() ? libraryInfoResp.getData() : libraryInfoResp.getMessage())
+                    .append("\n\n");
 
             // 5. 商店模块
             String shopOrdersJson = ClientNetworkHelper.send(
                     new Request("getUserOrders", Map.of("cardNumber", cardNumber))
             );
+            Response shopOrdersResponse = gson.fromJson(shopOrdersJson, Response.class);
 
-            Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>(){}.getType();
-            List<Map<String, Object>> orders = new Gson().fromJson(shopOrdersJson, listType);
+            if (!shopOrdersResponse.isSuccess()) {
+                sb.append("【5. 商店模块】请求失败：").append(shopOrdersResponse.getMessage()).append("\n");
+            } else {
+                String dataJson = gson.toJson(shopOrdersResponse.getData());
+                Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>() {}.getType();
+                List<Map<String, Object>> orders = gson.fromJson(dataJson, listType);
 
-            StringBuilder shopSb = new StringBuilder();
-            shopSb.append("【5. 商店模块】\n");
+                StringBuilder shopSb = new StringBuilder();
+                shopSb.append("【5. 商店模块】\n");
 
-            for (Map<String, Object> orderMap : orders) {
-                String uuidStr = (String) orderMap.get("uuid");
-                shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
+                for (Map<String, Object> orderMap : orders) {
+                    String uuidStr = (String) orderMap.get("uuid");
+                    shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
 
-                // 调用 getOrder 接口获取订单详情
-                String orderDetailJson = ClientNetworkHelper.send(
-                        new Request("getOrder", Map.of("orderId", uuidStr))
-                );
+                    String orderDetailJson = ClientNetworkHelper.send(
+                            new Request("getOrder", Map.of("orderId", uuidStr))
+                    );
+                    Response orderDetailResponse = gson.fromJson(orderDetailJson, Response.class);
+                    if (orderDetailResponse.isSuccess()) {
+                        shopSb.append("订单详情: ").append(orderDetailResponse.getData()).append("\n\n");
+                    } else {
+                        shopSb.append("订单详情获取失败: ").append(orderDetailResponse.getMessage()).append("\n\n");
+                    }
+                }
 
-                shopSb.append("订单详情: ").append(orderDetailJson).append("\n\n");
+                sb.append(shopSb.toString());
             }
-
-            sb.append(shopSb.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -214,7 +236,6 @@ public class AIChatPanel extends BorderPane {
         scrollPane.setContent(chatContainer);
         scrollPane.getStyleClass().add("scroll-pane");
         scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         StackPane wrapper = new StackPane(scrollPane);
@@ -237,7 +258,7 @@ public class AIChatPanel extends BorderPane {
         Node aiAvatarNode = buildAiAvatarNode();
         VBox messageContent = new VBox();
         messageContent.setSpacing(5);
-        Label nameLabel = new Label("东南大学虚拟校园系统智能助手");
+        Label nameLabel = new Label("东大虚拟校园系统智能助手");
         nameLabel.getStyleClass().add("message-name");
         TextFlow textFlow = new TextFlow();
         textFlow.getStyleClass().add("ai-message");
@@ -276,6 +297,7 @@ public class AIChatPanel extends BorderPane {
         area.getChildren().addAll(inputField, sendButton);
         return area;
     }
+
     private void sendMessage(){
         String msg = inputField.getText().trim();
         if (msg.isEmpty()) return;
@@ -339,7 +361,7 @@ public class AIChatPanel extends BorderPane {
         HBox box = new HBox(); box.getStyleClass().add("ai-message-container"); box.setAlignment(Pos.TOP_LEFT);
         Node aiAvatarNode = buildAiAvatarNode();
         VBox content = new VBox(); content.setSpacing(5);
-        Label name = new Label("DeepSeek"); name.getStyleClass().add("message-name");
+        Label name = new Label("东大虚拟校园系统智能助手"); name.getStyleClass().add("message-name");
         TextFlow tf = new TextFlow(); tf.getStyleClass().add("ai-message");
         tf.getChildren().add(new Text(message));
         content.getChildren().addAll(name, tf); HBox.setMargin(content, new Insets(0,0,0,10));
@@ -348,15 +370,68 @@ public class AIChatPanel extends BorderPane {
         JsonObject obj = new JsonObject(); obj.addProperty("role","assistant"); obj.addProperty("content", message); conversationHistory.add(obj);
     }
 
+//    private void showTypingIndicator(){
+//        HBox box = new HBox();
+//        box.getStyleClass().add("ai-message-container");
+//        box.setAlignment(Pos.TOP_LEFT);
+//        box.setId("typing-indicator");
+//
+//        Node aiAvatarNode = buildAiAvatarNode();
+//        VBox content = new VBox();
+//        content.setSpacing(5);
+//
+//        Label name = new Label("东大虚拟校园系统智能助手");
+//        name.getStyleClass().add("message-name");
+//
+//        HBox dots = new HBox(5);
+//        dots.getStyleClass().add("typing-dots");
+//        dots.setAlignment(Pos.CENTER_LEFT);
+//        dots.setMaxWidth(30);
+//
+//        for (int i = 0; i < 3; i++) {
+//            Circle d = new Circle(4);
+//            d.getStyleClass().add("typing-dot");
+//            dots.getChildren().add(d);
+//        }
+//
+//        TextFlow tf = new TextFlow(dots);
+//        tf.getStyleClass().add("ai-message");
+//
+//        content.getChildren().addAll(name, tf);
+//        HBox.setMargin(content, new Insets(0,0,0,10));
+//        box.getChildren().addAll(aiAvatarNode, content);
+//        chatContainer.getChildren().add(box);
+//    }
+
     private void showTypingIndicator(){
-        HBox typing = new HBox(); typing.getStyleClass().add("typing-indicator"); typing.setAlignment(Pos.TOP_LEFT); typing.setId("typing-indicator");
+        HBox typing = new HBox();
+        typing.getStyleClass().add("ai-message-container");
+        typing.getStyleClass().add("typing-indicator");
+        typing.setAlignment(Pos.TOP_LEFT);
+        typing.setId("typing-indicator");
+
         Node aiAvatarNode = buildAiAvatarNode();
-        VBox indicatorContent = new VBox(); indicatorContent.setSpacing(5);
-        Label name = new Label("DeepSeek"); name.getStyleClass().add("message-name");
-        HBox dots = new HBox(5); dots.getStyleClass().add("typing-dots"); dots.setAlignment(Pos.CENTER_LEFT);
-        for(int i=0;i<3;i++){ Circle d = new Circle(4); d.getStyleClass().add("typing-dot"); dots.getChildren().add(d);}
-        indicatorContent.getChildren().addAll(name,dots); HBox.setMargin(indicatorContent,new Insets(0,0,0,10));
-        typing.getChildren().addAll(aiAvatarNode, indicatorContent); chatContainer.getChildren().add(typing);
+        VBox indicatorContent = new VBox();
+        indicatorContent.setSpacing(5);
+
+        Label name = new Label("东大虚拟校园系统智能助手");
+        name.getStyleClass().add("message-name");
+
+        HBox dots = new HBox(5);
+        dots.getStyleClass().add("typing-dots");
+        dots.setAlignment(Pos.CENTER_LEFT);
+        dots.setMaxWidth(30);
+
+        for (int i = 0; i < 3; i++) {
+            Circle d = new Circle(4);
+            d.getStyleClass().add("typing-dot");
+            dots.getChildren().add(d);
+        }
+
+        indicatorContent.getChildren().addAll(name,dots);
+        HBox.setMargin(indicatorContent,new Insets(0,0,0,10));
+        typing.getChildren().addAll(aiAvatarNode, indicatorContent);
+        chatContainer.getChildren().add(typing);
     }
 
     private void removeTypingIndicator(){
