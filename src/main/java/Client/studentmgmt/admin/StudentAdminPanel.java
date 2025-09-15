@@ -9,6 +9,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import java.util.List;
 
 /**
@@ -50,8 +52,13 @@ public class StudentAdminPanel extends VBox {
     private TableView<Student> createTable() {
         TableView<Student> t = new TableView<>();
         t.setPrefHeight(420);
+        // 允许列根据内容调整，我们使用自定义逻辑动态计算并设置列宽
         t.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         t.setTableMenuButtonVisible(true);
+
+        // 应用CSS样式到表格
+        t.setStyle("-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;");
+
         java.text.SimpleDateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd");
         TableColumn<Student,String> cCard = new TableColumn<>("一卡通号"); cCard.setCellValueFactory(d-> new SimpleStringProperty(String.valueOf(d.getValue().getCardNumber()))); cCard.setPrefWidth(90);
         TableColumn<Student,String> cName = new TableColumn<>("姓名"); cName.setCellValueFactory(d-> new SimpleStringProperty(val(d.getValue().getName()))); cName.setPrefWidth(90);
@@ -65,8 +72,52 @@ public class StudentAdminPanel extends VBox {
         TableColumn<Student,String> cSchool = new TableColumn<>("学院"); cSchool.setCellValueFactory(d-> new SimpleStringProperty(val(d.getValue().getSchool()))); cSchool.setPrefWidth(110);
         TableColumn<Student,String> cMajor = new TableColumn<>("专业"); cMajor.setCellValueFactory(d-> new SimpleStringProperty(val(d.getValue().getMajor()))); cMajor.setPrefWidth(140);
         TableColumn<Student,String> cStatus = new TableColumn<>("学籍状态"); cStatus.setCellValueFactory(d-> new SimpleStringProperty(d.getValue().getStatus()!=null? d.getValue().getStatus().getDescription():"未设置")); cStatus.setPrefWidth(100);
+
         t.getColumns().addAll(cCard,cName,cId,cStuNo,cGender,cBirth,cEnroll,cBirthPlace,cPolitical,cSchool,cMajor,cStatus);
+
+        // 为所有列设置统一样式（在列被添加后执行）
+        for (TableColumn<Student, ?> column : t.getColumns()) {
+            column.setStyle("-fx-alignment: CENTER_LEFT; -fx-padding: 8 10 8 10;");
+        }
+
+        // 应用CSS样式表
+        t.getStylesheets().add(getClass().getResource("/styles/table-styles.css").toExternalForm());
+
         return t;
+    }
+
+    // 根据列头与可见单元格内容计算并调整每一列的宽度，尽量避免文本被截断
+    private void adjustColumnWidths() {
+        if (table == null) return;
+        Platform.runLater(() -> {
+            Font font = Font.font(13);
+            for (TableColumn<Student, ?> col : table.getColumns()) {
+                double max = 30; // 最小宽度
+                // 计算表头宽度
+                String header = col.getText() == null ? "" : col.getText();
+                Text ht = new Text(header);
+                ht.setFont(font);
+                max = Math.max(max, ht.getLayoutBounds().getWidth() + 30);
+
+                // 计算若干行内容宽度（只遍历当前可见或前 N 行以节省开销）
+                int limit = Math.min(table.getItems().size(), 200); // 上限防止过慢
+                for (int i = 0; i < limit; i++) {
+                    Student s = table.getItems().get(i);
+                    try {
+                        Object cellObj = col.getCellData(s);
+                        String cellText = cellObj == null ? "" : String.valueOf(cellObj);
+                        Text ct = new Text(cellText);
+                        ct.setFont(font);
+                        double w = ct.getLayoutBounds().getWidth();
+                        if (w + 30 > max) max = w + 30;
+                    } catch (Exception ignored) {}
+                }
+
+                // 限制最大列宽以避免单列占用过多空间（可根据需要调整）
+                double cap = 600;
+                col.setPrefWidth(Math.min(Math.max(max, col.getPrefWidth()), cap));
+            }
+        });
     }
 
     private String val(String s) {return (s==null||s.isEmpty())?"未设置":s;}
@@ -91,7 +142,7 @@ public class StudentAdminPanel extends VBox {
 
     private void doSearch(String type,String value,boolean fuzzy){
         new Thread(() -> {
-            try {List<Student> list = service.searchStudents(type,value,fuzzy); Platform.runLater(()->{table.getItems().clear();table.getItems().addAll(list);});}
+            try {List<Student> list = service.searchStudents(type,value,fuzzy); Platform.runLater(()->{table.getItems().clear();table.getItems().addAll(list);adjustColumnWidths();});}
             catch (Exception e){Platform.runLater(()->showAlert(Alert.AlertType.ERROR,"搜索失败", e.getMessage()));}
         }).start();
     }

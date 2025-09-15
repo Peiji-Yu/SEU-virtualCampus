@@ -503,7 +503,7 @@ public class MainFrame {
                                 Alert info = new Alert(Alert.AlertType.INFORMATION);
                                 info.setTitle("挂失结果");
                                 info.setHeaderText(null);
-                                info.setContentText(resp);
+                                info.setContentText("挂失成功");
                                 info.showAndWait();
                             });
                         } catch (Exception ex) {
@@ -1056,4 +1056,3 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
-
