@@ -1040,7 +1040,7 @@ public class ClientHandler implements Runnable {
 
                     // 📚 借书
                     case "borrowBook": {
-                        String isbn = (String) request.getData().get("isbn");
+                        String isbn = (String) request.getData().get("uuid");
                         Integer userId = ((Double) request.getData().get("userId")).intValue();
                         if (isbn == null || userId == 0) {
                             response = Response.error("缺少 uuid 或 userId 参数");
