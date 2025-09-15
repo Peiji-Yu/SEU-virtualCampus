@@ -155,135 +155,163 @@ public class MainFrame {
         Image iconLibrary = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/图书馆.png"))); // 新增图书馆图标
         Image iconLostCardAdmin = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/解挂挂失.png")));
 
+        Image iconStudent_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/学生.png")));
+        Image iconCourseMgmt_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/课程.png")));
+        Image iconFinance_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/交易记录.png")));
+        Image iconStore_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/商店.png")));
+        Image iconAI_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/deepseek.png")));
+        Image iconClassroom_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/课堂.png")));
+        Image iconTimetable_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/表格.png")));
+        Image iconCourseSelect_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/选课.png")));
+        Image iconLibrary_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/图书馆.png")));
+        Image iconLostCardAdmin_1 = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar_choose/解挂挂失.png")));
+
+        // 按钮声明（确保在后续使用前已定义）
         Button stuManageBtn = new Button();
-        stuManageBtn.setPrefWidth(40);
-        stuManageBtn.setPrefHeight(40);
-        stuManageBtn.setMinWidth(40);
-        stuManageBtn.setMinHeight(40);
-        stuManageBtn.setMaxWidth(40);
-        stuManageBtn.setMaxHeight(40);
-        setSelectedButtonStyle(stuManageBtn);
-        stuManageBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        stuManageBtn.setAlignment(Pos.CENTER);
-
         Button courseMgmtBtn = new Button();
-        courseMgmtBtn.setPrefWidth(40);
-        courseMgmtBtn.setPrefHeight(40);
-        courseMgmtBtn.setMinWidth(40);
-        courseMgmtBtn.setMinHeight(40);
-        courseMgmtBtn.setMaxWidth(40);
-        courseMgmtBtn.setMaxHeight(40);
-        resetButtonStyle(courseMgmtBtn);
-        courseMgmtBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        courseMgmtBtn.setAlignment(Pos.CENTER);
-
         Button timetableBtn = new Button();
-        timetableBtn.setPrefWidth(40);
-        timetableBtn.setPrefHeight(40);
-        timetableBtn.setMinWidth(40);
-        timetableBtn.setMinHeight(40);
-        timetableBtn.setMaxWidth(40);
-        timetableBtn.setMaxHeight(40);
-        resetButtonStyle(timetableBtn);
-        timetableBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        timetableBtn.setAlignment(Pos.CENTER);
-
         Button courseSelectBtn = new Button();
-        courseSelectBtn.setPrefWidth(40);
-        courseSelectBtn.setPrefHeight(40);
-        courseSelectBtn.setMinWidth(40);
-        courseSelectBtn.setMinHeight(40);
-        courseSelectBtn.setMaxWidth(40);
-        courseSelectBtn.setMaxHeight(40);
-        resetButtonStyle(courseSelectBtn);
-        courseSelectBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        courseSelectBtn.setAlignment(Pos.CENTER);
-
         Button myClassroomBtn = new Button();
-        myClassroomBtn.setPrefWidth(40);
-        myClassroomBtn.setPrefHeight(40);
-        myClassroomBtn.setMinWidth(40);
-        myClassroomBtn.setMinHeight(40);
-        myClassroomBtn.setMaxWidth(40);
-        myClassroomBtn.setMaxHeight(40);
-        resetButtonStyle(myClassroomBtn);
-        myClassroomBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        myClassroomBtn.setAlignment(Pos.CENTER);
-
         Button financeBtn = new Button();
-        financeBtn.setPrefWidth(40);
-        financeBtn.setPrefHeight(40);
-        financeBtn.setMinWidth(40);
-        financeBtn.setMinHeight(40);
-        financeBtn.setMaxWidth(40);
-        financeBtn.setMaxHeight(40);
-        resetButtonStyle(financeBtn);
-        financeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        financeBtn.setAlignment(Pos.CENTER);
-
         Button storeBtn = new Button();
-        storeBtn.setPrefWidth(40);
-        storeBtn.setPrefHeight(40);
-        storeBtn.setMinWidth(40);
-        storeBtn.setMinHeight(40);
-        storeBtn.setMaxWidth(40);
-        storeBtn.setMaxHeight(40);
-        resetButtonStyle(storeBtn);
-        storeBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        storeBtn.setAlignment(Pos.CENTER);
-
         Button aiAssistBtn = new Button();
-        aiAssistBtn.setPrefWidth(40);
-        aiAssistBtn.setPrefHeight(40);
-        aiAssistBtn.setMinWidth(40);
-        aiAssistBtn.setMinHeight(40);
-        aiAssistBtn.setMaxWidth(40);
-        aiAssistBtn.setMaxHeight(40);
-        resetButtonStyle(aiAssistBtn);
-        aiAssistBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        aiAssistBtn.setAlignment(Pos.CENTER);
-
-        // 新增：图书馆按钮
         Button libraryBtn = new Button();
-        libraryBtn.setPrefWidth(40);
-        libraryBtn.setPrefHeight(40);
-        libraryBtn.setMinWidth(40);
-        libraryBtn.setMinHeight(40);
-        libraryBtn.setMaxWidth(40);
-        libraryBtn.setMaxHeight(40);
-        resetButtonStyle(libraryBtn);
-        libraryBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        libraryBtn.setAlignment(Pos.CENTER);
-
-        // 新增：一卡通挂失按钮
         Button reportLossBtn = new Button();
-        reportLossBtn.setPrefWidth(40);
-        reportLossBtn.setPrefHeight(40);
-        reportLossBtn.setMinWidth(40);
-        reportLossBtn.setMinHeight(40);
-        reportLossBtn.setMaxWidth(40);
-        reportLossBtn.setMaxHeight(40);
-        resetButtonStyle(reportLossBtn);
-        reportLossBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        reportLossBtn.setAlignment(Pos.CENTER);
-        Image iconReportLoss = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/挂失.png")));
-        attachIconAndRememberText(reportLossBtn, iconReportLoss);
-        setRightTooltip(reportLossBtn, "一卡通挂失");
-
-        // 新增：挂失管理按钮
         Button lostCardAdminBtn = new Button();
-        lostCardAdminBtn.setPrefWidth(40);
-        lostCardAdminBtn.setPrefHeight(40);
-        lostCardAdminBtn.setMinWidth(40);
-        lostCardAdminBtn.setMinHeight(40);
-        lostCardAdminBtn.setMaxWidth(40);
-        lostCardAdminBtn.setMaxHeight(40);
-        resetButtonStyle(lostCardAdminBtn);
-        lostCardAdminBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        lostCardAdminBtn.setAlignment(Pos.CENTER);
-        attachIconAndRememberText(lostCardAdminBtn, iconLostCardAdmin);
-        setRightTooltip(lostCardAdminBtn, "挂失管理");
 
+        // 统一尺寸与显示
+        List<Button> allBtns = Arrays.asList(stuManageBtn, courseMgmtBtn, timetableBtn, courseSelectBtn,
+                myClassroomBtn, financeBtn, storeBtn, aiAssistBtn, libraryBtn, reportLossBtn, lostCardAdminBtn);
+        for (Button b : allBtns) {
+            b.setPrefWidth(40); b.setPrefHeight(40);
+            b.setMinWidth(40); b.setMinHeight(40);
+            b.setMaxWidth(40); b.setMaxHeight(40);
+            b.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            b.setAlignment(Pos.CENTER);
+        }
+
+        // 初始化按钮图标（默认使用普通图标）
+        attachIconAndRememberText(stuManageBtn, iconStudent);
+        attachIconAndRememberText(courseMgmtBtn, iconCourseMgmt);
+        attachIconAndRememberText(timetableBtn, iconTimetable);
+        attachIconAndRememberText(courseSelectBtn, iconCourseSelect);
+        attachIconAndRememberText(myClassroomBtn, iconClassroom);
+        attachIconAndRememberText(financeBtn, iconFinance);
+        attachIconAndRememberText(storeBtn, iconStore);
+        attachIconAndRememberText(aiAssistBtn, iconAI);
+        attachIconAndRememberText(libraryBtn, iconLibrary);
+        attachIconAndRememberText(lostCardAdminBtn, iconLostCardAdmin);
+        // reportLossBtn 已单独设置图标
+
+        // 使用 map 维护每个按钮对应的普通/选中图标，方便统一切换
+        Map<Button, Image> normalIcon = new HashMap<>();
+        Map<Button, Image> selectedIcon = new HashMap<>();
+        normalIcon.put(stuManageBtn, iconStudent); selectedIcon.put(stuManageBtn, iconStudent_1);
+        normalIcon.put(courseMgmtBtn, iconCourseMgmt); selectedIcon.put(courseMgmtBtn, iconCourseMgmt_1);
+        normalIcon.put(timetableBtn, iconTimetable); selectedIcon.put(timetableBtn, iconTimetable_1);
+        normalIcon.put(courseSelectBtn, iconCourseSelect); selectedIcon.put(courseSelectBtn, iconCourseSelect_1);
+        normalIcon.put(myClassroomBtn, iconClassroom); selectedIcon.put(myClassroomBtn, iconClassroom_1);
+        normalIcon.put(financeBtn, iconFinance); selectedIcon.put(financeBtn, iconFinance_1);
+        normalIcon.put(storeBtn, iconStore); selectedIcon.put(storeBtn, iconStore_1);
+        normalIcon.put(aiAssistBtn, iconAI); selectedIcon.put(aiAssistBtn, iconAI_1);
+        normalIcon.put(libraryBtn, iconLibrary); selectedIcon.put(libraryBtn, iconLibrary_1);
+        normalIcon.put(lostCardAdminBtn, iconLostCardAdmin); selectedIcon.put(lostCardAdminBtn, iconLostCardAdmin_1);
+
+        // 将样式初始化为未选中状态
+        resetButtonStyle(stuManageBtn, normalIcon.get(stuManageBtn));
+        resetButtonStyle(courseMgmtBtn, normalIcon.get(courseMgmtBtn));
+        resetButtonStyle(timetableBtn, normalIcon.get(timetableBtn));
+        resetButtonStyle(courseSelectBtn, normalIcon.get(courseSelectBtn));
+        resetButtonStyle(myClassroomBtn, normalIcon.get(myClassroomBtn));
+        resetButtonStyle(financeBtn, normalIcon.get(financeBtn));
+        resetButtonStyle(storeBtn, normalIcon.get(storeBtn));
+        resetButtonStyle(aiAssistBtn, normalIcon.get(aiAssistBtn));
+        resetButtonStyle(libraryBtn, normalIcon.get(libraryBtn));
+        resetButtonStyle(lostCardAdminBtn, normalIcon.get(lostCardAdminBtn));
+        resetButtonStyle(reportLossBtn, normalIcon.get(reportLossBtn));
+
+        // ===== 简化事件处理：统一通过 mapping 切换图标与样式 =====
+        stuManageBtn.setOnAction(e -> {
+            if (currentSelectedButton == stuManageBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(stuManageBtn, selectedIcon.get(stuManageBtn));
+            currentSelectedButton = stuManageBtn;
+            if ("student".equals(userType)) setCenterContent(new StudentSelfPanel(cardNumber)); else setCenterContent(new StudentAdminPanel());
+        });
+
+        courseMgmtBtn.setOnAction(e -> {
+            if (currentSelectedButton == courseMgmtBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
+            currentSelectedButton = courseMgmtBtn;
+            setCenterContent(new CourseAdminPanel());
+        });
+
+        timetableBtn.setOnAction(e -> {
+            if (currentSelectedButton == timetableBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(timetableBtn, selectedIcon.get(timetableBtn));
+            currentSelectedButton = timetableBtn;
+            setCenterContent(new TimetablePanel(cardNumber));
+        });
+
+        courseSelectBtn.setOnAction(e -> {
+            if (currentSelectedButton == courseSelectBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
+            currentSelectedButton = courseSelectBtn;
+            setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
+        });
+
+        myClassroomBtn.setOnAction(e -> {
+            if (currentSelectedButton == myClassroomBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(myClassroomBtn, selectedIcon.get(myClassroomBtn));
+            currentSelectedButton = myClassroomBtn;
+            setCenterContent(new MyClassroomPanel(cardNumber));
+        });
+
+        financeBtn.setOnAction(e -> {
+            if (currentSelectedButton == financeBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(financeBtn, selectedIcon.get(financeBtn));
+            currentSelectedButton = financeBtn;
+            setCenterContent(new FinancePanel(cardNumber, userType));
+        });
+
+        storeBtn.setOnAction(e -> {
+            if (currentSelectedButton == storeBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(storeBtn, selectedIcon.get(storeBtn));
+            currentSelectedButton = storeBtn;
+            setCenterContent(new StoreMainPanel(cardNumber, userType));
+        });
+
+        aiAssistBtn.setOnAction(e -> {
+            if (currentSelectedButton == aiAssistBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(aiAssistBtn, selectedIcon.get(aiAssistBtn));
+            currentSelectedButton = aiAssistBtn;
+            setCenterContent(new AIChatPanel(cardNumber));
+        });
+
+        libraryBtn.setOnAction(e -> {
+            if (currentSelectedButton == libraryBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(libraryBtn, selectedIcon.get(libraryBtn));
+            currentSelectedButton = libraryBtn;
+            setCenterContent(new LibraryMainPanel(cardNumber));
+        });
+
+        lostCardAdminBtn.setOnAction(e -> {
+            if (currentSelectedButton == lostCardAdminBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(lostCardAdminBtn, selectedIcon.get(lostCardAdminBtn));
+            currentSelectedButton = lostCardAdminBtn;
+            setCenterContent(new Client.finance.LostCardAdminPanel());
+        });
+
+        // reportLossBtn 的逻辑保持不变（只是执行挂失操作），样式切换按需要可添加
 
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
@@ -330,6 +358,18 @@ public class MainFrame {
         StackPane.setMargin(centerContainer, new Insets(0));
         mainLayout.setCenter(centerContainer);
 
+        // 初始化 hover tip（避免未初始化警告与潜在 NPE）
+        hoverTipLayer = new StackPane();
+        hoverTipLayer.setMouseTransparent(true);
+        hoverTipBox = new Pane();
+        hoverTipBox.setVisible(false);
+        hoverTipLabel = new Label("");
+        hoverTipLabel.setVisible(false);
+        hoverTipBox.getChildren().add(hoverTipLabel);
+        hoverTipLayer.getChildren().add(hoverTipBox);
+        // 将 hover 层添加到 rootStack 的最上层
+        rootStack.getChildren().add(hoverTipLayer);
+
         // 右侧内容初始载入
         if ("student".equals(userType)) {
             setCenterContent(new StudentSelfPanel(cardNumber));
@@ -370,7 +410,12 @@ public class MainFrame {
                 currentSelectedButton = stuManageBtn;
             } else if ("teacher".equals(userType)) {
                 currentSelectedButton = myClassroomBtn;
-                setSelectedButtonStyle(myClassroomBtn);
+            }
+
+            // 确保初始选中按钮显示为高亮图标
+            if (currentSelectedButton != null) {
+                Image sel = selectedIcon.get(currentSelectedButton);
+                if (sel != null) setSelectedButtonStyle(currentSelectedButton, sel);
             }
 
             stuManageBtn.setOnAction(e -> {
@@ -378,9 +423,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(stuManageBtn);
+                setSelectedButtonStyle(stuManageBtn, selectedIcon.get(stuManageBtn));
                 currentSelectedButton = stuManageBtn;
                 if ("student".equals(userType)) {
                     setCenterContent(new StudentSelfPanel(cardNumber));
@@ -395,9 +440,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(courseMgmtBtn);
+                setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
                 currentSelectedButton = courseMgmtBtn;
                 setCenterContent(new CourseAdminPanel());
             });
@@ -408,9 +453,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(timetableBtn);
+                setSelectedButtonStyle(timetableBtn, selectedIcon.get(timetableBtn));
                 currentSelectedButton = timetableBtn;
                 setCenterContent(new TimetablePanel(cardNumber));
             });
@@ -421,9 +466,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(courseSelectBtn);
+                setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
                 currentSelectedButton = courseSelectBtn;
                 setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
             });
@@ -434,9 +479,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(myClassroomBtn);
+                setSelectedButtonStyle(myClassroomBtn, selectedIcon.get(myClassroomBtn));
                 currentSelectedButton = myClassroomBtn;
                 setCenterContent(new MyClassroomPanel(cardNumber));
             });
@@ -444,8 +489,8 @@ public class MainFrame {
             // 新增：交易管理
             financeBtn.setOnAction(e -> {
                 if (currentSelectedButton == financeBtn) return;
-                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
-                setSelectedButtonStyle(financeBtn);
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+                setSelectedButtonStyle(financeBtn, selectedIcon.get(financeBtn));
                 currentSelectedButton = financeBtn;
                 setCenterContent(new FinancePanel(cardNumber, userType));
             });
@@ -453,8 +498,8 @@ public class MainFrame {
             // 新增：校园商店事件
             storeBtn.setOnAction(e -> {
                 if (currentSelectedButton == storeBtn) return;
-                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
-                setSelectedButtonStyle(storeBtn);
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+                setSelectedButtonStyle(storeBtn, selectedIcon.get(storeBtn));
                 currentSelectedButton = storeBtn;
                 setCenterContent(new StoreMainPanel(cardNumber, userType));
             });
@@ -465,9 +510,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(aiAssistBtn);
+                setSelectedButtonStyle(aiAssistBtn, selectedIcon.get(aiAssistBtn));
                 currentSelectedButton = aiAssistBtn;
                 setCenterContent(new AIChatPanel(cardNumber));
             });
@@ -478,9 +523,9 @@ public class MainFrame {
                     return;
                 }
                 if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton);
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
                 }
-                setSelectedButtonStyle(libraryBtn);
+                setSelectedButtonStyle(libraryBtn, selectedIcon.get(libraryBtn));
                 currentSelectedButton = libraryBtn;
                 // 创建图书馆主面板并显示在右侧，传递一卡通号
                 setCenterContent(new LibraryMainPanel(cardNumber));
@@ -522,8 +567,8 @@ public class MainFrame {
             // 管理员-挂失管理
             lostCardAdminBtn.setOnAction(e -> {
                 if (currentSelectedButton == lostCardAdminBtn) return;
-                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton);
-                setSelectedButtonStyle(lostCardAdminBtn);
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+                setSelectedButtonStyle(lostCardAdminBtn, selectedIcon.get(lostCardAdminBtn));
                 currentSelectedButton = lostCardAdminBtn;
                 setCenterContent(new Client.finance.LostCardAdminPanel());
             });
@@ -879,28 +924,55 @@ public class MainFrame {
         btn.setGraphicTextGap(8);
     }
 
-    private void setSelectedButtonStyle(Button button) {
+    private void setSelectedButtonStyle(Button button, Image icon) {
+        if (button == null) return;
+        // 选中时不使用阴影，仅变色并替换为高亮图标
         button.setStyle(
                 "-fx-background-color: " + SIDEBAR_COLOR + ";" +
-                        "-fx-effect: dropshadow(gaussian, #1E1F22, 10, 0, 0, 2);" +
+                        "-fx-effect: none;" +
                         "-fx-font-size: 15px; -fx-font-weight: bold; " +
                         "-fx-text-fill: " + PRIMARY_COLOR + ";"
         );
+        if (icon != null) attachIconAndRememberText(button, icon);
     }
 
-    private void resetButtonStyle(Button button) {
+    private void resetButtonStyle(Button button, Image icon) {
+        if (button == null) return;
         button.setStyle(
                 "-fx-background-color: " + SIDEBAR_COLOR + ";" +
                         "-fx-effect: none;" +
                         "-fx-font-size: 15px; " +
                         "-fx-text-fill: " + TEXT_COLOR + ";"
         );
+        if (icon != null) attachIconAndRememberText(button, icon);
     }
 
     private void setButtonHoverShadow(Button button) {
         button.setStyle(
                 "-fx-background-color: " + SIDEBAR_COLOR + ";" +
                         "-fx-effect: dropshadow(gaussian, #1E1F22, 10, 0, 0, 2);" + // 光效颜色与悬停阴影一致
+                        "-fx-font-size: 15px; " +
+                        "-fx-text-fill: " + TEXT_COLOR + ";"
+        );
+    }
+
+    // 重载：只设置选中样式但不替换图标
+    private void setSelectedButtonStyle(Button button) {
+        if (button == null) return;
+        button.setStyle(
+                "-fx-background-color: " + SIDEBAR_COLOR + ";" +
+                        "-fx-effect: none;" +
+                        "-fx-font-size: 15px; -fx-font-weight: bold; " +
+                        "-fx-text-fill: " + PRIMARY_COLOR + ";"
+        );
+    }
+
+    // 重载：只重置样式但不替换图标
+    private void resetButtonStyle(Button button) {
+        if (button == null) return;
+        button.setStyle(
+                "-fx-background-color: " + SIDEBAR_COLOR + ";" +
+                        "-fx-effect: none;" +
                         "-fx-font-size: 15px; " +
                         "-fx-text-fill: " + TEXT_COLOR + ";"
         );
@@ -929,10 +1001,6 @@ public class MainFrame {
             b.setOnMouseExited(e -> {
                 if (currentSelectedButton != b) resetButtonStyle(b);
             });
-        }
-        // 默认选中按钮也展示悬停阴影
-        if (currentSelectedButton != null) {
-            setSelectedButtonStyle(currentSelectedButton);
         }
     }
 
@@ -1058,3 +1126,4 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
+
