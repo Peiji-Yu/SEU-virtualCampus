@@ -43,9 +43,9 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
-import com.vladsch.flexmark.html.HtmlRenderer;
-import com.vladsch.flexmark.parser.Parser;
-import javafx.scene.web.WebView;
+//import com.vladsch.flexmark.html.HtmlRenderer;
+//import com.vladsch.flexmark.parser.Parser;
+//import javafx.scene.web.WebView;
 
 /**
  * 嵌入式 AI 助手聊天面板（虚拟校园系统专用）
@@ -56,8 +56,8 @@ public class AIChatPanel extends BorderPane {
     private final Button sendButton = new Button();
     private final ScrollPane scrollPane = new ScrollPane();
     private final List<JsonObject> conversationHistory = new ArrayList<>();
-//    private final Parser mdParser = Parser.builder().build();
-//    private final HtmlRenderer mdRenderer = HtmlRenderer.builder().build();
+//  private final Parser mdParser = Parser.builder().build();
+//  private final HtmlRenderer mdRenderer = HtmlRenderer.builder().build();
 
 
     private String apiKey = "your_api_key"; // 默认占位
@@ -103,7 +103,7 @@ public class AIChatPanel extends BorderPane {
                         "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
                         "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
                         "\n" +
-                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。避免使用表情符号。";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
@@ -406,7 +406,8 @@ public class AIChatPanel extends BorderPane {
         VBox content = new VBox(); content.setSpacing(5);
         Label name = new Label("东大虚拟校园系统智能助手"); name.getStyleClass().add("message-name");
         TextFlow tf = new TextFlow(); tf.getStyleClass().add("ai-message");
-        tf.getChildren().add(new Text(message));
+        String cleanMessage = message.replace("#", "").replace("*", "");
+        tf.getChildren().add(new Text(cleanMessage));
         content.getChildren().addAll(name, tf); HBox.setMargin(content, new Insets(0,0,0,10));
         box.getChildren().addAll(aiAvatarNode, content); chatContainer.getChildren().add(box);
         FadeTransition ft = new FadeTransition(Duration.millis(500), box); ft.setFromValue(0); ft.setToValue(1); ft.play();
