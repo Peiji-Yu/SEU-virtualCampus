@@ -103,9 +103,9 @@ public class TimetablePanel extends BorderPane {
                         System.out.println("[Timetable] getStudentSelectedCourses raw: " + selResp);
                         Map<String, Object> selResult = gson.fromJson(selResp, Map.class);
                         if (selResult != null && Boolean.TRUE.equals(selResult.get("success"))) {
-                            Object dataObj = selResult.get("data");
-                            if (dataObj instanceof List) {
-                                List<Map<String, Object>> tcs = (List<Map<String, Object>>) dataObj;
+                            Object selDataObj = selResult.get("data");
+                            if (selDataObj instanceof List) {
+                                List<Map<String, Object>> tcs = (List<Map<String, Object>>) selDataObj;
                                 courses.clear();
                                 scheduleMap.clear();
                                 unscheduledCourses.clear();
@@ -119,7 +119,25 @@ public class TimetablePanel extends BorderPane {
                                         Object cn = ((Map) courseObj).get("courseName");
                                         if (cn != null) cname = String.valueOf(cn);
                                     }
-                                    if (cname.isEmpty()) cname = tc.get("courseId") == null ? "" : String.valueOf(tc.get("courseId"));
+                                    // 如果 course 字段未返回课程名，尝试通过 courseId 向后端请求课程详情以获取 courseName
+                                    Object cidObj = tc.get("courseId");
+                                    String courseId = cidObj == null ? "" : String.valueOf(cidObj);
+                                    if ((cname == null || cname.trim().isEmpty()) && !courseId.isEmpty()) {
+                                        try {
+                                            String courseResp = ClientNetworkHelper.getCourseById(courseId);
+                                            Map<String, Object> courseResult = gson.fromJson(courseResp, Map.class);
+                                            if (courseResult != null && Boolean.TRUE.equals(courseResult.get("success"))) {
+                                                Object courseDataObj = courseResult.get("data");
+                                                if (courseDataObj instanceof Map) {
+                                                    Object cn = ((Map) courseDataObj).get("courseName");
+                                                    if (cn != null) cname = String.valueOf(cn);
+                                                }
+                                            }
+                                        } catch (Exception ignored) {
+                                            // 允许忽略网络错误，继续使用 courseId 作为回退显示
+                                        }
+                                    }
+                                    if (cname.isEmpty()) cname = courseId.isEmpty() ? "" : courseId;
 
                                     parseScheduleEntry(cname, sched, place, teacher);
                                 }
@@ -158,9 +176,9 @@ public class TimetablePanel extends BorderPane {
                     String tcResp = ClientNetworkHelper.getAllTeachingClasses();
                     Map<String, Object> tcResult = gson.fromJson(tcResp, Map.class);
                     if (tcResult != null && Boolean.TRUE.equals(tcResult.get("success"))) {
-                        Object dataObj = tcResult.get("data");
-                        if (dataObj instanceof List) {
-                            allTeachingClasses = (List<Map<String, Object>>) dataObj;
+                        Object tcDataObj = tcResult.get("data");
+                        if (tcDataObj instanceof List) {
+                            allTeachingClasses = (List<Map<String, Object>>) tcDataObj;
                         }
                     } else {
                         System.out.println("[Timetable] getAllTeachingClasses returned no data or failed");
@@ -402,6 +420,26 @@ public class TimetablePanel extends BorderPane {
 
         // 标题已固定在 top，center 只放置滚动区域
         mainContainer.getChildren().add(scrollPane);
+
+        // 新增：如果存在未排课程，则在表格下方显示未排课程清单（显示完整课程名称、地点与教师）
+        if (!unscheduledCourses.isEmpty()) {
+            VBox unscheduledBox = new VBox(6);
+            unscheduledBox.setPadding(new Insets(8, 10, 10, 10));
+            unscheduledBox.setStyle("-fx-background-color: transparent;");
+            Label title = new Label("未排课程：");
+            title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
+            unscheduledBox.getChildren().add(title);
+            for (CourseSlot cs : unscheduledCourses) {
+                String text = cs.name + (cs.location != null && !cs.location.isEmpty() ? " @" + cs.location : "")
+                        + (cs.teacher != null && !cs.teacher.isEmpty() ? " (" + cs.teacher + ")" : "");
+                Label l = new Label(text);
+                l.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SUB_TEXT + ";");
+                l.setWrapText(true);
+                unscheduledBox.getChildren().add(l);
+            }
+            mainContainer.getChildren().add(unscheduledBox);
+        }
+
         // 确保滚动条始终定位到顶部，避免刷新后滚动位置不在顶部
         Platform.runLater(() -> scrollPane.setVvalue(0.0));
         setCenter(mainContainer);
@@ -516,8 +554,8 @@ public class TimetablePanel extends BorderPane {
                 "-fx-border-color: " + darken(course.color, 0.2) + "; -fx-border-radius: 6; -fx-border-width: 1;");
         courseBox.setPadding(new Insets(8));
 
-        // 课程名称（截断过长的名称）
-        String displayName = course.name.length() > 12 ? course.name.substring(0, 10) + "..." : course.name;
+        // 课程名称（截断过长的名称），放宽截断长度
+        String displayName = course.name.length() > 20 ? course.name.substring(0, 18) + "..." : course.name;
         Label nameLabel = new Label(displayName);
         nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white;");
         nameLabel.setWrapText(true);
@@ -541,6 +579,18 @@ public class TimetablePanel extends BorderPane {
             courseBox.setStyle("-fx-background-color: " + course.color + "; -fx-background-radius: 6; " +
                     "-fx-border-color: " + darken(course.color, 0.2) + "; -fx-border-radius: 6; -fx-border-width: 1;");
         });
+
+        // 新增：为课程格子安装 Tooltip，显示完整课程名、地点、教师与节次信息
+        try {
+            String full = course.name + "\n" + course.location + (course.teacher != null && !course.teacher.isEmpty() ? "\n" + course.teacher : "");
+            if (course.day != null && course.startSlot > 0) {
+                full += "\n" + course.day + " 第" + course.startSlot + "节 起，共 " + course.duration + " 节";
+            }
+            javafx.scene.control.Tooltip tip = new javafx.scene.control.Tooltip(full);
+            tip.setWrapText(true);
+            tip.setMaxWidth(400);
+            javafx.scene.control.Tooltip.install(courseBox, tip);
+        } catch (Exception ignored) {}
     }
 
     private void addEmptyCell(GridPane grid, int col, int row) {

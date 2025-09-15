@@ -114,7 +114,7 @@ public class MainFrame {
 
         // 主功能面板：内部使用 BorderPane 分区（顶部、左侧功能栏、中心内容区）
         BorderPane mainLayout = new BorderPane();
-        mainLayout.setPrefSize(1300, 750);
+        mainLayout.setPrefSize(1300, 780);
         AnchorPane anchorWrapper = new AnchorPane(mainLayout);
         AnchorPane.setTopAnchor(mainLayout, 0.0);
         AnchorPane.setBottomAnchor(mainLayout, 0.0);
@@ -755,14 +755,6 @@ public class MainFrame {
         leftGroup.setAlignment(Pos.CENTER_LEFT);
         leftGroup.setPadding(new Insets(0, 6, 0, 6));
 
-        // 移除顶部"修改密码"按钮
-        // Button changePwdBtn = new Button("修改密码");
-        // changePwdBtn.setPrefHeight(34);
-        // changePwdBtn.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
-        //         "-fx-background-color: #4e8cff; -fx-text-fill: white; " +
-        //         "-fx-background-radius: 8; " +
-        //         "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.18), 8, 0, 0, 2);");
-        // changePwdBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
 
         // 只显示 logo 和用户信息
         if (logoView != null) {

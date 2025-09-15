@@ -86,6 +86,26 @@ public class CourseAdminPanel extends BorderPane {
         HBox.setHgrow(searchField, Priority.ALWAYS);
         searchBox.getChildren().addAll(searchLabel, searchType, searchField, searchBtn, clearBtn);
 
+        // 搜索按钮与回车支持：使用本地缓存 lastCourseList 进行过滤，避免重新请求服务器
+        searchBtn.setOnAction(e -> {
+            String kw = searchField.getText() == null ? "" : searchField.getText().trim();
+            String type = searchType.getValue() == null ? "全部" : searchType.getValue();
+            performSearch(type, kw);
+        });
+        // 回车触发搜索
+        searchField.setOnAction(e -> {
+            String kw = searchField.getText() == null ? "" : searchField.getText().trim();
+            String type = searchType.getValue() == null ? "全部" : searchType.getValue();
+            performSearch(type, kw);
+        });
+        // 清除按钮重置为全部
+        clearBtn.setOnAction(e -> {
+            searchField.clear();
+            // 恢复全部展示
+            Platform.runLater(() -> displayCoursesByCourse(new ArrayList<>(lastCourseList), new HashMap<>(lastTcsByCourse)));
+            statusLabel.setText("共加载 " + lastCourseList.size() + " 门课程");
+        });
+
         // 列表容器
         courseListContainer = new VBox(16);
         courseListContainer.setPadding(new Insets(16, 20, 20, 20));
@@ -1022,6 +1042,57 @@ public class CourseAdminPanel extends BorderPane {
 
         displayCoursesByCourse(filtered, filteredTcs);
         statusLabel.setText("搜索结果：共 " + filtered.size() + " 门课程");
+    }
+
+    // 在本地缓存上执行搜索并更新显示
+    private void performSearch(String type, String keyword) {
+        if ((keyword == null || keyword.isEmpty()) && (lastCourseList == null || lastCourseList.isEmpty())) {
+            // 没有数据可展示
+            Platform.runLater(() -> displayCoursesByCourse(new ArrayList<>(), Collections.emptyMap()));
+            return;
+        }
+
+        if (keyword == null || keyword.isEmpty()) {
+            // 关键词为空，展示全部
+            Platform.runLater(() -> displayCoursesByCourse(new ArrayList<>(lastCourseList), new HashMap<>(lastTcsByCourse)));
+            statusLabel.setText("共加载 " + lastCourseList.size() + " 门课程");
+            return;
+        }
+
+        String kwLower = keyword.toLowerCase();
+        List<Map<String, Object>> filtered = new ArrayList<>();
+        for (Map<String, Object> course : lastCourseList) {
+            String courseId = course.get("courseId") == null ? "" : String.valueOf(course.get("courseId"));
+            String courseName = course.get("courseName") == null ? "" : String.valueOf(course.get("courseName"));
+            Object schoolObj = course.get("college") != null ? course.get("college") : course.get("school");
+            String college = schoolObj == null ? "" : String.valueOf(schoolObj);
+
+            boolean match = false;
+            switch (type) {
+                case "学院":
+                    match = college.toLowerCase().contains(kwLower);
+                    break;
+                case "课程代码":
+                    match = courseId.toLowerCase().contains(kwLower);
+                    break;
+                case "课程名称":
+                    match = courseName.toLowerCase().contains(kwLower);
+                    break;
+                default:
+                    // 全部：在课程代码/名称/学院中搜索
+                    match = courseId.toLowerCase().contains(kwLower)
+                            || courseName.toLowerCase().contains(kwLower)
+                            || college.toLowerCase().contains(kwLower);
+            }
+
+            if (match) filtered.add(course);
+        }
+
+        final List<Map<String, Object>> toShow = filtered;
+        Platform.runLater(() -> {
+            displayCoursesByCourse(toShow, lastTcsByCourse);
+            statusLabel.setText("搜索到 " + toShow.size() + " 门课程");
+        });
     }
 
     // 其余原有的增删改课程方法仍可复用（如果需要可继续扩展）

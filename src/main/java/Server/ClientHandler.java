@@ -245,6 +245,34 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取所有课程成功", courses);
                         break;
 
+                    // 根据 courseId 获取单条课程详情（客户端需要的接口）
+                    case "getCourseById":
+                        if (request.getData() == null) {
+                            response = Response.error("缺少参数: courseId");
+                            break;
+                        }
+                        Object cidObj = request.getData().get("courseId");
+                        String queryCourseId = null;
+                        if (cidObj instanceof String) queryCourseId = (String) cidObj;
+                        else if (cidObj != null) queryCourseId = String.valueOf(cidObj);
+
+                        if (queryCourseId == null || queryCourseId.trim().isEmpty()) {
+                            response = Response.error("缺少参数: courseId");
+                            break;
+                        }
+
+                        try {
+                            Course course = courseService.findByCourseId(queryCourseId);
+                            if (course != null) {
+                                response = Response.success("获取课程成功", course);
+                            } else {
+                                response = Response.error("未找到课程: " + queryCourseId);
+                            }
+                        } catch (Exception e) {
+                            response = Response.error(500, "查询课程失败: " + e.getMessage());
+                        }
+                        break;
+
                     // 根据学院查询课程
                     case "getCoursesBySchool":
                         String school = (String) request.getData().get("school");
@@ -386,18 +414,8 @@ public class ClientHandler implements Runnable {
                         Integer studentCardNumber = ((Double) request.getData().get("cardNumber")).intValue();
 
                         try {
-                            // 获取学生的选课关系
-                            List<StudentTeachingClass> studentCourses = studentTeachingClassService.findByStudentCardNumber(studentCardNumber);
-
-                            // 获取教学班详细信息
-                            List<TeachingClass> teachingClasses1 = new ArrayList<>();
-                            for (StudentTeachingClass stc : studentCourses) {
-                                TeachingClass tc = teachingClassService.findByUuid(stc.getTeachingClassUuid());
-                                if (tc != null) {
-                                    teachingClasses1.add(tc);
-                                }
-                            }
-
+                            // 使用一次性 JOIN 查询获取该学生所有已选教学班，避免逐条查询导致的 N+1 问题
+                            List<TeachingClass> teachingClasses1 = teachingClassService.findByStudentCardNumber(studentCardNumber);
                             response = Response.success("获取已选课程成功", teachingClasses1);
                         } catch (Exception e) {
                             response = Response.error("获取已选课程失败: " + e.getMessage());

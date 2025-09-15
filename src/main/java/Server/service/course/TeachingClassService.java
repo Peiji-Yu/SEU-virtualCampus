@@ -40,6 +40,26 @@ public class TeachingClassService {
         }
     }
 
+    // 根据学生一卡通号一次性查询该学生已选的教学班（避免 N+1 查询）
+    public List<TeachingClass> findByStudentCardNumber(Integer studentCardNumber) {
+        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+            TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
+            CourseMapper courseMapper = sqlSession.getMapper(CourseMapper.class);
+            List<TeachingClass> list = teachingClassMapper.findByStudentCardNumber(studentCardNumber);
+            if (list != null) {
+                for (TeachingClass tc : list) {
+                    if (tc != null) {
+                        tc.setCourse(courseMapper.findByCourseId(tc.getCourseId()));
+                    }
+                }
+            }
+            return list;
+        } catch (Exception e) {
+            System.err.println("根据学生一卡通号查询已选教学班失败: " + e.getMessage());
+            return null;
+        }
+    }
+
     public boolean addTeachingClass(TeachingClass teachingClass) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             TeachingClassMapper teachingClassMapper = sqlSession.getMapper(TeachingClassMapper.class);
