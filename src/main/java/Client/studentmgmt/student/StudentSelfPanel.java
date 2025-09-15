@@ -154,15 +154,15 @@ public class StudentSelfPanel extends VBox {
         studyGrid.getColumnConstraints().addAll(col1, col2);
 
         r = 0;
-        addStyledRow(studyGrid, r++, "学院:", s.getSchool());
-        addStyledRow(studyGrid, r++, "专业:", s.getMajor());
+        addStyledRow(studyGrid, r++, "学院：", s.getSchool());
+        addStyledRow(studyGrid, r++, "专业：", s.getMajor());
 
         if (s.getStatus() != null) {
-            addStyledRow(studyGrid, r++, "学籍状态:", s.getStatus().getDescription());
+            addStyledRow(studyGrid, r++, "学籍状态：", s.getStatus().getDescription());
         }
 
         if (s.getEnrollment() != null) {
-            addStyledRow(studyGrid, r++, "入学日��:", df.format(s.getEnrollment()));
+            addStyledRow(studyGrid, r++, "入学日期：", df.format(s.getEnrollment()));
         }
 
         studyInfoCard.getChildren().add(studyGrid);

@@ -609,15 +609,21 @@ public class ClientHandler implements Runnable {
                         if (updates != null && updates.containsKey("schedule")) {
                             Object schedObj = updates.get("schedule");
                             if (schedObj != null) {
-                                String schedStr = String.valueOf(schedObj);
-                                String normalized = normalizeScheduleForStorage(schedStr);
-                                if (normalized == null) {
-                                    response = Response.error("schedule 字段格式不正确，应为合法的 JSON，例如 {\"周三\": \"1-2节\"}");
-                                    break;
+                                // 如果前端直接传了 Map 或 List，则直接传递原始对象给 normalize 函数
+                                String normalized;
+                                if (schedObj instanceof Map || schedObj instanceof java.util.List) {
+                                    normalized = normalizeScheduleForStorage(schedObj);
+                                } else {
+                                    String schedStr = String.valueOf(schedObj);
+                                    normalized = normalizeScheduleForStorage(schedStr);
                                 }
-                                existingTeachingClass.setSchedule(normalized);
-                            }
-                        }
+                                 if (normalized == null) {
+                                     response = Response.error("schedule 字段格式不正确，应为合法的 JSON，例如 {\"周三\": \"1-2节\"}");
+                                     break;
+                                 }
+                                 existingTeachingClass.setSchedule(normalized);
+                             }
+                         }
                         if (updates != null && updates.containsKey("place")) {
                             existingTeachingClass.setPlace((String) updates.get("place"));
                         }
@@ -1510,38 +1516,153 @@ public class ClientHandler implements Runnable {
     }
 
     // 将前端传来的 schedule 字符串规范化为合法的 JSON 字符串以写入数据库
-    // 返回规范化的 JSON（如: {"周三":"1-2节"}），失败返回 null
+    // 返回规范化的 JSON（如: {"周三":"1-2节"} 或 {"周六":"1-2节,6-7节"}），失败返回 null
     private String normalizeScheduleForStorage(Object raw) {
         if (raw == null) return null;
-        String s;
+        // 已经是 Map 对象（客户端可能直接传了对象）
         if (raw instanceof Map) {
             try {
-                return gson.toJson(raw);
+                Map<?, ?> inMap = (Map<?, ?>) raw;
+                Map<String, String> out = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> e : inMap.entrySet()) {
+                    if (e.getKey() == null) continue;
+                    String day = String.valueOf(e.getKey()).trim();
+                    if (day.isEmpty()) continue;
+                    Object v = e.getValue();
+                    if (v == null) continue;
+                    // 值可能是字符串，也可能是 List
+                    if (v instanceof java.util.List) {
+                        List<?> lst = (List<?>) v;
+                        List<String> parts = new ArrayList<>();
+                        for (Object it : lst) {
+                            if (it == null) continue;
+                            String s = String.valueOf(it).trim();
+                            if (!s.isEmpty() && !parts.contains(s)) parts.add(s);
+                        }
+                        if (!parts.isEmpty()) out.put(day, String.join(",", parts));
+                    } else {
+                        String s = String.valueOf(v).trim();
+                        if (!s.isEmpty()) out.put(day, s);
+                    }
+                }
+                if (out.isEmpty()) return null;
+                return gson.toJson(out);
             } catch (Exception e) {
                 return null;
             }
-        } else {
-            s = String.valueOf(raw).trim();
         }
-         // 替换常见中文全角标点
-         s = s.replace('：', ':')
-              .replace('，', ',')
-              .replace('；', ';')
-              .replace('（', '(').replace('）', ')')
-              .replace('“', '"').replace('”', '"')
-              .replace('‘', '\'').replace('’', '\'');
-         // 有时前端会把 schedule 直接作为 Map（不是字符串）传过来��通过 toString() 可能不是合法 JSON
-         // 尝试用 gson 解析为 Map<String,String>
-         try {
-             java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
-             Map<String, String> m = gson.fromJson(s, mapType);
-             if (m == null) return null;
-             // 重新序列化为稳定的 JSON（去掉多余空白，统一格式）
-             return gson.toJson(m);
-         } catch (Exception e) {
-             // 解析失败，返回 null
-             System.err.println("normalizeScheduleForStorage 解析失败: " + e.getMessage());
-             return null;
-         }
-     }
+
+        String s = String.valueOf(raw).trim();
+        // 替换常见中文全角标点
+        s = s.replace('：', ':')
+             .replace('，', ',')
+             .replace('；', ';')
+             .replace('（', '(').replace('）', ')')
+             .replace('“', '"').replace('”', '"')
+             .replace('‘', '\'').replace('’', '\'');
+
+        // 如果字符串里的对象使用了未加引号的 key（例如 {周六: "1-2节"}），为其添加引号，方便 Gson 解析
+        try {
+            if (s.startsWith("{") && s.contains(":")) {
+                // 使用 Pattern/Matcher 代替复杂的字符串字面量正则，避免转义错误
+                java.util.regex.Pattern keyPattern = java.util.regex.Pattern.compile("(\\{|,)\\s*([^\"'\\[\\]{}\\.,:]+?)\\s*:");
+                java.util.regex.Matcher keyMatcher = keyPattern.matcher(s);
+                s = keyMatcher.replaceAll("$1\"$2\":");
+            }
+        } catch (Exception ex) {
+            // 忽略替换失败，后续 Gson 解析会处理或返回 null
+        }
+
+        // 先尝试解析为 JsonElement，支持对象或数组
+        try {
+            com.google.gson.JsonElement je = gson.fromJson(s, com.google.gson.JsonElement.class);
+            if (je == null) return null;
+            Map<String, List<String>> tmp = new LinkedHashMap<>();
+            if (je.isJsonObject()) {
+                com.google.gson.JsonObject jo = je.getAsJsonObject();
+                for (Map.Entry<String, com.google.gson.JsonElement> entry : jo.entrySet()) {
+                    String day = entry.getKey().trim();
+                    com.google.gson.JsonElement val = entry.getValue();
+                    if (val == null || day.isEmpty()) continue;
+                    if (val.isJsonArray()) {
+                        // 值为数组，逐项加入
+                        for (com.google.gson.JsonElement item : val.getAsJsonArray()) {
+                            String t = item.isJsonNull() ? "" : item.getAsString().trim();
+                            if (!t.isEmpty()) {
+                                tmp.computeIfAbsent(day, k -> new ArrayList<>());
+                                if (!tmp.get(day).contains(t)) tmp.get(day).add(t);
+                            }
+                        }
+                    } else if (val.isJsonPrimitive()) {
+                        String t = val.getAsString().trim();
+                        if (!t.isEmpty()) {
+                            tmp.computeIfAbsent(day, k -> new ArrayList<>());
+                            if (!tmp.get(day).contains(t)) tmp.get(day).add(t);
+                        }
+                    } else if (val.isJsonObject()) {
+                        // 如果值是对象，尝试拿 time 字段
+                        com.google.gson.JsonObject vobj = val.getAsJsonObject();
+                        if (vobj.has("time")) {
+                            String t = vobj.get("time").getAsString().trim();
+                            if (!t.isEmpty()) {
+                                tmp.computeIfAbsent(day, k -> new ArrayList<>());
+                                if (!tmp.get(day).contains(t)) tmp.get(day).add(t);
+                            }
+                        }
+                    }
+                }
+            } else if (je.isJsonArray()) {
+                // 支持数组形式: [{"day":"周六","time":"1-2节"}, ...]
+                for (com.google.gson.JsonElement el : je.getAsJsonArray()) {
+                    if (!el.isJsonObject()) continue;
+                    com.google.gson.JsonObject obj = el.getAsJsonObject();
+                    String day = null;
+                    String time = null;
+                    if (obj.has("day")) day = obj.get("day").getAsString().trim();
+                    if (obj.has("time")) time = obj.get("time").getAsString().trim();
+                    // 兼容早期可能使用 fields 名称不同
+                    if ((day == null || day.isEmpty()) && obj.has("d")) day = obj.get("d").getAsString().trim();
+                    if ((time == null || time.isEmpty()) && obj.has("t")) time = obj.get("t").getAsString().trim();
+                    if (day == null || day.isEmpty() || time == null || time.isEmpty()) continue;
+                    tmp.computeIfAbsent(day, k -> new ArrayList<>());
+                    if (!tmp.get(day).contains(time)) tmp.get(day).add(time);
+                }
+            } else {
+                // 既不是对象也不是数组，尝试解析为 Map<String,String>
+                try {
+                    java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+                    Map<String, String> m = gson.fromJson(s, mapType);
+                    if (m != null) {
+                        for (Map.Entry<String, String> e : m.entrySet()) {
+                            if (e.getKey() == null) continue;
+                            String day = e.getKey().trim();
+                            String t = e.getValue() == null ? "" : e.getValue().trim();
+                            if (!day.isEmpty() && !t.isEmpty()) {
+                                tmp.computeIfAbsent(day, k -> new ArrayList<>());
+                                if (!tmp.get(day).contains(t)) tmp.get(day).add(t);
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    // 继续到失败处理
+                }
+            }
+
+            if (tmp.isEmpty()) return null;
+            // 把 List<String> 转为逗号连接的单个字符串（后端数据库当前只保存字符串）
+            Map<String, String> out = new LinkedHashMap<>();
+            for (Map.Entry<String, List<String>> en : tmp.entrySet()) {
+                List<String> vals = en.getValue();
+                // 保持原始顺序，且去重
+                List<String> clean = new ArrayList<>();
+                for (String it : vals) if (it != null && !it.trim().isEmpty() && !clean.contains(it.trim())) clean.add(it.trim());
+                if (!clean.isEmpty()) out.put(en.getKey(), String.join(",", clean));
+            }
+            if (out.isEmpty()) return null;
+            return gson.toJson(out);
+        } catch (Exception e) {
+            System.err.println("normalizeScheduleForStorage 解析失败: " + e.getMessage());
+            return null;
+        }
+    }
 }
