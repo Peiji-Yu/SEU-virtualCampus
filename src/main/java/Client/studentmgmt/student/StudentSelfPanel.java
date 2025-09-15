@@ -162,7 +162,7 @@ public class StudentSelfPanel extends VBox {
         }
 
         if (s.getEnrollment() != null) {
-            addStyledRow(studyGrid, r++, "入学日��:", df.format(s.getEnrollment()));
+            addStyledRow(studyGrid, r++, "入学日期:", df.format(s.getEnrollment()));
         }
 
         studyInfoCard.getChildren().add(studyGrid);
