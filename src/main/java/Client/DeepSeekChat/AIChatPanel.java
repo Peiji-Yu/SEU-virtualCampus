@@ -95,8 +95,9 @@ public class AIChatPanel extends BorderPane {
                         "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
                         "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
                         "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
+                        "注意，根据一卡通号（card_number）判断用户类型；学生，2开头，9位数；教师：1开头，9位数；管理员/教务：1000以内。\n" + 
                         "\n" +
-                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。";
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。\n";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
@@ -211,7 +212,7 @@ public class AIChatPanel extends BorderPane {
         header.setAlignment(Pos.CENTER_LEFT);
 
         try {
-            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
+            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/chater.png")));
             logo.setFitHeight(30);
             logo.setPreserveRatio(true);
             Label title = new Label("东南大学虚拟校园系统智能助手");

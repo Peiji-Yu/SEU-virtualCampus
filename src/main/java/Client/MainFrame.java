@@ -1,31 +1,47 @@
 package Client;
 
-import Client.login.component.LogoutHandler;
-import Client.login.LoginClientFX;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import Client.DeepSeekChat.AIChatPanel;
+import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.courseselect.CourseSelectPanel;
+import Client.finance.FinancePanel;
+import Client.library.LibraryMainPanel; // 新增导入
+import Client.login.LoginClientFX; // 新增 AI 助手面板导入
+import Client.login.component.LogoutHandler; // 新增：校园商店面板
+import Client.store.StoreMainPanel; // 新增：导入图书馆面板
 import Client.studentmgmt.admin.StudentAdminPanel;
 import Client.studentmgmt.student.StudentSelfPanel;
-import Client.timetable.TimetablePanel;
-import Client.courseselect.CourseSelectPanel;
 import Client.teacherclass.MyClassroomPanel;
-import Client.coursemgmt.admin.CourseAdminPanel;
-import Client.finance.FinancePanel; // 新增导入
-import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
-import Client.store.StoreMainPanel; // 新增：校园商店面板
-import Client.library.LibraryMainPanel; // 新增：导入图书馆面板
+import Client.timetable.TimetablePanel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node; // 新增导入
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle; // 新增导入
-import javafx.scene.input.MouseEvent;
-import javafx.scene.shape.Rectangle;
-import javafx.util.Duration;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label; // 新增
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.Node; // 新增
-import java.util.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
 
 /**
  * 应用主界面：左侧功能导�� + 右侧内容区（当前只包含学籍管理模块）。
@@ -154,6 +170,10 @@ public class MainFrame {
         Image iconCourseSelect = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/选课.png")));
         Image iconLibrary = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/图书馆.png"))); // 新增图书馆图标
         Image iconLostCardAdmin = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/解挂挂失.png")));
+        
+
+
+
 
         Button stuManageBtn = new Button();
         stuManageBtn.setPrefWidth(40);
@@ -285,6 +305,8 @@ public class MainFrame {
         setRightTooltip(lostCardAdminBtn, "挂失管理");
 
 
+
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -299,7 +321,6 @@ public class MainFrame {
         navButtons.add(lostCardAdminBtn);
         navButtons.add(reportLossBtn); // 新增：一卡通挂失按钮
         navButtons.add(lostCardAdminBtn); // 新增：挂失管理按钮
-
         // 为每个按钮添加图标与保存原文案
         attachIconAndRememberText(stuManageBtn, iconStudent);
         attachIconAndRememberText(courseMgmtBtn, iconCourseMgmt);
@@ -310,7 +331,6 @@ public class MainFrame {
         attachIconAndRememberText(storeBtn, iconStore);
         attachIconAndRememberText(aiAssistBtn, iconAI);
         attachIconAndRememberText(libraryBtn, iconLibrary); // 新增：图书馆图标
-
         // 为每个功能区按钮设置右侧 tooltip
         setRightTooltip(stuManageBtn, "学籍管理");
         setRightTooltip(courseMgmtBtn, "课程管理");
@@ -321,7 +341,6 @@ public class MainFrame {
         setRightTooltip(storeBtn, "校园商店");
         setRightTooltip(aiAssistBtn, "AI助手");
         setRightTooltip(libraryBtn, "图书管理"); // 新增：图书馆提示
-
         // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
         centerContainer = new StackPane();
         // 增加顶部分割线和左侧分割线
@@ -363,7 +382,6 @@ public class MainFrame {
             leftBar.getChildren().add(aiAssistBtn);
             // 新增：图书馆按钮添加（对所有用户类型开放）
             leftBar.getChildren().add(libraryBtn);
-
 
             // 初次默认选中
             if ("student".equals(userType) || "admin".equals(userType)) {
@@ -485,7 +503,6 @@ public class MainFrame {
                 // 创建图书馆主面板并显示在右侧，传递一卡通号
                 setCenterContent(new LibraryMainPanel(cardNumber));
             });
-
             // 新增：一卡通挂失事件
             reportLossBtn.setOnAction(e -> {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);

@@ -8,9 +8,11 @@ import Client.library.student.LibrarySearchPanel;
 import Client.library.student.MyBorrowingsPanel;
 import Client.library.student.PaperSketchPanel;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 
 public class LibraryMainPanel extends BorderPane {
     private LibrarySearchPanel searchPanel;
@@ -20,7 +22,10 @@ public class LibraryMainPanel extends BorderPane {
     private ModifyBookPanel modifyBookPanel;
     private BorrowBookPanel borrowBookPanel;
     private ReturnBookPanel returnBookPanel;
-    private Button currentSelectedButton;
+
+    private VBox leftBar;
+    private VBox currentSelectedBox;
+
     private final String cardNumber;
     private final boolean isAdmin;
 
@@ -41,171 +46,136 @@ public class LibraryMainPanel extends BorderPane {
 
     private void initializeUI() {
         // 左侧导航栏
-        VBox leftBar = new VBox(10);
-        leftBar.setPadding(new Insets(15));
-        leftBar.setStyle("-fx-background-color: #e8f2ff; -fx-background-radius: 12;");
-        leftBar.setPrefWidth(150);
+        leftBar = new VBox(12);
+        leftBar.setPadding(new Insets(20));
+        leftBar.setStyle("-fx-background-color: linear-gradient(to bottom, #f5f9ff, #e8f2ff);");
+        leftBar.setPrefWidth(160);
 
-        // 如果是管理员，添加管理功能按钮
         if (isAdmin) {
-            Button addBookButton = new Button("添加书籍");
-            addBookButton.setPrefWidth(120);
-            addBookButton.setPrefHeight(40);
-            setSelectedButtonStyle(addBookButton);
-            currentSelectedButton = addBookButton;
+            VBox addBookBox = createNavItem("📘 添加书籍");
+            VBox modifyBookBox = createNavItem("✏️ 修改书籍");
+            VBox borrowBookBox = createNavItem("📖 借书办理");
+            VBox returnBookBox = createNavItem("🔄 还书办理");
 
-            addBookButton.setOnAction(e -> {
-                if (currentSelectedButton != addBookButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(addBookButton);
-                    currentSelectedButton = addBookButton;
-                    setCenter(addBookPanel);
-                }
-            });
-
-            Button modifyBookButton = new Button("修改书籍");
-            modifyBookButton.setPrefWidth(120);
-            modifyBookButton.setPrefHeight(40);
-            resetButtonStyle(modifyBookButton);
-
-            modifyBookButton.setOnAction(e -> {
-                if (currentSelectedButton != modifyBookButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(modifyBookButton);
-                    currentSelectedButton = modifyBookButton;
-
-                    // 初始化修改书籍页面
-                    if (modifyBookPanel == null) {
-                        modifyBookPanel = new ModifyBookPanel();
-                    }
-                    setCenter(modifyBookPanel);
-                }
-            });
-
-            // 添加借书办理按钮
-            Button borrowBookButton = new Button("借书办理");
-            borrowBookButton.setPrefWidth(120);
-            borrowBookButton.setPrefHeight(40);
-            resetButtonStyle(borrowBookButton);
-
-            borrowBookButton.setOnAction(e -> {
-                if (currentSelectedButton != borrowBookButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(borrowBookButton);
-                    currentSelectedButton = borrowBookButton;
-
-                    // 初始化借书办理页面
-                    if (borrowBookPanel == null) {
-                        borrowBookPanel = new BorrowBookPanel();
-                    }
-                    setCenter(borrowBookPanel);
-                }
-            });
-
-            // 添加还书办理按钮
-            Button returnBookButton = new Button("还书办理");
-            returnBookButton.setPrefWidth(120);
-            returnBookButton.setPrefHeight(40);
-            resetButtonStyle(returnBookButton);
-
-            returnBookButton.setOnAction(e -> {
-                if (currentSelectedButton != returnBookButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(returnBookButton);
-                    currentSelectedButton = returnBookButton;
-
-                    // 初始化还书办理页面
-                    if (returnBookPanel == null) {
-                        returnBookPanel = new ReturnBookPanel();
-                    }
-                    setCenter(returnBookPanel);
-                }
-            });
-
-            leftBar.getChildren().addAll(addBookButton, modifyBookButton, borrowBookButton, returnBookButton);
+            leftBar.getChildren().addAll(addBookBox, modifyBookBox, borrowBookBox, returnBookBox);
             setLeft(leftBar);
 
-            // 初始化默认面板
+            // 默认显示添加书籍
             addBookPanel = new AddBookPanel();
             setCenter(addBookPanel);
-        }
-        else {
-            // 图书搜索按钮
-            Button searchButton = new Button("图书搜索");
-            searchButton.setPrefWidth(120);
-            searchButton.setPrefHeight(40);
-            setSelectedButtonStyle(searchButton);
-            currentSelectedButton = searchButton;
+            selectNavItem(addBookBox);
 
-            searchButton.setOnAction(e -> {
-                if (currentSelectedButton != searchButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(searchButton);
-                    currentSelectedButton = searchButton;
-                    setCenter(searchPanel);
-                }
-            });
+            // 点击事件
+            addBookBox.setOnMouseClicked(e -> switchPanel(addBookBox, () -> {
+                if (addBookPanel == null) addBookPanel = new AddBookPanel();
+                setCenter(addBookPanel);
+            }));
 
-            // 文献检索按钮
-            Button papersketchButton = new Button("文献检索");
-            papersketchButton.setPrefWidth(120);
-            papersketchButton.setPrefHeight(40);
-            resetButtonStyle(papersketchButton);
+            modifyBookBox.setOnMouseClicked(e -> switchPanel(modifyBookBox, () -> {
+                if (modifyBookPanel == null) modifyBookPanel = new ModifyBookPanel();
+                setCenter(modifyBookPanel);
+            }));
 
-            papersketchButton.setOnAction(e -> {
-                if (currentSelectedButton != papersketchButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(papersketchButton);
-                    currentSelectedButton = papersketchButton;
+            borrowBookBox.setOnMouseClicked(e -> switchPanel(borrowBookBox, () -> {
+                if (borrowBookPanel == null) borrowBookPanel = new BorrowBookPanel();
+                setCenter(borrowBookPanel);
+            }));
 
-                    // 初始化文献检索页面
-                    paperSketchPanel = new PaperSketchPanel();
-                    setCenter(paperSketchPanel);
-                }
-            });
+            returnBookBox.setOnMouseClicked(e -> switchPanel(returnBookBox, () -> {
+                if (returnBookPanel == null) returnBookPanel = new ReturnBookPanel();
+                setCenter(returnBookPanel);
+            }));
+        } else {
+            VBox searchBox = createNavItem("🔍 图书搜索");
+            VBox paperSketchBox = createNavItem("📑 文献检索");
+            VBox borrowingsBox = createNavItem("📚 我的借阅");
 
-            // 我的借阅按钮
-            Button borrowingsButton = new Button("我的借阅");
-            borrowingsButton.setPrefWidth(120);
-            borrowingsButton.setPrefHeight(40);
-            resetButtonStyle(borrowingsButton);
-
-            borrowingsButton.setOnAction(e -> {
-                if (currentSelectedButton != borrowingsButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(borrowingsButton);
-                    currentSelectedButton = borrowingsButton;
-
-                    // 初始化或刷新我的借阅页面
-                    if (borrowingsPanel == null) {
-                        borrowingsPanel = new MyBorrowingsPanel(cardNumber);
-                    } else {
-                        borrowingsPanel.loadBorrowedBooks();
-                    }
-                    setCenter(borrowingsPanel);
-                }
-            });
-
-            leftBar.getChildren().addAll(searchButton, papersketchButton, borrowingsButton);
+            leftBar.getChildren().addAll(searchBox, paperSketchBox, borrowingsBox);
             setLeft(leftBar);
 
-            // 初始化面板
+            // 默认显示搜索
             searchPanel = new LibrarySearchPanel();
             setCenter(searchPanel);
+            selectNavItem(searchBox);
+
+            // 点击事件
+            searchBox.setOnMouseClicked(e -> switchPanel(searchBox, () -> {
+                if (searchPanel == null) searchPanel = new LibrarySearchPanel();
+                setCenter(searchPanel);
+            }));
+
+            paperSketchBox.setOnMouseClicked(e -> switchPanel(paperSketchBox, () -> {
+                paperSketchPanel = new PaperSketchPanel();
+                setCenter(paperSketchPanel);
+            }));
+
+            borrowingsBox.setOnMouseClicked(e -> switchPanel(borrowingsBox, () -> {
+                if (borrowingsPanel == null) {
+                    borrowingsPanel = new MyBorrowingsPanel(cardNumber);
+                } else {
+                    borrowingsPanel.loadBorrowedBooks();
+                }
+                setCenter(borrowingsPanel);
+            }));
         }
     }
 
-    private void setSelectedButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
-                "-fx-border-color: #4e8cff; -fx-border-width: 2; -fx-border-radius: 10; " +
-                "-fx-background-color: #f8fbff; -fx-text-fill: #4e8cff; " +
-                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
+    /** 创建一个导航项（卡片风格） */
+    private VBox createNavItem(String text) {
+        VBox box = new VBox();
+        box.setPrefWidth(130);
+        box.setPrefHeight(45);
+        box.setAlignment(Pos.CENTER_LEFT);
+        box.setPadding(new Insets(10, 15, 10, 15));
+        box.setSpacing(5);
+
+        Text label = new Text(text);
+        label.setStyle("-fx-font-size: 14px; -fx-fill: #2a4d7b;");
+        box.getChildren().add(label);
+
+        box.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 2);");
+
+        // 鼠标悬浮效果
+        box.setOnMouseEntered(e -> {
+            if (box != currentSelectedBox) {
+                box.setStyle("-fx-background-color: #f0f6ff; -fx-background-radius: 12; "
+                        + "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
+            }
+        });
+        box.setOnMouseExited(e -> {
+            if (box != currentSelectedBox) {
+                box.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
+                        + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 2);");
+            }
+        });
+
+        box.setCursor(Cursor.HAND);
+        return box;
     }
 
-    private void resetButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-background-radius: 10; " +
-                "-fx-background-color: white; -fx-text-fill: #2a4d7b; " +
-                "-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 10; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
+    /** 切换导航项 */
+    private void switchPanel(VBox newBox, Runnable action) {
+        if (currentSelectedBox != newBox) {
+            resetNavItemStyle(currentSelectedBox);
+            selectNavItem(newBox);
+            action.run();
+        }
+    }
+
+    /** 设置选中样式 */
+    private void selectNavItem(VBox box) {
+        currentSelectedBox = box;
+        box.setStyle("-fx-background-color: #e3eeff; -fx-background-radius: 12; "
+                + "-fx-border-color: #4e8cff; -fx-border-width: 2; -fx-border-radius: 12; "
+                + "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.4), 10, 0, 0, 3);");
+    }
+
+    /** 重置样式 */
+    private void resetNavItemStyle(VBox box) {
+        if (box != null) {
+            box.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
+                    + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 2);");
+        }
     }
 }

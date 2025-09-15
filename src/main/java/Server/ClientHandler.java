@@ -22,7 +22,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.google.gson.stream.JsonToken;
-
+import Server.model.book.Category;
 import Server.model.course.Course;
 import Server.model.course.TeachingClass;
 import Server.model.course.ClassStudent;
@@ -944,12 +944,13 @@ public class ClientHandler implements Runnable {
                     // 🔍 搜索书籍（通过书名）
                     case "searchBooks":
                         String searchBookText = (String) request.getData().get("searchText");
-                        if (searchBookText == null) {
-                            response = Response.error("搜索参数不完整");
-                            break;
+                        String categoryStr = (String) request.getData().get("category"); // 前端传类别字符串，比如 "SCIENCE" 或 null/空表示全部
+                        Category categorybook = null;
+                        if (categoryStr != null) {
+                            categorybook = Category.valueOf(categoryStr); // 将字符串转为枚举
                         }
                         try {
-                            List<Book> books = bookService.searchBooks(searchBookText);
+                            List<Book> books = bookService.searchBooks(searchBookText, categorybook);
                             response = Response.success("搜索完成", books);
                         } catch (Exception e) {
                             response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
