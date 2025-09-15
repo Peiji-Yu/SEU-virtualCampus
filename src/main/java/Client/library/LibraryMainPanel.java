@@ -41,16 +41,16 @@ public class LibraryMainPanel extends BorderPane {
 
     private void initializeUI() {
         // 左侧导航栏
-        VBox leftBar = new VBox(10);
-        leftBar.setPadding(new Insets(15));
-        leftBar.setStyle("-fx-background-color: #e8f2ff; -fx-background-radius: 12;");
-        leftBar.setPrefWidth(150);
+        VBox leftBar = new VBox();
+//        leftBar.setPadding(new Insets(15));
+        leftBar.setStyle("-fx-background-color: #fafafa; -fx-background-radius: 12;");
+        leftBar.setPrefWidth(240);
 
         // 如果是管理员，添加管理功能按钮
         if (isAdmin) {
             Button addBookButton = new Button("添加书籍");
-            addBookButton.setPrefWidth(120);
-            addBookButton.setPrefHeight(40);
+            addBookButton.setPrefWidth(240);
+            addBookButton.setPrefHeight(60);
             setSelectedButtonStyle(addBookButton);
             currentSelectedButton = addBookButton;
 
@@ -64,8 +64,8 @@ public class LibraryMainPanel extends BorderPane {
             });
 
             Button modifyBookButton = new Button("修改书籍");
-            modifyBookButton.setPrefWidth(120);
-            modifyBookButton.setPrefHeight(40);
+            modifyBookButton.setPrefWidth(240);
+            modifyBookButton.setPrefHeight(60);
             resetButtonStyle(modifyBookButton);
 
             modifyBookButton.setOnAction(e -> {
@@ -84,8 +84,8 @@ public class LibraryMainPanel extends BorderPane {
 
             // 添加借书办理按钮
             Button borrowBookButton = new Button("借书办理");
-            borrowBookButton.setPrefWidth(120);
-            borrowBookButton.setPrefHeight(40);
+            borrowBookButton.setPrefWidth(240);
+            borrowBookButton.setPrefHeight(60);
             resetButtonStyle(borrowBookButton);
 
             borrowBookButton.setOnAction(e -> {
@@ -104,8 +104,8 @@ public class LibraryMainPanel extends BorderPane {
 
             // 添加还书办理按钮
             Button returnBookButton = new Button("还书办理");
-            returnBookButton.setPrefWidth(120);
-            returnBookButton.setPrefHeight(40);
+            returnBookButton.setPrefWidth(240);
+            returnBookButton.setPrefHeight(60);
             resetButtonStyle(returnBookButton);
 
             returnBookButton.setOnAction(e -> {
@@ -132,8 +132,8 @@ public class LibraryMainPanel extends BorderPane {
         else {
             // 图书搜索按钮
             Button searchButton = new Button("图书搜索");
-            searchButton.setPrefWidth(120);
-            searchButton.setPrefHeight(40);
+            searchButton.setPrefWidth(240);
+            searchButton.setPrefHeight(60);
             setSelectedButtonStyle(searchButton);
             currentSelectedButton = searchButton;
 
@@ -148,8 +148,8 @@ public class LibraryMainPanel extends BorderPane {
 
             // 文献检索按钮
             Button papersketchButton = new Button("文献检索");
-            papersketchButton.setPrefWidth(120);
-            papersketchButton.setPrefHeight(40);
+            papersketchButton.setPrefWidth(240);
+            papersketchButton.setPrefHeight(60);
             resetButtonStyle(papersketchButton);
 
             papersketchButton.setOnAction(e -> {
@@ -166,8 +166,8 @@ public class LibraryMainPanel extends BorderPane {
 
             // 我的借阅按钮
             Button borrowingsButton = new Button("我的借阅");
-            borrowingsButton.setPrefWidth(120);
-            borrowingsButton.setPrefHeight(40);
+            borrowingsButton.setPrefWidth(240);
+            borrowingsButton.setPrefHeight(60);
             resetButtonStyle(borrowingsButton);
 
             borrowingsButton.setOnAction(e -> {
@@ -196,16 +196,14 @@ public class LibraryMainPanel extends BorderPane {
     }
 
     private void setSelectedButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10; " +
-                "-fx-border-color: #4e8cff; -fx-border-width: 2; -fx-border-radius: 10; " +
-                "-fx-background-color: #f8fbff; -fx-text-fill: #4e8cff; " +
-                "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.3), 8, 0, 0, 2);");
+        button.setStyle("-fx-font-family: 'Microsoft YaHei UI'; -fx-font-size: 16px; " +
+                "-fx-background-color: #185cdc; -fx-text-fill: white; " +
+                "-fx-alignment: center-left; -fx-padding: 0 0 0 56;");
     }
 
     private void resetButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-background-radius: 10; " +
-                "-fx-background-color: white; -fx-text-fill: #2a4d7b; " +
-                "-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 10; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
+        button.setStyle("-fx-font-family: 'Microsoft YaHei UI'; -fx-font-size: 16px; " +
+                "-fx-background-color: #fafafa; -fx-text-fill: black; " +
+                "-fx-alignment: center-left; -fx-padding: 0 0 0 60;");
     }
 }
