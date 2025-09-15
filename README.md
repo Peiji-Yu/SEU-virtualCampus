@@ -72,7 +72,7 @@ store_order表：订单主表
             card_number INT NOT NULL,           -- 用户一卡通号
             total_amount INT NOT NULL,          -- 订单总金额（以分为单位）
             time DATETIME NOT NULL,             -- 订单时间
-            status ENUM('待支付', '已支付', '已取消') NOT NULL DEFAULT '待支付',
+            status ENUM('待支付', '已支付', '已取消', '已退款') NOT NULL DEFAULT '待支付',
             remark TEXT,                        -- 订单备注
             FOREIGN KEY (card_number) REFERENCES finance_card(card_number)
         );

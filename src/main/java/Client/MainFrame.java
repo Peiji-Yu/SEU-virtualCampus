@@ -44,7 +44,7 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 /**
- * 应用主界面：左侧功能导�� + 右侧内容区（当前只包含学籍管理模块）。
+ * 应用主界面：左侧功能导航 + 右侧内容区（当前只包含学籍管理模块）。
  * 根据 userType(student/admin/teacher) 动态加载不同面板。
  * 注意：仅调整结构与注释，不修改原有UI与行为。
  * @author Msgo-srAm
@@ -55,7 +55,7 @@ public class MainFrame {
     private static final String DANGER_COLOR = "#ff6b6b";
     private static final String DANGER_HOVER_COLOR = "#ff5252";
     private static final String BACKGROUND_COLOR = "#f8fbff";
-    private static final String SIDEBAR_COLOR = "#6EFF7E";
+    private static final String SIDEBAR_COLOR = "#ffffff";
     private static final String TEXT_COLOR = "#2a4d7b";
     private static final String SECONDARY_TEXT_COLOR = "#666666";
     // 新增：顶部栏固定高度（使右上角三个按钮与顶部栏上下边界重合）
@@ -130,7 +130,7 @@ public class MainFrame {
 
         // 主功能面板：内部使用 BorderPane 分区（顶部、左侧功能栏、中心内容区）
         BorderPane mainLayout = new BorderPane();
-        mainLayout.setPrefSize(1300, 750);
+        mainLayout.setPrefSize(1300, 780);
         AnchorPane anchorWrapper = new AnchorPane(mainLayout);
         AnchorPane.setTopAnchor(mainLayout, 0.0);
         AnchorPane.setBottomAnchor(mainLayout, 0.0);
@@ -141,8 +141,8 @@ public class MainFrame {
         // 顶部用户栏容器
         HBox topBar = buildTopBar();
         // 增加底部分割线
-        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);" +
-                " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
+//        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);" +
+//                " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
         VBox topContainer = new VBox(topBar);
         topContainer.setFillWidth(true);
         mainLayout.setTop(topContainer);
@@ -520,7 +520,7 @@ public class MainFrame {
                                 Alert info = new Alert(Alert.AlertType.INFORMATION);
                                 info.setTitle("挂失结果");
                                 info.setHeaderText(null);
-                                info.setContentText(resp);
+                                info.setContentText("挂失成功");
                                 info.showAndWait();
                             });
                         } catch (Exception ex) {
@@ -743,7 +743,8 @@ public class MainFrame {
         bar.setMaxHeight(TOP_BAR_HEIGHT);
         bar.setPadding(new Insets(0, 0, 0, 0));
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
+//      bar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
+        bar.setStyle("-fx-background-color: #176B3A; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);");
 
         // 左侧Logo
         ImageView logoView = null;
@@ -765,21 +766,14 @@ public class MainFrame {
             default: roleCN = "未知";
         }
         Label userInfo = new Label(roleCN + " " + cardNumber);
-        userInfo.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+//      userInfo.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+        userInfo.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
 
         // 左侧组合容器，提供水平内边距
         HBox leftGroup = new HBox(6);
         leftGroup.setAlignment(Pos.CENTER_LEFT);
         leftGroup.setPadding(new Insets(0, 6, 0, 6));
 
-        // 移除顶部"修改密码"按钮
-        // Button changePwdBtn = new Button("修改密码");
-        // changePwdBtn.setPrefHeight(34);
-        // changePwdBtn.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; " +
-        //         "-fx-background-color: #4e8cff; -fx-text-fill: white; " +
-        //         "-fx-background-radius: 8; " +
-        //         "-fx-effect: dropshadow(gaussian, rgba(78,140,255,0.18), 8, 0, 0, 2);");
-        // changePwdBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
 
         // 只显示 logo 和用户信息
         if (logoView != null) {
@@ -1081,4 +1075,3 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
-

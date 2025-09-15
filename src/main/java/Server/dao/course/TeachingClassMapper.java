@@ -31,6 +31,13 @@ public interface TeachingClassMapper {
     })
     List<TeachingClass> findByTeacherCardNumber(@Param("cardNumber") Integer cardNumber);
 
+    // 根据学生一卡通号查询该学生已选的教学班（避免在服务端做 N+1 查询）
+    @Select("SELECT tc.* FROM teaching_classes tc JOIN student_teaching_class stc ON tc.uuid = stc.teaching_class_uuid WHERE stc.student_card_number = #{studentCardNumber}")
+    @Results({
+        @Result(property = "teacherName", column = "teacher_name")
+    })
+    List<TeachingClass> findByStudentCardNumber(@Param("studentCardNumber") Integer studentCardNumber);
+
     // 插入新教学班
     @Insert("INSERT INTO teaching_classes (uuid, course_id, teacher_name, schedule, place, capacity, selected_count) " +
             "VALUES (#{uuid}, #{courseId}, #{teacherName}, #{schedule}, #{place}, IFNULL(#{capacity}, 0), IFNULL(#{selectedCount}, 0))")
