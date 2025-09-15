@@ -43,6 +43,10 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import javafx.scene.web.WebView;
+
 /**
  * 嵌入式 AI 助手聊天面板（虚拟校园系统专用）
  */
@@ -52,6 +56,9 @@ public class AIChatPanel extends BorderPane {
     private final Button sendButton = new Button();
     private final ScrollPane scrollPane = new ScrollPane();
     private final List<JsonObject> conversationHistory = new ArrayList<>();
+//    private final Parser mdParser = Parser.builder().build();
+//    private final HtmlRenderer mdRenderer = HtmlRenderer.builder().build();
+
 
     private String apiKey = "your_api_key"; // 默认占位
     private String apiUrl = "https://api.deepseek.com/v1/chat/completions";
@@ -65,6 +72,7 @@ public class AIChatPanel extends BorderPane {
 
     public AIChatPanel(String userDisplayName){
         this.userDisplayName = userDisplayName == null ? "未知用户" : userDisplayName;
+
         // 加载头像
         try { aiAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/deepseek.png"))); } catch (Exception ignore) {}
         try { userAvatarImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/deepseek/用户.png"))); } catch (Exception ignore) {}
@@ -355,6 +363,41 @@ public class AIChatPanel extends BorderPane {
         obj.addProperty("content", message);
         conversationHistory.add(obj);
     }
+
+//    private void addAiMessage(String message){
+//        removeTypingIndicator();
+//        HBox box = new HBox();
+//        box.getStyleClass().add("ai-message-container");
+//        box.setAlignment(Pos.TOP_LEFT);
+//
+//        Node aiAvatarNode = buildAiAvatarNode();
+//        VBox content = new VBox();
+//        content.setSpacing(5);
+//
+//        Label name = new Label("东大虚拟校园系统智能助手");
+//        name.getStyleClass().add("message-name");
+//
+//        // Markdown 转 HTML
+//        String html = mdRenderer.render(mdParser.parse(message));
+//        WebView webView = new WebView();
+//        webView.getEngine().loadContent("<body style='font-size:14px;'>" + html + "</body>");
+//        webView.setPrefHeight(80); // 可根据内容动态调整高度
+//        webView.setPrefWidth(400);
+//        webView.setStyle("-fx-background-color: transparent;");
+//
+//        content.getChildren().addAll(name, webView);
+//        HBox.setMargin(content, new Insets(0,0,0,10));
+//        box.getChildren().addAll(aiAvatarNode, content);
+//        chatContainer.getChildren().add(box);
+//
+//        FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(500), box);
+//        ft.setFromValue(0); ft.setToValue(1); ft.play();
+//
+//        JsonObject obj = new JsonObject();
+//        obj.addProperty("role","assistant");
+//        obj.addProperty("content", message);
+//        conversationHistory.add(obj);
+//    }
 
     private void addAiMessage(String message){
         removeTypingIndicator();
