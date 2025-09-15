@@ -1,28 +1,25 @@
 package Client.store;
 
+import Client.store.admin.AdminAddProductPanel;
 import Client.store.admin.AdminManageOrderPanel;
 import Client.store.admin.AdminManageProductPanel;
 import Client.store.student.CustomerOrderPanel;
 import Client.store.student.CustomerProductPanel;
-import  Client.store.admin.AdminAddProductPanel;
-
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 public class StoreMainPanel extends BorderPane {
-    private final String cardNumber;
-    private final boolean isAdmin;
-
-    // 各个功能面板
     private CustomerProductPanel customerProductPanel;
     private CustomerOrderPanel customerOrderPanel;
     private AdminAddProductPanel adminAddProductPanel;
     private AdminManageProductPanel adminManageProductPanel;
     private AdminManageOrderPanel adminManageOrderPanel;
-
     private Button currentSelectedButton;
+    private final String cardNumber;
+    private final boolean isAdmin;
 
     public StoreMainPanel(String cardNumber, String userType) {
         this.cardNumber = cardNumber;
@@ -32,94 +29,181 @@ public class StoreMainPanel extends BorderPane {
 
     private void initializeUI() {
         // 左侧导航栏
-        VBox leftBar = new VBox(10);
-        leftBar.setPadding(new Insets(15));
-        leftBar.setStyle("-fx-background-color: #f8f8f8; -fx-background-radius: 12;");
-        leftBar.setPrefWidth(150);
+        VBox leftBar = new VBox();
 
+        // 设置样式，添加向内阴影效果
+        leftBar.setStyle("-fx-background-color: #f4f4f4;"
+                + "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 10, 0, 1, 0);");
+        leftBar.setPrefWidth(210);
+
+        //设置说明标签
+        Label leftLabel = new Label("校园超市");
+        leftLabel.setStyle("-fx-text-fill: #303030; -fx-font-family: 'Microsoft YaHei UI'; " +
+                "-fx-font-size: 12px; -fx-alignment: center-left; -fx-padding: 10 0 10 15;");
+
+        // 添加分割线
+        Region separator = new Region();
+        separator.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+        separator.setMaxWidth(Double.MAX_VALUE);
+
+        // 如果是管理员，添加管理功能按钮
         if (isAdmin) {
-            // 管理员功能按钮
-            Button addProductBtn = createNavButton("添加商品");
-            addProductBtn.setOnAction(e -> switchToPanel("addProduct"));
+            Button addProductButton = new Button("添加商品");
+            addProductButton.setPrefWidth(210);
+            addProductButton.setPrefHeight(56);
+            setSelectedButtonStyle(addProductButton);
+            currentSelectedButton = addProductButton;
 
-            Button manageProductBtn = createNavButton("管理商品");
-            manageProductBtn.setOnAction(e -> switchToPanel("manageProduct"));
+            addProductButton.setOnAction(e -> {
+                if (currentSelectedButton != addProductButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(addProductButton);
+                    currentSelectedButton = addProductButton;
 
-            Button manageOrderBtn = createNavButton("管理订单");
-            manageOrderBtn.setOnAction(e -> switchToPanel("manageOrder"));
+                    // 初始化添加商品页面
+                    if (adminAddProductPanel == null) {
+                        adminAddProductPanel = new AdminAddProductPanel();
+                    }
+                    setCenter(adminAddProductPanel);
+                }
+            });
 
-            leftBar.getChildren().addAll(addProductBtn, manageProductBtn, manageOrderBtn);
+            // 添加分割线
+            Region separator1 = new Region();
+            separator1.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator1.setMaxWidth(Double.MAX_VALUE);
+
+            Button manageProductButton = new Button("管理商品");
+            manageProductButton.setPrefWidth(210);
+            manageProductButton.setPrefHeight(56);
+            resetButtonStyle(manageProductButton);
+
+            manageProductButton.setOnAction(e -> {
+                if (currentSelectedButton != manageProductButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(manageProductButton);
+                    currentSelectedButton = manageProductButton;
+
+                    // 初始化管理商品页面
+                    if (adminManageProductPanel == null) {
+                        adminManageProductPanel = new AdminManageProductPanel();
+                    }
+                    setCenter(adminManageProductPanel);
+                }
+            });
+
+            // 添加分割线
+            Region separator2 = new Region();
+            separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator2.setMaxWidth(Double.MAX_VALUE);
+
+            // 添加管理订单按钮
+            Button manageOrderButton = new Button("管理订单");
+            manageOrderButton.setPrefWidth(210);
+            manageOrderButton.setPrefHeight(56);
+            resetButtonStyle(manageOrderButton);
+
+            manageOrderButton.setOnAction(e -> {
+                if (currentSelectedButton != manageOrderButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(manageOrderButton);
+                    currentSelectedButton = manageOrderButton;
+
+                    // 初始化管理订单页面
+                    if (adminManageOrderPanel == null) {
+                        adminManageOrderPanel = new AdminManageOrderPanel();
+                    }
+                    setCenter(adminManageOrderPanel);
+                }
+            });
+
+            // 添加分割线
+            Region separator3 = new Region();
+            separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator3.setMaxWidth(Double.MAX_VALUE);
+
+            leftBar.getChildren().addAll(leftLabel, separator,
+                    addProductButton, separator1,
+                    manageProductButton, separator2,
+                    manageOrderButton, separator3);
             setLeft(leftBar);
 
-            // 默认显示添加商品面板
-            switchToPanel("addProduct");
-        } else {
-            // 用户功能按钮
-            Button productBtn = createNavButton("商品浏览");
-            productBtn.setOnAction(e -> switchToPanel("product"));
+            // 初始化默认面板
+            adminAddProductPanel = new AdminAddProductPanel();
+            setCenter(adminAddProductPanel);
+        }
+        else {
+            // 商品浏览按钮
+            Button productButton = new Button("商品浏览");
+            productButton.setPrefWidth(210);
+            productButton.setPrefHeight(56);
+            setSelectedButtonStyle(productButton);
+            currentSelectedButton = productButton;
 
-            Button orderBtn = createNavButton("我的订单");
-            orderBtn.setOnAction(e -> switchToPanel("order"));
+            productButton.setOnAction(e -> {
+                if (currentSelectedButton != productButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(productButton);
+                    currentSelectedButton = productButton;
 
-            leftBar.getChildren().addAll(productBtn, orderBtn);
+                    // 初始化商品浏览页面
+                    if (customerProductPanel == null) {
+                        customerProductPanel = new CustomerProductPanel(cardNumber);
+                    }
+                    setCenter(customerProductPanel);
+                }
+            });
+
+            // 添加分割线
+            Region separator1 = new Region();
+            separator1.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator1.setMaxWidth(Double.MAX_VALUE);
+
+            // 我的订单按钮
+            Button orderButton = new Button("我的订单");
+            orderButton.setPrefWidth(210);
+            orderButton.setPrefHeight(56);
+            resetButtonStyle(orderButton);
+
+            orderButton.setOnAction(e -> {
+                if (currentSelectedButton != orderButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(orderButton);
+                    currentSelectedButton = orderButton;
+
+                    // 初始化我的订单页面
+                    if (customerOrderPanel == null) {
+                        customerOrderPanel = new CustomerOrderPanel(cardNumber);
+                    }
+                    setCenter(customerOrderPanel);
+                }
+            });
+
+            // 添加分割线
+            Region separator2 = new Region();
+            separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator2.setMaxWidth(Double.MAX_VALUE);
+
+            leftBar.getChildren().addAll(leftLabel, separator,
+                    productButton, separator1,
+                    orderButton, separator2);
             setLeft(leftBar);
 
-            // 默认显示商品浏览面板
-            switchToPanel("product");
+            // 初始化面板
+            customerProductPanel = new CustomerProductPanel(cardNumber);
+            setCenter(customerProductPanel);
         }
     }
 
-    private Button createNavButton(String text) {
-        Button btn = new Button(text);
-        btn.setPrefWidth(120);
-        btn.setPrefHeight(40);
-        resetButtonStyle(btn);
-        return btn;
-    }
-
-    private void switchToPanel(String panelType) {
-        if (currentSelectedButton != null) {
-            resetButtonStyle(currentSelectedButton);
-        }
-
-        switch (panelType) {
-            case "product":
-                if (customerProductPanel == null) {
-                    customerProductPanel = new CustomerProductPanel(cardNumber);
-                }
-                setCenter(customerProductPanel);
-                break;
-            case "order":
-                if (customerOrderPanel == null) {
-                    customerOrderPanel = new CustomerOrderPanel(cardNumber);
-                }
-                setCenter(customerOrderPanel);
-                break;
-            case "addProduct":
-                if (adminAddProductPanel == null) {
-                    adminAddProductPanel = new AdminAddProductPanel();
-                }
-                setCenter(adminAddProductPanel);
-                break;
-            case "manageProduct":
-                if (adminManageProductPanel == null) {
-                    adminManageProductPanel = new AdminManageProductPanel();
-                }
-                setCenter(adminManageProductPanel);
-                break;
-            case "manageOrder":
-                if (adminManageOrderPanel == null) {
-                    adminManageOrderPanel = new AdminManageOrderPanel();
-                }
-                setCenter(adminManageOrderPanel);
-                break;
-        }
+    private void setSelectedButtonStyle(Button button) {
+        button.setStyle("-fx-font-family: 'Microsoft YaHei UI'; -fx-font-size: 16px; " +
+                "-fx-background-color: #176B3A; -fx-text-fill: white; " +
+                "-fx-alignment: center-left; -fx-padding: 0 0 0 56;");
     }
 
     private void resetButtonStyle(Button button) {
-        button.setStyle("-fx-font-size: 14px; -fx-background-radius: 10; " +
-                "-fx-background-color: white; -fx-text-fill: #2a4d7b; " +
-                "-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 10; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
+        button.setStyle("-fx-font-family: 'Microsoft YaHei UI'; -fx-font-size: 16px; " +
+                "-fx-background-color: #f4f4f4; -fx-text-fill: black; " +
+                "-fx-alignment: center-left;  -fx-padding: 0 0 0 60;");
     }
 }

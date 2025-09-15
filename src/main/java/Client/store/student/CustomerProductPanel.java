@@ -373,26 +373,30 @@ public class CustomerProductPanel extends BorderPane {
 
     private VBox createProductCard(Item item) {
         VBox card = new VBox();
-        card.setPadding(new Insets(15));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
-                "-fx-border-color: #e0e0e0; -fx-border-radius: 10; -fx-border-width: 1; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);");
-        card.setSpacing(10);
+        card.setPrefWidth(200); // 固定宽度使卡片更方形
+        card.setPrefHeight(280); // 固定高度形成方形卡片
+        card.setPadding(new Insets(10));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
+                "-fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-border-width: 1; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);");
+        card.setSpacing(8);
+        card.setAlignment(Pos.TOP_CENTER);
 
         // 存储商品ID和展开状态
         String productId = item.getUuid();
         boolean isExpanded = expandedCards.getOrDefault(productId, false);
 
-        // 商品基本信息区域（始终显示）
-        HBox summaryBox = new HBox();
-        summaryBox.setAlignment(Pos.CENTER_LEFT);
-        summaryBox.setSpacing(15);
-
-        // 商品图片
+        // 商品图片 - 占据主导位置
         ImageView imageView = new ImageView();
-        imageView.setFitWidth(60);
-        imageView.setFitHeight(60);
+        imageView.setFitWidth(160);
+        imageView.setFitHeight(160);
         imageView.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 5;");
+
+        // 图片圆角裁剪
+        Rectangle clip = new Rectangle(160, 160);
+        clip.setArcWidth(8);
+        clip.setArcHeight(8);
+        imageView.setClip(clip);
 
         if (item.getPictureLink() != null && !item.getPictureLink().isEmpty()) {
             try {
@@ -404,7 +408,6 @@ public class CustomerProductPanel extends BorderPane {
                     Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
                     imageView.setImage(defaultImage);
                 } catch (Exception ex) {
-                    // 如果默认图片加载失败，使用纯色背景
                     imageView.setStyle("-fx-background-color: #e0e0e0; -fx-background-radius: 5;");
                 }
             }
@@ -414,40 +417,39 @@ public class CustomerProductPanel extends BorderPane {
                 Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
                 imageView.setImage(defaultImage);
             } catch (Exception e) {
-                // 如果默认图片加载失败，使用纯色背景
                 imageView.setStyle("-fx-background-color: #e0e0e0; -fx-background-radius: 5;");
             }
         }
 
-        // 商品基本信息
-        VBox infoBox = new VBox(5);
+        // 商品名称 - 限制行数并添加省略号
         Label nameLabel = new Label(item.getItemName());
-        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #333;");
+        nameLabel.setMaxWidth(160);
+        nameLabel.setWrapText(true);
+        nameLabel.setMaxHeight(40);
+        nameLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
 
-        Label categoryLabel = new Label("类别: " + item.getCategory());
-        categoryLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 14px;");
-
-        infoBox.getChildren().addAll(nameLabel, categoryLabel);
-
-        // 库存和价格信息
-        VBox statusBox = new VBox(5);
-        statusBox.setAlignment(Pos.CENTER_RIGHT);
-        HBox.setHgrow(statusBox, Priority.ALWAYS);
+        // 价格和库存信息
+        HBox infoBox = new HBox(10);
+        infoBox.setAlignment(Pos.CENTER);
+        infoBox.setPadding(new Insets(5, 0, 0, 0));
 
         Label priceLabel = new Label(item.getPriceYuan() + "元");
         priceLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #e74c3c;");
 
         Label stockLabel = new Label("库存: " + item.getStock());
-        stockLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
+        stockLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
 
-        statusBox.getChildren().addAll(priceLabel, stockLabel);
+        infoBox.getChildren().addAll(priceLabel, stockLabel);
 
-        summaryBox.getChildren().addAll(imageView, infoBox, statusBox);
+        // 添加到卡片
+        card.getChildren().addAll(imageView, nameLabel, infoBox);
 
         // 详细信息区域（默认折叠）
-        VBox detailBox = new VBox(10);
+        VBox detailBox = new VBox(8);
         detailBox.setVisible(isExpanded);
         detailBox.setManaged(isExpanded);
+        detailBox.setPadding(new Insets(8, 0, 0, 0));
 
         if (isExpanded) {
             // 添加详细信息
@@ -456,20 +458,21 @@ public class CustomerProductPanel extends BorderPane {
 
         // 操作按钮区域（仅在展开时显示）
         HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.setAlignment(Pos.CENTER);
         buttonBox.setVisible(isExpanded);
         buttonBox.setManaged(isExpanded);
+        buttonBox.setPadding(new Insets(5, 0, 0, 0));
 
         if (isExpanded) {
             Button addToCartBtn = new Button("加入购物车");
-            addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; " +
-                    "-fx-padding: 8 16; -fx-background-radius: 5;");
+            addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 12px; " +
+                    "-fx-padding: 6 12; -fx-background-radius: 4;");
             addToCartBtn.setOnAction(e -> addToCart(item));
 
             buttonBox.getChildren().add(addToCartBtn);
         }
 
-        card.getChildren().addAll(summaryBox, detailBox, buttonBox);
+        card.getChildren().addAll(detailBox, buttonBox);
 
         // 点击卡片切换展开状态
         card.setOnMouseClicked(e -> {
@@ -487,8 +490,8 @@ public class CustomerProductPanel extends BorderPane {
 
                     // 添加操作按钮
                     Button addToCartBtn = new Button("加入购物车");
-                    addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; " +
-                            "-fx-padding: 8 16; -fx-background-radius: 5;");
+                    addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 12px; " +
+                            "-fx-padding: 6 12; -fx-background-radius: 4;");
                     addToCartBtn.setOnAction(event -> addToCart(item));
 
                     buttonBox.getChildren().setAll(addToCartBtn);
@@ -504,29 +507,24 @@ public class CustomerProductPanel extends BorderPane {
     private void addProductDetails(VBox detailBox, Item item) {
         detailBox.getChildren().clear();
 
-        // 创建详细信息网格
-        GridPane detailGrid = new GridPane();
-        detailGrid.setHgap(15);
-        detailGrid.setVgap(10);
-        detailGrid.setPadding(new Insets(10, 0, 0, 0));
-
-        // 添加详细信息
-        detailGrid.add(new Label("商品ID:"), 0, 0);
-        detailGrid.add(new Label(item.getUuid()), 1, 0);
-
-        detailGrid.add(new Label("销量:"), 0, 1);
-        detailGrid.add(new Label(String.valueOf(item.getSalesVolume())), 1, 1);
-
+        // 类别标签
+        Label categoryLabel = new Label("类别: " + item.getCategory());
+        categoryLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+        
+        // 销量标签
+        Label salesLabel = new Label("销量: " + item.getSalesVolume());
+        salesLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+        
         // 商品描述
         if (item.getDescription() != null && !item.getDescription().isEmpty()) {
-            detailGrid.add(new Label("描述:"), 0, 2);
             Label descLabel = new Label(item.getDescription());
-            descLabel.setStyle("-fx-wrap-text: true;");
-            descLabel.setMaxWidth(300);
-            detailGrid.add(descLabel, 1, 2);
+            descLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 11px; -fx-wrap-text: true;");
+            descLabel.setMaxWidth(160);
+            descLabel.setPadding(new Insets(5, 0, 0, 0));
+            detailBox.getChildren().addAll(categoryLabel, salesLabel, descLabel);
+        } else {
+            detailBox.getChildren().addAll(categoryLabel, salesLabel);
         }
-
-        detailBox.getChildren().add(detailGrid);
     }
 
     private void addToCart(Item item) {

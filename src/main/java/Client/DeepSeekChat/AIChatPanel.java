@@ -20,8 +20,6 @@ import com.google.gson.JsonObject;
 import Client.ClientNetworkHelper;
 import Client.util.Config;
 import Server.model.Request;
-import Server.model.Response;
-import Client.util.Config;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -45,9 +43,9 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
-import com.vladsch.flexmark.html.HtmlRenderer;
-import com.vladsch.flexmark.parser.Parser;
-import javafx.scene.web.WebView;
+//import com.vladsch.flexmark.html.HtmlRenderer;
+//import com.vladsch.flexmark.parser.Parser;
+//import javafx.scene.web.WebView;
 
 /**
  * 嵌入式 AI 助手聊天面板（虚拟校园系统专用）
@@ -58,8 +56,8 @@ public class AIChatPanel extends BorderPane {
     private final Button sendButton = new Button();
     private final ScrollPane scrollPane = new ScrollPane();
     private final List<JsonObject> conversationHistory = new ArrayList<>();
-//    private final Parser mdParser = Parser.builder().build();
-//    private final HtmlRenderer mdRenderer = HtmlRenderer.builder().build();
+//  private final Parser mdParser = Parser.builder().build();
+//  private final HtmlRenderer mdRenderer = HtmlRenderer.builder().build();
 
 
     private String apiKey = "your_api_key"; // 默认占位
@@ -104,9 +102,8 @@ public class AIChatPanel extends BorderPane {
                         "3. 选课系统模块：学生查询课表、选退课；教师查询教学任务及选课学生名单。\n" +
                         "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
                         "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
-                        "注意，根据一卡通号（card_number）判断用户类型；学生，2开头，9位数；教师：1开头，9位数；管理员/教务：1000以内。\n" + 
                         "\n" +
-                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。回答风格活泼友好。\n";
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。避免使用表情符号。";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
@@ -124,43 +121,29 @@ public class AIChatPanel extends BorderPane {
         Integer cardNumber = Integer.valueOf(userDisplayName);
         Gson gson = new Gson();
 
-        Gson gson = new Gson();
-
         try {
             // 2. 学籍管理模块
-            String studentInfoJsonJson = ClientNetworkHelper.send(
+            String studentInfoJson = ClientNetworkHelper.send(
                     new Request("getSelf", Map.of("cardNumber", cardNumber))
             );
-            Response studentInfoResp = gson.fromJson(studentInfoJson, Response.class);
-            sb.append("【2. 学籍管理模块】\n")
-            .append(studentInfoResp.isSuccess() ? studentInfoResp.getData() : studentInfoResp.getMessage())
-            .append("\n\n");
             Response studentInfoResp = gson.fromJson(studentInfoJson, Response.class);
             sb.append("【2. 学籍管理模块】\n")
                     .append(studentInfoResp.isSuccess() ? studentInfoResp.getData() : studentInfoResp.getMessage())
                     .append("\n\n");
 
             // 3. 选课系统模块
-            String courseInfoJsonJson = ClientNetworkHelper.send(
+            String courseInfoJson = ClientNetworkHelper.send(
                     new Request("getStudentSelectedCourses", Map.of("cardNumber", cardNumber))
             );
-            Response courseInfoResp = gson.fromJson(courseInfoJson, Response.class);
-            sb.append("【3. 选课系统模块】\n")
-            .append(courseInfoResp.isSuccess() ? courseInfoResp.getData() : courseInfoResp.getMessage())
-            .append("\n\n");
             Response courseInfoResp = gson.fromJson(courseInfoJson, Response.class);
             sb.append("【3. 选课系统模块】\n")
                     .append(courseInfoResp.isSuccess() ? courseInfoResp.getData() : courseInfoResp.getMessage())
                     .append("\n\n");
 
             // 4. 图书管理模块
-            String libraryInfoJsonJson = ClientNetworkHelper.send(
+            String libraryInfoJson = ClientNetworkHelper.send(
                     new Request("getOwnRecords", Map.of("userId", cardNumber))
             );
-            Response libraryInfoResp = gson.fromJson(libraryInfoJson, Response.class);
-            sb.append("【4. 图书管理模块】\n")
-            .append(libraryInfoResp.isSuccess() ? libraryInfoResp.getData() : libraryInfoResp.getMessage())
-            .append("\n\n");
             Response libraryInfoResp = gson.fromJson(libraryInfoJson, Response.class);
             sb.append("【4. 图书管理模块】\n")
                     .append(libraryInfoResp.isSuccess() ? libraryInfoResp.getData() : libraryInfoResp.getMessage())
@@ -178,21 +161,13 @@ public class AIChatPanel extends BorderPane {
                 String dataJson = gson.toJson(shopOrdersResponse.getData());
                 Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>() {}.getType();
                 List<Map<String, Object>> orders = gson.fromJson(dataJson, listType);
-            Response shopOrdersResponse = gson.fromJson(shopOrdersJson, Response.class);
 
-            if (!shopOrdersResponse.isSuccess()) {
-                sb.append("【5. 商店模块】请求失败：").append(shopOrdersResponse.getMessage()).append("\n");
-            } else {
-                String dataJson = gson.toJson(shopOrdersResponse.getData());
-                Type listType = new com.google.gson.reflect.TypeToken<List<Map<String, Object>>>() {}.getType();
-                List<Map<String, Object>> orders = gson.fromJson(dataJson, listType);
+                StringBuilder shopSb = new StringBuilder();
+                shopSb.append("【5. 商店模块】\n");
 
-                    StringBuilder shopSb = new StringBuilder();
-                    shopSb.append("【5. 商店模块】\n");
-
-                    for (Map<String, Object> orderMap : orders) {
-                        String uuidStr = (String) orderMap.get("uuid");
-                        shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
+                for (Map<String, Object> orderMap : orders) {
+                    String uuidStr = (String) orderMap.get("uuid");
+                    shopSb.append("订单 UUID: ").append(uuidStr).append("\n");
 
                     String orderDetailJson = ClientNetworkHelper.send(
                             new Request("getOrder", Map.of("orderId", uuidStr))
@@ -204,19 +179,8 @@ public class AIChatPanel extends BorderPane {
                         shopSb.append("订单详情获取失败: ").append(orderDetailResponse.getMessage()).append("\n\n");
                     }
                 }
-                    String orderDetailJson = ClientNetworkHelper.send(
-                            new Request("getOrder", Map.of("orderId", uuidStr))
-                    );
-                    Response orderDetailResponse = gson.fromJson(orderDetailJson, Response.class);
-                    if (orderDetailResponse.isSuccess()) {
-                        shopSb.append("订单详情: ").append(orderDetailResponse.getData()).append("\n\n");
-                    } else {
-                        shopSb.append("订单详情获取失败: ").append(orderDetailResponse.getMessage()).append("\n\n");
-                    }
-                }
 
-                    sb.append(shopSb.toString());
-            }
+                sb.append(shopSb.toString());
             }
 
         } catch (Exception e) {
@@ -255,7 +219,7 @@ public class AIChatPanel extends BorderPane {
         header.setAlignment(Pos.CENTER_LEFT);
 
         try {
-            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/chater.png")));
+            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
             logo.setFitHeight(30);
             logo.setPreserveRatio(true);
             Label title = new Label("东南大学虚拟校园系统智能助手");
@@ -442,7 +406,8 @@ public class AIChatPanel extends BorderPane {
         VBox content = new VBox(); content.setSpacing(5);
         Label name = new Label("东大虚拟校园系统智能助手"); name.getStyleClass().add("message-name");
         TextFlow tf = new TextFlow(); tf.getStyleClass().add("ai-message");
-        tf.getChildren().add(new Text(message));
+        String cleanMessage = message.replace("#", "").replace("*", "");
+        tf.getChildren().add(new Text(cleanMessage));
         content.getChildren().addAll(name, tf); HBox.setMargin(content, new Insets(0,0,0,10));
         box.getChildren().addAll(aiAvatarNode, content); chatContainer.getChildren().add(box);
         FadeTransition ft = new FadeTransition(Duration.millis(500), box); ft.setFromValue(0); ft.setToValue(1); ft.play();
