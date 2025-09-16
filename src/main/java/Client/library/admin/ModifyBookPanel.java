@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
@@ -44,6 +45,7 @@ public class ModifyBookPanel extends BorderPane {
         gson = gsonBuilder.create();
 
         initializeUI();
+        performSearch();
     }
 
     private void initializeUI() {
@@ -59,7 +61,7 @@ public class ModifyBookPanel extends BorderPane {
         titleLabel.setFont(Font.font(32));
         titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
 
-        Label subtitleLabel = new Label("搜索和管理图书馆藏书");
+        Label subtitleLabel = new Label("查找和管理图书馆藏书");
         subtitleLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
 
         VBox headtitleBox = new VBox(5, titleLabel, subtitleLabel);
@@ -238,9 +240,7 @@ public class ModifyBookPanel extends BorderPane {
                 });
 
             } catch (Exception e) {
-                Platform.runLater(() -> {
-                    resultsLabel.setText("通信错误");
-                });
+                System.err.println("通信错误");
                 e.printStackTrace();
             }
         }).start();
@@ -251,10 +251,6 @@ public class ModifyBookPanel extends BorderPane {
         currentExpandedCard = null;
 
         if (books.isEmpty()) {
-            Label emptyLabel = new Label("没有找到图书");
-            emptyLabel.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 16px; -fx-padding: 40;");
-            emptyLabel.setAlignment(Pos.CENTER);
-            booksContainer.getChildren().add(emptyLabel);
             resultsLabel.setText("找到 0 本图书");
             return;
         }
@@ -303,7 +299,8 @@ public class ModifyBookPanel extends BorderPane {
         private TextArea descriptionArea;
         private ComboBox<Category> categoryCombo;
         private List<BookItemEditor> itemEditors = new ArrayList<>();
-        private BookItemEditor newItemEditor;
+        private List<BookItemEditor> newItemEditors = new ArrayList<>();
+
 
         public ExpandableBookCard(Book book) {
             this.book = book;
@@ -602,8 +599,8 @@ public class ModifyBookPanel extends BorderPane {
                     itemEditors.add(editor);
                     itemsContainer.getChildren().add(editor);
 
-                    // 为每个项目添加分割线（除了最后一个）
-                    if (book.getItems().indexOf(item) < book.getItems().size() - 1) {
+                    // 为每个项目添加分割线
+                    if (book.getItems().indexOf(item) < book.getItems().size()) {
                         Region itemSeparator = createSeparator();
                         itemsContainer.getChildren().add(itemSeparator);
                     }
@@ -614,6 +611,9 @@ public class ModifyBookPanel extends BorderPane {
                 noItemsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #7f8c8d;");
                 noItemsLabel.setPadding(new Insets(10, 0, 10, 0));
                 itemsContainer.getChildren().add(noItemsLabel);
+
+                Region itemSeparator = createSeparator();
+                itemsContainer.getChildren().add(itemSeparator);
             }
 
             detailBox.getChildren().add(itemsContainer);
@@ -628,7 +628,7 @@ public class ModifyBookPanel extends BorderPane {
         private void cancelEditing() {
             isEditing = false;
             isAnyCardEditing = false; // 取消全局编辑状态
-            newItemEditor = null;
+            newItemEditors.clear(); // 清空新项目列表
             updateEditMode();
             // 重新加载详情以恢复原始数据
             addBookDetails();
@@ -797,25 +797,45 @@ public class ModifyBookPanel extends BorderPane {
 
                 // 表格内容
                 itemEditors.clear();
-                if (!book.getItems().isEmpty()) {
-                    for (BookItem item : book.getItems()) {
+                List<BookItem> allItems = new ArrayList<>(book.getItems());
+
+                if (!allItems.isEmpty() || !newItemEditors.isEmpty()) {
+                    for (int i = 0; i < allItems.size(); i++) {
+                        BookItem item = allItems.get(i);
                         BookItemEditor editor = new BookItemEditor(item, true);
                         itemEditors.add(editor);
-                        itemsContainer.getChildren().add(editor);
 
-                        // 为每个项目添加分割线（除了最后一个）
-                        if (book.getItems().indexOf(item) < book.getItems().size() - 1) {
+                        // 创建包含编辑器和分割线的容器
+                        VBox itemContainer = new VBox();
+                        itemContainer.getChildren().add(editor);
+
+                        // 为每个项目添加分割线
+                        if (i < allItems.size() || !newItemEditors.isEmpty()) {
                             Region itemSeparator = createSeparator();
-                            itemsContainer.getChildren().add(itemSeparator);
+                            itemContainer.getChildren().add(itemSeparator);
                         }
+
+                        itemsContainer.getChildren().add(itemContainer);
+                        editor.setParentContainer(itemContainer); // 设置父容器引用
                     }
                 }
 
-                // 如果有新添加的项目，显示它
-                if (newItemEditor != null) {
-                    Region newItemSeparator = createSeparator();
-                    itemsContainer.getChildren().add(newItemSeparator);
-                    itemsContainer.getChildren().add(newItemEditor);
+                // 添加新项目
+                if (!newItemEditors.isEmpty()) {
+                    for (int i = 0; i < newItemEditors.size(); i++) {
+                        BookItemEditor editor = newItemEditors.get(i);
+                        VBox itemContainer = new VBox();
+                        itemContainer.getChildren().add(editor);
+
+                        // 为每个项目添加分割线
+                        if (i < newItemEditors.size()) {
+                            Region itemSeparator = createSeparator();
+                            itemContainer.getChildren().add(itemSeparator);
+                        }
+
+                        itemsContainer.getChildren().add(itemContainer);
+                        editor.setParentContainer(itemContainer); // 设置父容器引用
+                    }
                 }
 
                 detailBox.getChildren().add(itemsContainer);
@@ -833,7 +853,8 @@ public class ModifyBookPanel extends BorderPane {
             newItem.setPlace("");
             newItem.setBookStatus(BookStatus.INLIBRARY);
 
-            newItemEditor = new BookItemEditor(newItem, true);
+            BookItemEditor editor = new BookItemEditor(newItem, true);
+            newItemEditors.add(editor);
 
             // 刷新编辑视图
             updateEditMode();
@@ -858,14 +879,16 @@ public class ModifyBookPanel extends BorderPane {
                 }
             }
 
-            // 添加新副本
-            if (newItemEditor != null && !newItemEditor.isDeleted()) {
-                addBookItem(newItemEditor.getItem());
+            // 添加所有新副本
+            for (BookItemEditor editor : newItemEditors) {
+                if (!editor.isDeleted()) {
+                    addBookItem(editor.getItem());
+                }
             }
 
             isEditing = false;
             isAnyCardEditing = false; // 取消全局编辑状态
-            newItemEditor = null;
+            newItemEditors.clear(); // 清空新项目列表
 
             try {
                 Thread.sleep(100); //等待数据库更新
@@ -905,6 +928,7 @@ public class ModifyBookPanel extends BorderPane {
         private boolean isEditing;
         private boolean isDeleted = false;
         private boolean isModified = false;
+        private Node parentContainer; // 引用父容器
 
         private TextField placeField;
         private ComboBox<BookStatus> statusCombo;
@@ -914,6 +938,11 @@ public class ModifyBookPanel extends BorderPane {
             this.item = item;
             this.isEditing = isEditing;
             initializeUI();
+        }
+
+        // 设置父容器的方法
+        public void setParentContainer(Node parentContainer) {
+            this.parentContainer = parentContainer;
         }
 
         private void initializeUI() {
@@ -1019,6 +1048,13 @@ public class ModifyBookPanel extends BorderPane {
 
         private void markAsDeleted() {
             isDeleted = true;
+            // 同时移除父容器（包含本编辑器和分割线）
+            if (parentContainer != null) {
+                Pane parent = (Pane) parentContainer.getParent();
+                if (parent != null) {
+                    parent.getChildren().remove(parentContainer);
+                }
+            }
             setVisible(false);
             setManaged(false);
         }

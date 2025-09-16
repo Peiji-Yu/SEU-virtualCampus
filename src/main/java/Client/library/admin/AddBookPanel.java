@@ -37,6 +37,7 @@ public class AddBookPanel extends BorderPane {
         gson = gsonBuilder.create();
 
         initializeUI();
+        clearForm();
     }
 
     private void initializeUI() {

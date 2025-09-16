@@ -46,6 +46,7 @@ public class LibrarySearchPanel extends BorderPane {
         gson = gsonBuilder.create();
 
         initializeUI();
+        performSearch();
     }
 
     private void initializeUI() {
@@ -57,11 +58,11 @@ public class LibrarySearchPanel extends BorderPane {
         topContainer.setPadding(new Insets(30, 30, 0, 30));
 
         // 标题
-        Label titleLabel = new Label("图书查询");
+        Label titleLabel = new Label("搜索图书");
         titleLabel.setFont(Font.font(32));
         titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
 
-        Label subtitleLabel = new Label("搜索图书馆藏书");
+        Label subtitleLabel = new Label("查找图书馆藏书");
         subtitleLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
 
         VBox headtitleBox = new VBox(5, titleLabel, subtitleLabel);
@@ -240,9 +241,7 @@ public class LibrarySearchPanel extends BorderPane {
                 });
 
             } catch (Exception e) {
-                Platform.runLater(() -> {
-                    resultsLabel.setText("通信错误");
-                });
+                System.err.println("通信错误");
                 e.printStackTrace();
             }
         }).start();
@@ -253,10 +252,6 @@ public class LibrarySearchPanel extends BorderPane {
         currentExpandedCard = null;
 
         if (books.isEmpty()) {
-            Label emptyLabel = new Label("没有找到图书");
-            emptyLabel.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 16px; -fx-padding: 40;");
-            emptyLabel.setAlignment(Pos.CENTER);
-            booksContainer.getChildren().add(emptyLabel);
             resultsLabel.setText("找到 0 本图书");
             return;
         }
@@ -547,8 +542,8 @@ public class LibrarySearchPanel extends BorderPane {
 
                     itemsContainer.getChildren().add(itemGrid);
 
-                    // 为每个项目添加分割线（除了最后一个）
-                    if (book.getItems().indexOf(item) < book.getItems().size() - 1) {
+                    // 为每个项目添加分割线
+                    if (book.getItems().indexOf(item) < book.getItems().size()) {
                         Region itemSeparator = createSeparator();
                         itemsContainer.getChildren().add(itemSeparator);
                     }
@@ -559,6 +554,9 @@ public class LibrarySearchPanel extends BorderPane {
                 noItemsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #7f8c8d;");
                 noItemsLabel.setPadding(new Insets(10, 0, 10, 0));
                 itemsContainer.getChildren().add(noItemsLabel);
+
+                Region itemSeparator = createSeparator();
+                itemsContainer.getChildren().add(itemSeparator);
             }
 
             detailBox.getChildren().add(itemsContainer);
