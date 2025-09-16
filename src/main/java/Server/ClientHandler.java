@@ -940,8 +940,7 @@ public class ClientHandler implements Runnable {
                     case "payOrder":
                         String payOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(payOrderIdStr);
-                            boolean payResult = storeService.payOrder(orderId);
+                            boolean payResult = storeService.payOrder(payOrderIdStr);
                             response = payResult ? Response.success("支付成功") : Response.error("支付失败");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
@@ -953,8 +952,7 @@ public class ClientHandler implements Runnable {
                     case "cancelOrder":
                         String cancelOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(cancelOrderIdStr);
-                            boolean cancelResult = storeService.cancelOrder(orderId);
+                            boolean cancelResult = storeService.cancelOrder(cancelOrderIdStr);
                             response = cancelResult ? Response.success("取消订单成功") : Response.error("取消订单失败");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
@@ -978,8 +976,7 @@ public class ClientHandler implements Runnable {
                     case "getOrder":
                         String getOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(getOrderIdStr);
-                            StoreOrder order = storeService.getOrderById(orderId);
+                            StoreOrder order = storeService.getOrderById(getOrderIdStr);
                             response = (order != null) ? Response.success("获取订单成功", order) : Response.error("订单不存在");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
@@ -1017,8 +1014,7 @@ public class ClientHandler implements Runnable {
                         String refundReason = (String) refundData.get("reason");
 
                         try {
-                            UUID orderId = UUID.fromString(refundOrderIdStr);
-                            boolean refundResult = storeService.refundOrder(orderId, refundReason);
+                            boolean refundResult = storeService.refundOrder(refundOrderIdStr, refundReason);
                             response = refundResult ?
                                     Response.success("退款成功") :
                                     Response.error("退款失败");

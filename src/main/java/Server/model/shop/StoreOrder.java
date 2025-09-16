@@ -13,7 +13,7 @@ public class StoreOrder {
     public static final String STATUS_CANCELLED = "已取消";
     public static final String STATUS_REFUNDED = "已退款";
 
-    private UUID uuid;                   // 订单编号
+    private String id;                   // 订单编号
     private Integer cardNumber;          // 用户一卡通号
     private Integer totalAmount;         // 订单总金额（以分为单位）
     private LocalDateTime time;          // 订单时间
@@ -25,7 +25,7 @@ public class StoreOrder {
     public StoreOrder() {}
 
     public StoreOrder(Integer cardNumber, Integer totalAmount, String remark, List<StoreOrderItem> items) {
-        this.uuid = UUID.randomUUID();
+        this.id = "0";
         this.cardNumber = cardNumber;
         this.totalAmount = totalAmount;
         this.time = LocalDateTime.now();
@@ -35,12 +35,12 @@ public class StoreOrder {
     }
 
     // Getter和Setter方法
-    public UUID getUuid() {
-        return uuid;
+    public String getId() {
+        return id;
     }
 
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public Integer getTotalAmount() {
@@ -92,7 +92,7 @@ public class StoreOrder {
     @Override
     public String toString() {
         return "StoreOrder{" +
-                "uuid=" + uuid +
+                "id=" + id +
                 ", cardNumber=" + cardNumber +
                 ", totalAmount=" + totalAmount +
                 ", time=" + time +
