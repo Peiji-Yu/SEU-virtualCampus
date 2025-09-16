@@ -1,5 +1,18 @@
 package Client.store.student;
 
+import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import Client.ClientNetworkHelper;
 import Client.store.util.StoreUtils;
 import Client.store.util.model.CartItem;
@@ -7,23 +20,29 @@ import Client.store.util.model.Item;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-
-import java.lang.reflect.Type;
-import java.time.LocalDate;
-import java.util.*;
 
 public class CustomerProductPanel extends BorderPane {
     private final String cardNumber;
@@ -354,49 +373,53 @@ public class CustomerProductPanel extends BorderPane {
     }
 
     private void displayItems(List<Item> items) {
-        productsContainer.getChildren().clear();
-        expandedCards.clear();
-
+        // 创建流式布局容器
+        FlowPane flowPane = new FlowPane();
+        flowPane.setPadding(new Insets(15));
+        flowPane.setHgap(15);
+        flowPane.setVgap(15);
+        flowPane.setStyle("-fx-background-color: #f5f5f5;");
+        
         if (items.isEmpty()) {
             Label emptyLabel = new Label("没有找到商品");
             emptyLabel.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 16px; -fx-padding: 40;");
             emptyLabel.setAlignment(Pos.CENTER);
-            productsContainer.getChildren().add(emptyLabel);
-            return;
+            flowPane.getChildren().add(emptyLabel);
+        } else {
+            for (Item item : items) {
+                VBox productCard = createProductCard(item);
+                flowPane.getChildren().add(productCard);
+            }
         }
-
-        for (Item item : items) {
-            VBox productCard = createProductCard(item);
-            productsContainer.getChildren().add(productCard);
-        }
+        
+        // 替换原来的productsContainer
+        ScrollPane scrollPane = new ScrollPane(flowPane);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+        setCenter(scrollPane);
     }
 
     private VBox createProductCard(Item item) {
+        // 主卡片容器
         VBox card = new VBox();
-        card.setPrefWidth(200); // 固定宽度使卡片更方形
-        card.setPrefHeight(280); // 固定高度形成方形卡片
-        card.setPadding(new Insets(10));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
-                "-fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-border-width: 1; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);");
-        card.setSpacing(8);
+        card.setPrefWidth(180); // 固定宽度形成方形卡片
+        card.setMaxWidth(180);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 5; " +
+                "-fx-border-color: #f0f0f0; -fx-border-radius: 5; -fx-border-width: 1; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+        card.setSpacing(0);
         card.setAlignment(Pos.TOP_CENTER);
 
-        // 存储商品ID和展开状态
-        String productId = item.getUuid();
-        boolean isExpanded = expandedCards.getOrDefault(productId, false);
+        // 图片容器 - 占据主导位置
+        StackPane imageContainer = new StackPane();
+        imageContainer.setPrefSize(180, 180);
+        imageContainer.setStyle("-fx-background-color: #f8f9fa;");
 
-        // 商品图片 - 占据主导位置
+        // 商品图片
         ImageView imageView = new ImageView();
         imageView.setFitWidth(160);
         imageView.setFitHeight(160);
-        imageView.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 5;");
-
-        // 图片圆角裁剪
-        Rectangle clip = new Rectangle(160, 160);
-        clip.setArcWidth(8);
-        clip.setArcHeight(8);
-        imageView.setClip(clip);
+        imageView.setPreserveRatio(true);
 
         if (item.getPictureLink() != null && !item.getPictureLink().isEmpty()) {
             try {
@@ -408,7 +431,8 @@ public class CustomerProductPanel extends BorderPane {
                     Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
                     imageView.setImage(defaultImage);
                 } catch (Exception ex) {
-                    imageView.setStyle("-fx-background-color: #e0e0e0; -fx-background-radius: 5;");
+                    // 如果默认图片加载失败，使用纯色背景
+                    imageView.setStyle("-fx-background-color: #e0e0e0;");
                 }
             }
         } else {
@@ -417,89 +441,124 @@ public class CustomerProductPanel extends BorderPane {
                 Image defaultImage = new Image(getClass().getResourceAsStream("/Image/Logo.png"));
                 imageView.setImage(defaultImage);
             } catch (Exception e) {
-                imageView.setStyle("-fx-background-color: #e0e0e0; -fx-background-radius: 5;");
+                imageView.setStyle("-fx-background-color: #e0e0e0;");
             }
         }
+
+        // 图片居中
+        StackPane.setAlignment(imageView, Pos.CENTER);
+        imageContainer.getChildren().add(imageView);
+
+        // 信息容器
+        VBox infoContainer = new VBox(5);
+        infoContainer.setPadding(new Insets(10, 8, 10, 8));
+        infoContainer.setStyle("-fx-background-color: white;");
 
         // 商品名称 - 限制行数并添加省略号
         Label nameLabel = new Label(item.getItemName());
-        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #333;");
-        nameLabel.setMaxWidth(160);
-        nameLabel.setWrapText(true);
-        nameLabel.setMaxHeight(40);
+        nameLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #333; -fx-wrap-text: true;");
+        nameLabel.setMaxWidth(164);
+        nameLabel.setMaxHeight(36);
         nameLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
 
-        // 价格和库存信息
-        HBox infoBox = new HBox(10);
-        infoBox.setAlignment(Pos.CENTER);
-        infoBox.setPadding(new Insets(5, 0, 0, 0));
+        // 价格区域
+        HBox priceBox = new HBox(5);
+        priceBox.setAlignment(Pos.CENTER_LEFT);
 
-        Label priceLabel = new Label(item.getPriceYuan() + "元");
-        priceLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #e74c3c;");
+        Label priceLabel = new Label("¥" + item.getPriceYuan());
+        priceLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ff5000;");
 
-        Label stockLabel = new Label("库存: " + item.getStock());
-        stockLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
+        // 原价（如果有折扣）
+        priceBox.getChildren().add(priceLabel);
 
-        infoBox.getChildren().addAll(priceLabel, stockLabel);
+        // 销量信息
+        Label salesLabel = new Label("已售 " + item.getSalesVolume() + " 件");
+        salesLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #999;");
+
+        infoContainer.getChildren().addAll(nameLabel, priceBox, salesLabel);
 
         // 添加到卡片
-        card.getChildren().addAll(imageView, nameLabel, infoBox);
+        card.getChildren().addAll(imageContainer, infoContainer);
 
-        // 详细信息区域（默认折叠）
-        VBox detailBox = new VBox(8);
-        detailBox.setVisible(isExpanded);
-        detailBox.setManaged(isExpanded);
-        detailBox.setPadding(new Insets(8, 0, 0, 0));
-
-        if (isExpanded) {
-            // 添加详细信息
-            addProductDetails(detailBox, item);
+        // 详情覆盖面板（初始隐藏）
+        VBox detailOverlay = new VBox(10);
+        detailOverlay.setPrefSize(180, 180);
+        detailOverlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85); -fx-background-radius: 5;");
+        detailOverlay.setPadding(new Insets(15));
+        detailOverlay.setVisible(false);
+        
+        // 详情标题
+        Label detailTitle = new Label("商品详情");
+        detailTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;");
+        
+        // 详情内容
+        VBox detailContent = new VBox(5);
+        
+        Label categoryLabel = new Label("类别: " + item.getCategory());
+        categoryLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #ccc;");
+        
+        Label stockLabel = new Label("库存: " + item.getStock() + " 件");
+        stockLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #ccc;");
+        
+        // 商品描述
+        if (item.getDescription() != null && !item.getDescription().isEmpty()) {
+            Label descLabel = new Label(item.getDescription());
+            descLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #ccc; -fx-wrap-text: true;");
+            descLabel.setMaxWidth(150);
+            detailContent.getChildren().add(descLabel);
         }
-
-        // 操作按钮区域（仅在展开时显示）
-        HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setVisible(isExpanded);
-        buttonBox.setManaged(isExpanded);
-        buttonBox.setPadding(new Insets(5, 0, 0, 0));
-
-        if (isExpanded) {
-            Button addToCartBtn = new Button("加入购物车");
-            addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 12px; " +
-                    "-fx-padding: 6 12; -fx-background-radius: 4;");
-            addToCartBtn.setOnAction(e -> addToCart(item));
-
-            buttonBox.getChildren().add(addToCartBtn);
-        }
-
-        card.getChildren().addAll(detailBox, buttonBox);
-
-        // 点击卡片切换展开状态
-        card.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 1) {
-                boolean newExpandedState = !expandedCards.getOrDefault(productId, false);
-                expandedCards.put(productId, newExpandedState);
-
-                detailBox.setVisible(newExpandedState);
-                detailBox.setManaged(newExpandedState);
-                buttonBox.setVisible(newExpandedState);
-                buttonBox.setManaged(newExpandedState);
-
-                if (newExpandedState) {
-                    addProductDetails(detailBox, item);
-
-                    // 添加操作按钮
-                    Button addToCartBtn = new Button("加入购物车");
-                    addToCartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 12px; " +
-                            "-fx-padding: 6 12; -fx-background-radius: 4;");
-                    addToCartBtn.setOnAction(event -> addToCart(item));
-
-                    buttonBox.getChildren().setAll(addToCartBtn);
-                } else {
-                    buttonBox.getChildren().clear();
-                }
+        
+        detailContent.getChildren().addAll(categoryLabel, stockLabel);
+        
+        // 关闭按钮
+        Button closeBtn = new Button("关闭");
+        closeBtn.setStyle("-fx-background-color: #ff5000; -fx-text-fill: white; -fx-font-size: 12px; " +
+                "-fx-padding: 5 10; -fx-background-radius: 2;");
+        closeBtn.setOnAction(e -> {
+            detailOverlay.setVisible(false);
+            card.setEffect(null); // 移除阴影效果
+        });
+        
+        detailOverlay.getChildren().addAll(detailTitle, detailContent, closeBtn);
+        detailOverlay.setAlignment(Pos.TOP_CENTER);
+        
+        // 将详情面板添加到图片容器中
+        imageContainer.getChildren().add(detailOverlay);
+        
+        // 添加鼠标悬停效果
+        card.setOnMouseEntered(e -> {
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 5; " +
+                    "-fx-border-color: #ff5000; -fx-border-radius: 5; -fx-border-width: 1; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 3);");
+        });
+        
+        card.setOnMouseExited(e -> {
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 5; " +
+                    "-fx-border-color: #f0f0f0; -fx-border-radius: 5; -fx-border-width: 1; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+        });
+        
+        // 点击图片显示详情
+        imageContainer.setOnMouseClicked(e -> {
+            if (!detailOverlay.isVisible()) {
+                detailOverlay.setVisible(true);
+                // 添加发光效果突出显示
+                card.setEffect(new javafx.scene.effect.Glow(0.1));
             }
         });
+        
+        // 添加购物车按钮
+        HBox actionBox = new HBox();
+        actionBox.setPadding(new Insets(5, 0, 10, 0));
+        actionBox.setAlignment(Pos.CENTER);
+        
+        Button addCartBtn = new Button("加入购物车");
+        addCartBtn.setStyle("-fx-background-color: #ff5000; -fx-text-fill: white; -fx-font-size: 12px; " +
+                "-fx-padding: 5 15; -fx-background-radius: 2;");
+        addCartBtn.setOnAction(e -> addToCart(item));
+        
+        actionBox.getChildren().add(addCartBtn);
+        card.getChildren().add(actionBox);
 
         return card;
     }
