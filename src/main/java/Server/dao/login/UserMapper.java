@@ -49,7 +49,7 @@ public interface UserMapper {
     int insertUser(User user);
 
     /**
-     * 根据一卡通号查询用户（用���按一卡通号获取姓名等信息）
+     * 根据一卡通号查询用户（按一卡通号获取姓名等信息）
      */
     @Select("SELECT * FROM user WHERE card_number = #{cardNumber}")
     User findByCardNumber(@Param("cardNumber") Integer cardNumber);
