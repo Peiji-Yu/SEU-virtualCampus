@@ -311,6 +311,8 @@ public class MainFrame {
 
         // reportLossBtn 的逻辑保持不变（只是执行挂失操作），样式切换按需要可添加
 
+
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -650,7 +652,7 @@ public class MainFrame {
             noFunctionBox.setAlignment(Pos.CENTER);
             noFunctionBox.setStyle("-fx-background-color: " + BACKGROUND_COLOR + "; -fx-background-radius: 12; " +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0, 0, 2); -fx-padding: 40;");
-            Label noFunctionTitle = new Label("欢迎使用智慧���园系统");
+            Label noFunctionTitle = new Label("欢迎使用智慧校园系统");
             noFunctionTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
             Label noFunctionDesc = new Label("您当前的账户类型暂无可用功能模块");
             noFunctionDesc.setStyle("-fx-font-size: 16px; -fx-text-fill: " + SECONDARY_TEXT_COLOR + ";");

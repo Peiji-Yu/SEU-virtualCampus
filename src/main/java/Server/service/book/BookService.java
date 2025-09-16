@@ -13,25 +13,32 @@ import Server.model.book.Book;
 import Server.model.book.BookItem;
 import Server.model.book.BookRecord;
 import Server.model.book.BookStatus;
+import Server.model.book.Category;
 import Server.util.DatabaseUtil;
 public class BookService {
 
-    // 根据ISBN检索书籍信息
-    public Book retrieveBook(String isbn) {
+//    // 根据ISBN检索书籍信息
+//    public Book retrieveBook(String isbn) {
+//        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+//            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
+//            return bookMapper.findByIsbn(isbn);
+//        }
+//    }
+
+    // 根据书籍名称、作者、介绍、类别（可选）检索书籍信息
+    public List<Book> searchBooks(String keyword, Category category) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            return bookMapper.findByIsbn(isbn);
+
+            if (category == null) {
+                // 如果category为空，则不按照类别查找
+                return bookMapper.findBook(keyword);
+            }
+
+            // 如果category非空，则按照类别查找
+            return bookMapper.findBookByCategory(keyword, category);
         }
     }
-
-    // 根据书籍名称检索书籍信息
-    public List<Book> searchBooks(String name) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            return bookMapper.findByName("%" + name + "%");
-        }
-    }
-
 
     // 根据ISBN检索实体书籍
     public List<BookItem> retrieveBookItems(String isbn) {
@@ -58,7 +65,6 @@ public class BookService {
             return res > 0;
         }
     }
-
 
     // 管理员更新书籍
     public boolean updateBook(Book book) {
@@ -141,7 +147,6 @@ public class BookService {
         }
     }
 
-
     // 借书
     public boolean borrowBook(int userId, String uuid) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
@@ -158,6 +163,7 @@ public class BookService {
             // 4. 更新副本状态为借出
             bookItem.setBookStatus(BookStatus.LEND);
             bookItemMapper.updateBookItem(bookItem);
+
             Book book = bookMapper.findByIsbn(bookItem.getIsbn());
 
             // 7. 插入借阅记录
