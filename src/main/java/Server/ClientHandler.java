@@ -9,6 +9,7 @@ import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
+import Server.service.course.*;
 import Server.service.login.UserService;
 import Server.service.student.StudentService;
 import Server.service.shop.FinanceService;
@@ -31,6 +32,7 @@ import Server.service.course.ClassStudentService;
 import Server.service.course.CourseService;
 import Server.service.course.TeachingClassService;
 import Server.service.course.StudentTeachingClassService;
+import Server.model.course.Teacher;
 import Server.service.book.BookService;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -115,6 +117,7 @@ public class ClientHandler implements Runnable {
     private final CourseService courseService = new CourseService();
     private final TeachingClassService teachingClassService = new TeachingClassService();
     private final StudentTeachingClassService studentTeachingClassService = new StudentTeachingClassService();
+    private final TeacherService teacherService = new TeacherService();
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
     private final BookService bookService = new BookService();
@@ -673,6 +676,71 @@ public class ClientHandler implements Runnable {
                                 Response.success("删除教学班成功") :
                                 Response.error("删除教学班失败");
                          break;
+
+                    // 获取所有教师
+                    case "getAllTeachers":
+                        List<Teacher> teachers = teacherService.getAllTeachers();
+                        response = Response.success("获取所有教师成功", teachers);
+                        break;
+
+                    // 根据学院查询教师
+                    case "getTeachersBySchool":
+                        String teacherSchool = (String) request.getData().get("school");
+                        List<Teacher> schoolTeachers = teacherService.findBySchool(teacherSchool);
+                        response = Response.success("获取学院教师成功", schoolTeachers);
+                        break;
+
+                    // 添加教师（管理员功能）
+                    case "addTeacher":
+                        Map<String, Object> teacherData = (Map<String, Object>) request.getData().get("teacher");
+                        Teacher newTeacher = createTeacherFromMap(teacherData);
+
+                        boolean addTeacherResult = teacherService.addTeacher(newTeacher);
+                        response = addTeacherResult ?
+                                Response.success("添加教师成功") :
+                                Response.error("添加教师失败");
+                        break;
+
+                    // 更新教师信息
+                    case "updateTeacher":
+                        Integer updateTeacherId = ((Double) request.getData().get("teacherId")).intValue();
+                        Map<String, Object> teacherUpdates = (Map<String, Object>) request.getData().get("updates");
+
+                        // 获取现有教师信息
+                        Teacher existingTeacher = teacherService.findByTeacherId(updateTeacherId);
+                        if (existingTeacher == null) {
+                            response = Response.error("教师不存在");
+                            break;
+                        }
+
+                        // 应用更新
+                        if (teacherUpdates.containsKey("name")) {
+                            existingTeacher.setName((String) teacherUpdates.get("name"));
+                        }
+                        if (teacherUpdates.containsKey("school")) {
+                            existingTeacher.setSchool((String) teacherUpdates.get("school"));
+                        }
+                        if (teacherUpdates.containsKey("title")) {
+                            existingTeacher.setTitle((String) teacherUpdates.get("title"));
+                        }
+
+                        // 保存更新
+                        boolean updateTeacherResult = teacherService.updateTeacher(existingTeacher);
+                        response = updateTeacherResult ?
+                                Response.success("更新教师成功") :
+                                Response.error("更新教师失败");
+                        break;
+
+                    // 删除教师（管理员功能）
+                    case "deleteTeacher":
+                        Integer deleteTeacherId = ((Double) request.getData().get("teacherId")).intValue();
+
+                        boolean deleteTeacherResult = teacherService.deleteTeacher(deleteTeacherId);
+                        response = deleteTeacherResult ?
+                                Response.success("删除教师成功") :
+                                Response.error("删除教师失败");
+                        break;
+
 
                     case "getFinanceCard":
                         Object cardNumberObj = request.getData().get("cardNumber");
@@ -1253,6 +1321,25 @@ public class ClientHandler implements Runnable {
         }
 
         return teachingClass;
+    }
+    // 添加辅助方法，用于从Map创建Teacher对象
+    private Teacher createTeacherFromMap(Map<String, Object> teacherData) {
+        Teacher teacher = new Teacher();
+
+        if (teacherData.containsKey("teacherId")) {
+            teacher.setTeacherId(((Double) teacherData.get("teacherId")).intValue());
+        }
+        if (teacherData.containsKey("name")) {
+            teacher.setName((String) teacherData.get("name"));
+        }
+        if (teacherData.containsKey("school")) {
+            teacher.setSchool((String) teacherData.get("school"));
+        }
+        if (teacherData.containsKey("title")) {
+            teacher.setTitle((String) teacherData.get("title"));
+        }
+
+        return teacher;
     }
 
     // 添加辅助方法，用于从Map创建StoreItem对象
