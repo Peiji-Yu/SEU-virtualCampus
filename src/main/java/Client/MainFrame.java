@@ -311,6 +311,8 @@ public class MainFrame {
 
         // reportLossBtn 的逻辑保持不变（只是执行挂失操作），样式切换按需要可添加
 
+
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);

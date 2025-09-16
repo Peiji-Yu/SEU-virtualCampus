@@ -9,14 +9,25 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import Server.model.book.Book;
+import Server.model.book.Category;
 
 public interface BookMapper {
 
     @Select("SELECT * FROM book WHERE isbn = #{isbn}")
     Book findByIsbn(@Param("isbn") String isbn);
 
-    @Select("SELECT * FROM book WHERE name LIKE CONCAT('%', #{name}, '%')")
-    List<Book> findByName(@Param("name") String name);
+    @Select("<script>" +
+            "SELECT * FROM book " +
+            "WHERE 1=1 " +
+            "<if test='name != null and name != \"\"'> " +
+            "AND name LIKE CONCAT('%', #{name}, '%') " +
+            "</if>" +
+            "<if test='category != null'> " +
+            "AND category = #{category} " +
+            "</if>" +
+            "</script>")
+    List<Book> findByNameAndCategory(@Param("name") String name,
+                                     @Param("category") Category category);
 
     @Select("SELECT * FROM book WHERE author LIKE CONCAT('%', #{author}, '%')")
     List<Book> findByAuthor(@Param("author") String author);

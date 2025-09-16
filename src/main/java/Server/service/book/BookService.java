@@ -13,6 +13,7 @@ import Server.model.book.Book;
 import Server.model.book.BookItem;
 import Server.model.book.BookRecord;
 import Server.model.book.BookStatus;
+import Server.model.book.Category;
 import Server.util.DatabaseUtil;
 public class BookService {
 
@@ -25,10 +26,15 @@ public class BookService {
     }
 
     // 根据书籍名称检索书籍信息
-    public List<Book> searchBooks(String name) {
+    public List<Book> searchBooks(String name, Category category) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            return bookMapper.findByName("%" + name + "%");
+
+            // 如果name为空，则传null；category为空则传null
+            return bookMapper.findByNameAndCategory(
+                    (name == null || name.isBlank()) ? null : name,
+                    category
+            );
         }
     }
 
@@ -158,6 +164,7 @@ public class BookService {
             // 4. 更新副本状态为借出
             bookItem.setBookStatus(BookStatus.LEND);
             bookItemMapper.updateBookItem(bookItem);
+
             Book book = bookMapper.findByIsbn(bookItem.getIsbn());
 
             // 7. 插入借阅记录
