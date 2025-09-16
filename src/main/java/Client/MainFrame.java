@@ -5,7 +5,7 @@ import Client.login.LoginClientFX;
 import Client.studentmgmt.admin.StudentAdminPanel;
 import Client.studentmgmt.student.StudentSelfPanel;
 import Client.timetable.TimetablePanel;
-import Client.courseselect.CourseSelectPanel;
+import Client.courseselect.CourseSelectMainPanel;
 import Client.teacherclass.MyClassroomPanel;
 import Client.coursemgmt.admin.CourseAdminPanel;
 import Client.finance.FinancePanel; // 新增导入
@@ -258,7 +258,7 @@ public class MainFrame {
             if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
             setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
             currentSelectedButton = courseSelectBtn;
-            setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
+            setCenterContent(new CourseSelectMainPanel(Integer.valueOf(cardNumber)));
         });
 
         myClassroomBtn.setOnAction(e -> {
@@ -397,11 +397,10 @@ public class MainFrame {
                 leftBar.getChildren().add(financeBtn);
                 leftBar.getChildren().add(storeBtn); // 新增：校园商店
             }
-            // AI 助手按钮添加
-            leftBar.getChildren().add(aiAssistBtn);
             // 新增：图书馆按钮添加（对所有用户类型开放）
             leftBar.getChildren().add(libraryBtn);
-
+            // AI 助手按钮添加
+            leftBar.getChildren().add(aiAssistBtn);
 
             // 初次默认选中
             if ("student".equals(userType) || "admin".equals(userType)) {
@@ -468,7 +467,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
                 currentSelectedButton = courseSelectBtn;
-                setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
+                setCenterContent(new CourseSelectMainPanel(Integer.valueOf(cardNumber)));
             });
 
             // 教师-我的课堂
@@ -1145,3 +1144,4 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
+

@@ -31,8 +31,6 @@ public class CourseSelectPanel extends BorderPane {
     private ScrollPane scrollPane;
     private Label statusLabel;
     // 视图切换按钮：全部课程 / 已选课程
-    private Button allCoursesBtn;
-    private Button selectedCoursesBtn;
     private final Map<String, TeachingClass> teachingClassMap;
     private List<StudentTeachingClass> selectedClasses;
     // 防止重复提交的临时集合（线程安全）
@@ -84,32 +82,21 @@ public class CourseSelectPanel extends BorderPane {
         buttonBox.setPadding(new Insets(10, 20, 20, 20));
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-        // 视图切换按钮（全部课程 / 已选课程）
-        allCoursesBtn = new Button("全部课程");
-        selectedCoursesBtn = new Button("已选课程");
-        allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-        selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
-        allCoursesBtn.setOnAction(e -> {
-            allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-            selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
-            showingSelectedView = false;
-            loadCourseData();
-        });
-        selectedCoursesBtn.setOnAction(e -> {
-            selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-            allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
-            showingSelectedView = true;
-            loadSelectedCourses();
-        });
-        HBox viewToggle = new HBox(8, allCoursesBtn, selectedCoursesBtn);
-        viewToggle.setPadding(new Insets(0, 20, 10, 20));
+        VBox mainContainer = new VBox(titleBox, statusBox, scrollPane, buttonBox);
+        mainContainer.setStyle("-fx-background-color: #F3F5F8; -fx-background-radius: 12;");
 
-        VBox mainContainer = new VBox(titleBox, statusBox, viewToggle, scrollPane, buttonBox);
-        mainContainer.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12;");
+        // 使 mainContainer 填满 CourseSelectPanel 的中心区域
+        mainContainer.setFillWidth(true);
+        // 让 scrollPane 随 mainContainer 垂直增长，填充剩余空间
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        scrollPane.setMaxHeight(Double.MAX_VALUE);
+        // 绑定 mainContainer 大小到当前面板，减去外边距（this.setPadding 的 20*2）保证占满
+        mainContainer.prefWidthProperty().bind(this.widthProperty().subtract(40));
+        mainContainer.prefHeightProperty().bind(this.heightProperty().subtract(40));
 
         this.setCenter(mainContainer);
         this.setPadding(new Insets(20));
-        this.setStyle("-fx-background-color: #f8fbff;");
+        this.setStyle("-fx-background-color: #F3F5F8;");
     }
 
     private void loadCourseData() {
@@ -224,9 +211,6 @@ public class CourseSelectPanel extends BorderPane {
                         displayCoursesByCourse(courseListCopy, teachingClassesByCourseCopy);
                         // 显示按课程分组的课程数量，而不是教学班总数
                         statusLabel.setText("共加载 " + courseListCopy.size() + " 门课程，按课程分组显示");
-                        // 保证切换按钮样式与当前视图一致
-                        allCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-                        selectedCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
                     });
                 } else {
                     Platform.runLater(() -> {
@@ -496,9 +480,6 @@ public class CourseSelectPanel extends BorderPane {
         return selectedUuids.contains(teachingClassUuid.trim().toLowerCase());
     }
 
-    // 把后端的 schedule 值格式化为可读文本。
-    // 支持原始时间范围（含 ':'）以及新的节次格式如 "1-2节"、"3节"。
-    // 当识别为节次时，会尝试将节次转换为近似的时间区间（映射表可根据学校实际时间调整）。
     private String formatScheduleValue(String raw) {
         if (raw == null) return "";
         String s = raw.trim();
@@ -639,8 +620,6 @@ public class CourseSelectPanel extends BorderPane {
                     Platform.runLater(() -> {
                         displaySelectedCoursesList(finalList);
                         statusLabel.setText("已选课程: " + finalList.size());
-                        selectedCoursesBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
-                        allCoursesBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff; -fx-font-weight: bold;");
                     });
                 } else {
                     Platform.runLater(() -> {
@@ -669,33 +648,6 @@ public class CourseSelectPanel extends BorderPane {
         for (TeachingClass tc : list) {
             courseListContainer.getChildren().add(createSelectedCourseCard(tc));
         }
-    }
-
-    private void selectCourse(TeachingClass tc) {
-        new Thread(() -> {
-            try {
-                Map<String, Object> data = new HashMap<>();
-                data.put("cardNumber", studentId);
-                data.put("teachingClassUuid", tc.getUuid());
-
-                Request request = new Request("selectCourse", data);
-                String responseStr = ClientNetworkHelper.send(request);
-                Response response = new Gson().fromJson(responseStr, Response.class);
-
-                Platform.runLater(() -> {
-                    if (response.getCode() == 200) {
-                        showAlert("成功", "选课成功！", Alert.AlertType.INFORMATION);
-                        loadCourseData();
-                        // 通知全局事件：学生选课发生变化（用于课表等面板自动刷新）
-                        EventBus.post("student:courseChanged");
-                    } else {
-                        showAlert("选课失败", response.getMessage(), Alert.AlertType.ERROR);
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> showAlert("错误", "网络连接失败: " + e.getMessage(), Alert.AlertType.ERROR));
-            }
-        }).start();
     }
 
     private void selectCourse(TeachingClass tc, Button selectButton) {
@@ -834,3 +786,4 @@ public class CourseSelectPanel extends BorderPane {
         return false;
     }
 }
+
