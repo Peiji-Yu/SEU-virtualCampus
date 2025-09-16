@@ -66,7 +66,6 @@ public class BookService {
         }
     }
 
-
     // 管理员更新书籍
     public boolean updateBook(Book book) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
@@ -147,7 +146,6 @@ public class BookService {
             return bookRecordMapper.findByUserId(userId);
         }
     }
-
 
     // 借书
     public boolean borrowBook(int userId, String uuid) {
