@@ -388,8 +388,9 @@ public class MainFrame {
                 leftBar.getChildren().add(courseMgmtBtn);
                 leftBar.getChildren().add(lostCardAdminBtn); // 新增：挂失管理
             }
+            // 删除学生的“我的课表”按钮，只保留选课按钮
             if ("student".equals(userType)) {
-                leftBar.getChildren().addAll(timetableBtn, courseSelectBtn);
+                leftBar.getChildren().addAll(courseSelectBtn);
             }
             if ("teacher".equals(userType)) {
                 leftBar.getChildren().add(myClassroomBtn);
@@ -444,19 +445,6 @@ public class MainFrame {
                 setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
                 currentSelectedButton = courseMgmtBtn;
                 setCenterContent(new CourseAdminPanel());
-            });
-
-            // 学生-我的课表
-            timetableBtn.setOnAction(e -> {
-                if (currentSelectedButton == timetableBtn) {
-                    return;
-                }
-                if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
-                }
-                setSelectedButtonStyle(timetableBtn, selectedIcon.get(timetableBtn));
-                currentSelectedButton = timetableBtn;
-                setCenterContent(new TimetablePanel(cardNumber));
             });
 
             // 学生-选课

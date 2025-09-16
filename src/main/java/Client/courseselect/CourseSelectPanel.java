@@ -51,10 +51,10 @@ public class CourseSelectPanel extends BorderPane {
     private void initializeUI() {
         // 顶部标题
         Label titleLabel = new Label("课程选课");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
         HBox titleBox = new HBox(titleLabel);
         titleBox.setPadding(new Insets(20));
-        titleBox.setAlignment(Pos.CENTER);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
 
         // 状态标签
         statusLabel = new Label("正在加载课程数据...");
@@ -784,6 +784,10 @@ public class CourseSelectPanel extends BorderPane {
             }
         }
         return false;
+    }
+
+    public void refreshData() {
+        loadCourseData();
     }
 }
 

@@ -5,10 +5,12 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import Client.timetable.TimetablePanel  ;
 
 public class CourseSelectMainPanel extends BorderPane {
     private CourseSelectPanel courseSelectPanel;
     private SelectedCoursesPanel selectedCoursesPanel;
+    private TimetablePanel timetablePanel;
     private Button currentSelectedButton;
     private final int studentId;
 
@@ -51,6 +53,7 @@ public class CourseSelectMainPanel extends BorderPane {
                 if (courseSelectPanel == null) {
                     courseSelectPanel = new CourseSelectPanel(studentId);
                 }
+                courseSelectPanel.refreshData();
                 setCenter(courseSelectPanel);
             }
         });
@@ -76,6 +79,7 @@ public class CourseSelectMainPanel extends BorderPane {
                 if (selectedCoursesPanel == null) {
                     selectedCoursesPanel = new SelectedCoursesPanel(studentId);
                 }
+                selectedCoursesPanel.refreshData();
                 setCenter(selectedCoursesPanel);
             }
         });
@@ -85,12 +89,39 @@ public class CourseSelectMainPanel extends BorderPane {
         separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
         separator2.setMaxWidth(Double.MAX_VALUE);
 
+        // 我的课表课程按钮
+        Button timetableButton = new Button("我的课表");
+        timetableButton.setPrefWidth(210);
+        timetableButton.setPrefHeight(56);
+        resetButtonStyle(timetableButton);
+
+        timetableButton.setOnAction(e -> {
+            if (currentSelectedButton != timetableButton) {
+                resetButtonStyle(currentSelectedButton);
+                setSelectedButtonStyle(timetableButton);
+                currentSelectedButton = timetableButton;
+
+                // 初始化已选课程页面
+                if (timetablePanel == null) {
+                    timetablePanel = new TimetablePanel(Integer.toString(studentId));
+                }
+                setCenter(timetablePanel);
+            }
+        });
+
+        // 添加分割线
+        Region separator3 = new Region();
+        separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+        separator3.setMaxWidth(Double.MAX_VALUE);
+
+
         leftBar.getChildren().addAll(leftLabel, separator,
                 allCoursesButton, separator1,
-                selectedCoursesButton, separator2);
+                selectedCoursesButton, separator2,
+                timetableButton, separator3);
         setLeft(leftBar);
 
-        // 初始化默认面板
+        // 初始化默认面板并刷新
         courseSelectPanel = new CourseSelectPanel(studentId);
         setCenter(courseSelectPanel);
     }

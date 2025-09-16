@@ -34,10 +34,10 @@ public class SelectedCoursesPanel extends BorderPane {
     private void initializeUI() {
         // 顶部标题
         Label titleLabel = new Label("已选课程");
-        titleLabel.setStyle("-fx-font-family: 'Microsoft YaHei UI';-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        titleLabel.setStyle("-fx-font-family: 'Microsoft YaHei UI';-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
         HBox titleBox = new HBox(titleLabel);
         titleBox.setPadding(new Insets(20));
-        titleBox.setAlignment(Pos.CENTER);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
 
         // 状态标签
         statusLabel = new Label("正在加载已选课程...");
@@ -266,5 +266,9 @@ public class SelectedCoursesPanel extends BorderPane {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public void refreshData() {
+        loadSelectedCourses(); // 每次进入都刷新已选课程
     }
 }
