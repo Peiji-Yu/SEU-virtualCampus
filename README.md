@@ -112,14 +112,56 @@ book_item表：书籍副本表
         CONSTRAINT fk_book_item_book FOREIGN KEY (isbn) REFERENCES book(isbn)
     );
 
+<<<<<<< HEAD
+CREATE TABLE book_record (
+    uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
+    user_id INT NOT NULL,                 -- 用户一卡通号
+    borrow_time DATE NOT NULL,            -- 借书时间
+    due_time DATE NOT NULL,               -- 到期时间
+    name VARCHAR(255) NOT NULL,           -- 书名
+);
+
+        CREATE TABLE lib_user (
+            user_id INT PRIMARY KEY,              -- 用户一卡通号
+            borrowed INT NOT NULL DEFAULT 0,      -- 当前已借书数量
+            max_borrowed INT NOT NULL,            -- 最大可借书数量
+            user_status VARCHAR(20) NOT NULL      -- 用户状态 (BORROWING, FREE, OVERDUE, TRUSTBREAK)
+        );
+
+
+=======
 book_record表：借阅记录表
 
+<<<<<<< HEAD
+        CREATE TABLE book_record (
+            uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
+            user_id INT NOT NULL,                 -- 用户一卡通号
+            borrow_time DATE NOT NULL,            -- 借书时间
+            due_time DATE NOT NULL,               -- 到期时间
+            name VARCHAR(255) NOT NULL            -- 书名
+        );
+>>>>>>> 4754b8772aa31ff689fccd1fb7c685437413d647
+
+students表: 学生表
+
+        CREATE TABLE students (
+            card_number INT(9) UNSIGNED ZEROFILL PRIMARY KEY,   --一卡通号
+            student_number INT(8) UNSIGNED ZEROFILL UNIQUE NOT NULL,  --学号
+            name VARCHAR(50) NOT NULL,     --姓名
+            major VARCHAR(100) NOT NULL,    --专业
+            school VARCHAR(100) NOT NULL,    --学院
+            status ENUM('在校', '休学', '退学', '毕业') DEFAULT '在校',  --学籍状态
+            -- 添加检查约束确保卡号和学号长度正确
+    CONSTRAINT chk_card_number_length CHECK (LENGTH(card_number) = 9),
+    CONSTRAINT chk_student_number_length CHECK (LENGTH(student_number) = 8)
+=======
     CREATE TABLE book_record (
         uuid CHAR(36) PRIMARY KEY,            -- 借阅记录UUID
         user_id INT NOT NULL,                 -- 用户一卡通号
         borrow_time DATE NOT NULL,            -- 借书时间
         due_time DATE NOT NULL,               -- 到期时间
         name VARCHAR(255) NOT NULL            -- 书名
+>>>>>>> b34111e22c580630276063deb5db40d78cb9ee55
     );
 
 courses表: 课程表
@@ -155,6 +197,55 @@ teaching_classes表: 教学班表
 
 student_teaching_class表: 选课关系表
 
+<<<<<<< HEAD
+        CREATE TABLE student_teaching_class (
+            id INT AUTO_INCREMENT PRIMARY KEY,  
+            student_card_number INT(9) UNSIGNED ZEROFILL NOT NULL,  --学生一卡通号
+            teaching_class_uuid VARCHAR(36) NOT NULL,   --教学班uuid
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_student_class (student_card_number, teaching_class_uuid),
+            FOREIGN KEY (student_card_number) REFERENCES students(card_number) ON DELETE CASCADE,
+            FOREIGN KEY (teaching_class_uuid) REFERENCES teaching_classes(uuid) ON DELETE CASCADE
+        );
+
+teaching_class_students图: 教学班学生列表视图
+
+        CREATE VIEW teaching_class_students AS
+        SELECT 
+            stc.teaching_class_uuid,
+            s.card_number,
+            s.student_number,
+            s.name,
+            s.major,
+            s.school,
+            s.status
+        FROM student_teaching_class stc
+        JOIN students s ON stc.student_card_number = s.card_number;
+
+student_selected_courses图：学生已选课程视图
+
+        CREATE VIEW student_selected_courses AS
+        SELECT 
+            stc.student_card_number,
+            tc.uuid as teaching_class_uuid,
+            tc.course_id,
+            c.course_name,
+            c.school as course_school,
+            c.credit,
+            tc.teacher_name,
+            tc.schedule,
+            tc.place,
+            tc.capacity,
+            tc.selected_count
+        FROM student_teaching_class stc
+        JOIN teaching_classes tc ON stc.teaching_class_uuid = tc.uuid
+        JOIN courses c ON tc.course_id = c.course_id;
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> 4754b8772aa31ff689fccd1fb7c685437413d647
+=======
     CREATE TABLE student_teaching_class (
     id INT AUTO_INCREMENT PRIMARY KEY,  
     student_card_number INT(9) NOT NULL,  -- 学生一卡通号
@@ -164,3 +255,4 @@ student_teaching_class表: 选课关系表
     FOREIGN KEY (student_card_number) REFERENCES student(card_number) ON DELETE CASCADE,
     FOREIGN KEY (teaching_class_uuid) REFERENCES teaching_classes(uuid) ON DELETE CASCADE
     );
+>>>>>>> b34111e22c580630276063deb5db40d78cb9ee55

@@ -94,16 +94,6 @@ public class StoreService {
         }
     }
 
-//    /**
-//     * 获取所有商品类别
-//     */
-//    public List<String> getAllCategories() {
-//        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-//            StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-//            return storeMapper.findAllCategories();
-//        }
-//    }
-
     /**
      * 按类别和关键词搜索商品
      */
@@ -141,7 +131,7 @@ public class StoreService {
 
             // 插入订单商品项
             for (StoreOrderItem item : order.getItems()) {
-                item.setOrderUuid(order.getUuid());
+                item.setOrderId(order.getId());
                 int itemResult = storeMapper.insertOrderItem(item);
 
                 if (itemResult == 0) {
@@ -168,12 +158,12 @@ public class StoreService {
     /**
      * 支付订单（使用一卡通支付）
      */
-    public boolean payOrder(UUID orderUuid) {
+    public boolean payOrder(String orderId) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
             FinanceService financeService = new FinanceService();
 
-            StoreOrder order = storeMapper.findOrderWithDetailsById(orderUuid);
+            StoreOrder order = storeMapper.findOrderWithDetailsById(orderId);
             if (order == null) {
                 throw new RuntimeException("订单不存在");
             }
@@ -187,11 +177,11 @@ public class StoreService {
                     order.getCardNumber(),
                     order.getTotalAmount(),
                     "商店购物支付",
-                    orderUuid.toString()
+                    orderId
             );
 
             if (paymentResult) {
-                int updateResult = storeMapper.updateOrderStatus(orderUuid, STATUS_PAID);
+                int updateResult = storeMapper.updateOrderStatus(orderId, STATUS_PAID);
                 for (StoreOrderItem item : order.getItems()) {
                     storeMapper.increaseItemSales(item.getItemUuid(), item.getAmount());
                 }
@@ -206,11 +196,11 @@ public class StoreService {
     /**
      * 取消订单
      */
-    public boolean cancelOrder(UUID orderUuid) {
+    public boolean cancelOrder(String orderId) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
 
-            StoreOrder order = storeMapper.findOrderWithDetailsById(orderUuid);
+            StoreOrder order = storeMapper.findOrderWithDetailsById(orderId);
             if (order == null) {
                 throw new RuntimeException("订单不存在");
             }
@@ -232,7 +222,7 @@ public class StoreService {
                 }
             }
 
-            int upd = storeMapper.updateOrderStatus(orderUuid, STATUS_CANCELLED);
+            int upd = storeMapper.updateOrderStatus(orderId, STATUS_CANCELLED);
             sqlSession.commit();
             return upd > 0;
         }
@@ -241,12 +231,12 @@ public class StoreService {
     /**
      * 退款操作：已支付 -> 已退款；回增库存，减少销量
      */
-    public boolean refundOrder(UUID orderUuid, String refundReason) {
+    public boolean refundOrder(String orderId, String refundReason) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
             FinanceService financeService = new FinanceService();
 
-            StoreOrder order = storeMapper.findOrderWithDetailsById(orderUuid);
+            StoreOrder order = storeMapper.findOrderWithDetailsById(orderId);
             if (order == null) {
                 throw new RuntimeException("订单不存在");
             }
@@ -259,12 +249,12 @@ public class StoreService {
                     order.getCardNumber(),
                     order.getTotalAmount(),
                     "订单退款",
-                    orderUuid.toString()
+                    orderId
             );
 
             if (refundResult) {
                 String newRemark = "退款原因：" + (refundReason != null && !refundReason.isBlank() ? refundReason : "");
-                int updateResult = storeMapper.updateOrderStatusAndRemark(orderUuid, STATUS_REFUNDED, newRemark);
+                int updateResult = storeMapper.updateOrderStatusAndRemark(orderId, STATUS_REFUNDED, newRemark);
 
                 for (StoreOrderItem item : order.getItems()) {
                     storeMapper.decreaseItemSales(item.getItemUuid(), item.getAmount());
@@ -302,10 +292,10 @@ public class StoreService {
     }
 
     // 添加获取完整订单信息的方法
-    public StoreOrder getOrderById(UUID orderUuid) {
+    public StoreOrder getOrderById(String orderId) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             StoreMapper storeMapper = sqlSession.getMapper(StoreMapper.class);
-            return storeMapper.findOrderWithDetailsById(orderUuid);
+            return storeMapper.findOrderWithDetailsById(orderId);
         }
     }
 

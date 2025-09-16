@@ -7,7 +7,7 @@ import java.util.UUID;
  */
 public class StoreOrderItem {
     private UUID uuid;           // 订单项ID
-    private UUID orderUuid;      // 订单ID
+    private String orderId;      // 订单ID
     private UUID itemUuid;       // 商品ID
     private Integer itemPrice;   // 商品单价（以分为单位）
     private Integer amount;      // 商品数量
@@ -16,9 +16,9 @@ public class StoreOrderItem {
     // 构造方法
     public StoreOrderItem() {}
 
-    public StoreOrderItem(UUID orderUuid, UUID itemUuid, Integer itemPrice, Integer amount) {
+    public StoreOrderItem(String orderId, UUID itemUuid, Integer itemPrice, Integer amount) {
         this.uuid = UUID.randomUUID();
-        this.orderUuid = orderUuid;
+        this.orderId = orderId;
         this.itemUuid = itemUuid;
         this.itemPrice = itemPrice;
         this.amount = amount;
@@ -33,12 +33,12 @@ public class StoreOrderItem {
         this.uuid = uuid;
     }
 
-    public UUID getOrderUuid() {
-        return orderUuid;
+    public String getOrderId() {
+        return orderId;
     }
 
-    public void setOrderUuid(UUID orderUuid) {
-        this.orderUuid = orderUuid;
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     public UUID getItemUuid() {
@@ -73,7 +73,7 @@ public class StoreOrderItem {
     public String toString() {
         return "StoreOrderItem{" +
                 "uuid=" + uuid +
-                ", orderUuid=" + orderUuid +
+                ", orderId=" + orderId +
                 ", itemUuid=" + itemUuid +
                 ", itemPrice=" + itemPrice +
                 ", amount=" + amount +

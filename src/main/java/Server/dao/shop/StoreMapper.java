@@ -23,7 +23,7 @@ public interface StoreMapper {
     /**
      * 根据关键词搜索商品
      */
-    @Select("SELECT * FROM store_item WHERE item_name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%')")
+    @Select("SELECT * FROM store_item WHERE item_name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%') OR barcode = #{keyword}")
     List<StoreItem> searchItems(@Param("keyword") String keyword);
 
     /**
@@ -87,7 +87,7 @@ public interface StoreMapper {
      * 按类别和关键词搜索商品
      */
     @Select("SELECT * FROM store_item WHERE category = #{category} AND " +
-            "(item_name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))")
+            "(item_name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%') OR barcode = #{keyword})")
     List<StoreItem> searchItemsByCategoryAndKeyword(@Param("category") String category,
                                                     @Param("keyword") String keyword);
 
@@ -97,14 +97,14 @@ public interface StoreMapper {
      * 插入订单主信息
      */
     @Insert("INSERT INTO store_order (uuid, card_number, total_amount, time, status, remark) " +
-            "VALUES (#{uuid}, #{cardNumber}, #{totalAmount}, #{time}, #{status}, #{remark})")
+            "VALUES (#{id}, #{cardNumber}, #{totalAmount}, #{time}, #{status}, #{remark})")
     int insertOrder(StoreOrder order);
 
     /**
      * 插入订单商品项
      */
     @Insert("INSERT INTO store_order_item (uuid, order_uuid, item_uuid, item_price, amount) " +
-            "VALUES (#{uuid}, #{orderUuid}, #{itemUuid}, #{itemPrice}, #{amount})")
+            "VALUES (#{uuid}, #{orderId}, #{itemUuid}, #{itemPrice}, #{amount})")
     int insertOrderItem(StoreOrderItem orderItem);
 
 //    /**
@@ -145,7 +145,7 @@ public interface StoreMapper {
      */
     @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
     @Results({
-            @Result(property = "uuid", column = "uuid"),
+            @Result(property = "id", column = "uuid"),
             @Result(property = "cardNumber", column = "card_number"),
             @Result(property = "totalAmount", column = "total_amount"),
             @Result(property = "time", column = "time"),
@@ -154,7 +154,7 @@ public interface StoreMapper {
             @Result(property = "items", column = "uuid",
                     many = @Many(select = "Server.dao.shop.StoreMapper.findOrderItemsWithDetailsByOrderId"))
     })
-    StoreOrder findOrderWithDetailsById(@Param("uuid") UUID uuid);
+    StoreOrder findOrderWithDetailsById(@Param("id") String id);
 
     /**
      * 查询订单的所有商品项（包含商品详细信息）
@@ -165,7 +165,7 @@ public interface StoreMapper {
             "WHERE soi.order_uuid = #{orderUuid}")
     @Results({
             @Result(property = "uuid", column = "uuid"),
-            @Result(property = "orderUuid", column = "order_uuid"),
+            @Result(property = "orderId", column = "order_uuid"),
             @Result(property = "itemUuid", column = "item_uuid"),
             @Result(property = "itemPrice", column = "item_price"),
             @Result(property = "amount", column = "amount"),
@@ -175,22 +175,22 @@ public interface StoreMapper {
             @Result(property = "item.category", column = "category"),
             @Result(property = "item.barcode", column = "barcode")
     })
-    List<StoreOrderItem> findOrderItemsWithDetailsByOrderId(@Param("orderUuid") UUID orderUuid);
+    List<StoreOrderItem> findOrderItemsWithDetailsByOrderId(@Param("orderId") String Id);
 
     /**
      * 更新订单状态
      */
-    @Update("UPDATE store_order SET status = #{status} WHERE uuid = #{uuid}")
-    int updateOrderStatus(@Param("uuid") UUID uuid, @Param("status") String status);
+    @Update("UPDATE store_order SET status = #{status} WHERE uuid = #{Id}")
+    int updateOrderStatus(@Param("Id") String Id, @Param("status") String status);
 
 //    /**
 //     * 删除订单（同时删除关联的商品项）
 //     */
-//    @Delete("DELETE FROM store_order WHERE uuid = #{uuid}")
-//    int deleteOrder(@Param("uuid") UUID uuid);
+//    @Delete("DELETE FROM store_order WHERE uuid = #{id}")
+//    int deleteOrder(@Param("id") String orderId);
 //
-//    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{orderUuid}")
-//    int deleteOrderItems(@Param("orderUuid") UUID orderUuid);
+//    @Delete("DELETE FROM store_order_item WHERE order_uuid = #{id}")
+//    int deleteOrderItems(@Param("id") String orderId);
 
     /**
      * 减少商品销量（退款时调用）
@@ -213,8 +213,8 @@ public interface StoreMapper {
     /**
      * 更新订单状态和备注
      */
-    @Update("UPDATE store_order SET status = #{status}, remark = #{remark} WHERE uuid = #{uuid} AND status = '已支付'")
-    int updateOrderStatusAndRemark(@Param("uuid") UUID uuid, @Param("status") String status, @Param("remark") String remark);
+    @Update("UPDATE store_order SET status = #{status}, remark = #{remark} WHERE uuid = #{id} AND status = '已支付'")
+    int updateOrderStatusAndRemark(@Param("id") String orderId, @Param("status") String status, @Param("remark") String remark);
 
     // 销售统计相关操作
 

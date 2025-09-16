@@ -9,6 +9,7 @@ import Server.model.student.Gender;
 import Server.model.student.PoliticalStatus;
 import Server.model.student.Student;
 import Server.model.student.StudentStatus;
+import Server.service.course.*;
 import Server.service.login.UserService;
 import Server.service.student.StudentService;
 import Server.service.shop.FinanceService;
@@ -22,7 +23,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.google.gson.stream.JsonToken;
-
+import Server.model.book.Category;
 import Server.model.course.Course;
 import Server.model.course.TeachingClass;
 import Server.model.course.ClassStudent;
@@ -31,6 +32,7 @@ import Server.service.course.ClassStudentService;
 import Server.service.course.CourseService;
 import Server.service.course.TeachingClassService;
 import Server.service.course.StudentTeachingClassService;
+import Server.model.course.Teacher;
 import Server.service.book.BookService;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -115,6 +117,7 @@ public class ClientHandler implements Runnable {
     private final CourseService courseService = new CourseService();
     private final TeachingClassService teachingClassService = new TeachingClassService();
     private final StudentTeachingClassService studentTeachingClassService = new StudentTeachingClassService();
+    private final TeacherService teacherService = new TeacherService();
     private final StoreService storeService = new StoreService();
     private final FinanceService financeService = new FinanceService();
     private final BookService bookService = new BookService();
@@ -203,7 +206,7 @@ public class ClientHandler implements Runnable {
                         } catch (IllegalArgumentException e) {
                             response = Response.error(e.getMessage());
                         } catch (Exception e) {
-                            response = Response.error(500, "搜索过程��发生错误: " + e.getMessage());
+                            response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
                         }
                         break;
 
@@ -280,7 +283,7 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取学院课程成功", schoolCourses);
                         break;
 
-                    // 获取所��教学班
+                    // 获取所在教学班
                     case "getAllTeachingClasses":
                         List<TeachingClass> teachingClasses = teachingClassService.getAllTeachingClasses();
                         response = Response.success("获取所有教学班成功", teachingClasses);
@@ -446,7 +449,7 @@ public class ClientHandler implements Runnable {
                                     } else if (stuNoObj instanceof String) {
                                         stuNoStr = (String) stuNoObj;
                                     } else if (stuNoObj instanceof Number) {
-                                        // 转为整��并左补零
+                                        // 转为整数并左补零
                                         long val = ((Number) stuNoObj).longValue();
                                         stuNoStr = String.format("%08d", val);
                                     } else {
@@ -464,7 +467,7 @@ public class ClientHandler implements Runnable {
 
                             response = Response.success("获取教学班学生列表成功", students);
                         } catch (Exception e) {
-                            response = Response.error("获取���学班学生列表失败: " + e.getMessage());
+                            response = Response.error("获取教学班学生列表失败: " + e.getMessage());
                         }
                         break;
 
@@ -553,7 +556,7 @@ public class ClientHandler implements Runnable {
                         if (newTeachingClass != null && newTeachingClass.getSchedule() != null) {
                             String normalized = normalizeScheduleForStorage(newTeachingClass.getSchedule());
                             if (normalized == null) {
-                                response = Response.error("schedule 字段���式不正确，应为合法的 JSON，例如 {\"周三\": \"1-2节\"}");
+                                response = Response.error("schedule 字段格式不正确，应为合法的 JSON，例如 {\"周三\": \"1-2节\"}");
                                 break;
                             }
                             newTeachingClass.setSchedule(normalized);
@@ -674,6 +677,71 @@ public class ClientHandler implements Runnable {
                                 Response.error("删除教学班失败");
                          break;
 
+                    // 获取所有教师
+                    case "getAllTeachers":
+                        List<Teacher> teachers = teacherService.getAllTeachers();
+                        response = Response.success("获取所有教师成功", teachers);
+                        break;
+
+                    // 根据学院查询教师
+                    case "getTeachersBySchool":
+                        String teacherSchool = (String) request.getData().get("school");
+                        List<Teacher> schoolTeachers = teacherService.findBySchool(teacherSchool);
+                        response = Response.success("获取学院教师成功", schoolTeachers);
+                        break;
+
+                    // 添加教师（管理员功能）
+                    case "addTeacher":
+                        Map<String, Object> teacherData = (Map<String, Object>) request.getData().get("teacher");
+                        Teacher newTeacher = createTeacherFromMap(teacherData);
+
+                        boolean addTeacherResult = teacherService.addTeacher(newTeacher);
+                        response = addTeacherResult ?
+                                Response.success("添加教师成功") :
+                                Response.error("添加教师失败");
+                        break;
+
+                    // 更新教师信息
+                    case "updateTeacher":
+                        Integer updateTeacherId = ((Double) request.getData().get("teacherId")).intValue();
+                        Map<String, Object> teacherUpdates = (Map<String, Object>) request.getData().get("updates");
+
+                        // 获取现有教师信息
+                        Teacher existingTeacher = teacherService.findByTeacherId(updateTeacherId);
+                        if (existingTeacher == null) {
+                            response = Response.error("教师不存在");
+                            break;
+                        }
+
+                        // 应用更新
+                        if (teacherUpdates.containsKey("name")) {
+                            existingTeacher.setName((String) teacherUpdates.get("name"));
+                        }
+                        if (teacherUpdates.containsKey("school")) {
+                            existingTeacher.setSchool((String) teacherUpdates.get("school"));
+                        }
+                        if (teacherUpdates.containsKey("title")) {
+                            existingTeacher.setTitle((String) teacherUpdates.get("title"));
+                        }
+
+                        // 保存更新
+                        boolean updateTeacherResult = teacherService.updateTeacher(existingTeacher);
+                        response = updateTeacherResult ?
+                                Response.success("更新教师成功") :
+                                Response.error("更新教师失败");
+                        break;
+
+                    // 删除教师（管理员功能）
+                    case "deleteTeacher":
+                        Integer deleteTeacherId = ((Double) request.getData().get("teacherId")).intValue();
+
+                        boolean deleteTeacherResult = teacherService.deleteTeacher(deleteTeacherId);
+                        response = deleteTeacherResult ?
+                                Response.success("删除教师成功") :
+                                Response.error("删除教师失败");
+                        break;
+
+
                     case "getFinanceCard":
                         Object cardNumberObj = request.getData().get("cardNumber");
                         if (cardNumberObj == null) {
@@ -684,7 +752,7 @@ public class ClientHandler implements Runnable {
                             Integer cardNumber1 = ((Double) cardNumberObj).intValue();
                             FinanceCard financeCard = financeService.getFinanceCard(cardNumber1);
                             if (financeCard != null) {
-                                response = Response.success("获���一卡通信息成功", financeCard);
+                                response = Response.success("获取一卡通信息成功", financeCard);
                             } else {
                                 response = Response.error("未找到一卡通信息");
                             }
@@ -808,17 +876,12 @@ public class ClientHandler implements Runnable {
                         }
                         break;
 
-                    // 商品类��相关功能
+                    // 商品类别相关功能
                     case "getItemsByCategory":
                         String category = (String) request.getData().get("category");
                         List<StoreItem> categoryItems = storeService.getItemsByCategory(category);
                         response = Response.success("获取类别商品成功", categoryItems);
                         break;
-
-//                    case "getAllCategories":
-//                        List<String> categories = storeService.getAllCategories();
-//                        response = Response.success("获取所有类别成功", categories);
-//                        break;
 
                     case "searchItemsByCategory":
                         String searchCategory = (String) request.getData().get("category");
@@ -863,34 +926,33 @@ public class ClientHandler implements Runnable {
                                 break;
                             }
                         }
+
                         if (orderItemError) break; // 直接结束switch
                         try {
                             StoreOrder order = new StoreOrder(orderCardNumber, totalAmount, orderRemark, orderItems);
                             StoreOrder createdOrder = storeService.createOrder(order);
                             response = Response.success("创建订单成功", createdOrder);
                         } catch (Exception e) {
-                            response = Response.error("创建订单失败: " + e.getMessage());
+                            response = Response.error(e.getMessage());
                         }
                         break;
 
                     case "payOrder":
                         String payOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(payOrderIdStr);
-                            boolean payResult = storeService.payOrder(orderId);
+                            boolean payResult = storeService.payOrder(payOrderIdStr);
                             response = payResult ? Response.success("支付成功") : Response.error("支付失败");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
                         } catch (Exception e) {
-                            response = Response.error("支付失败: " + e.getMessage());
+                            response = Response.error("支付失败！" + e.getMessage());
                         }
                         break;
 
                     case "cancelOrder":
                         String cancelOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(cancelOrderIdStr);
-                            boolean cancelResult = storeService.cancelOrder(orderId);
+                            boolean cancelResult = storeService.cancelOrder(cancelOrderIdStr);
                             response = cancelResult ? Response.success("取消订单成功") : Response.error("取消订单失败");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
@@ -914,8 +976,7 @@ public class ClientHandler implements Runnable {
                     case "getOrder":
                         String getOrderIdStr = (String) request.getData().get("orderId");
                         try {
-                            UUID orderId = UUID.fromString(getOrderIdStr);
-                            StoreOrder order = storeService.getOrderById(orderId);
+                            StoreOrder order = storeService.getOrderById(getOrderIdStr);
                             response = (order != null) ? Response.success("获取订单成功", order) : Response.error("订单不存在");
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
@@ -925,7 +986,7 @@ public class ClientHandler implements Runnable {
                     case "getSalesStats":
                         // 管理员功能：获取销售统计
                         List<StoreMapper.SalesStats> salesStats = storeService.getSalesStatistics();
-                        response = Response.success("获取销���统计成功", salesStats);
+                        response = Response.success("获取销售统计成功", salesStats);
                         break;
 
                     case "getTodaySalesStats":
@@ -953,8 +1014,7 @@ public class ClientHandler implements Runnable {
                         String refundReason = (String) refundData.get("reason");
 
                         try {
-                            UUID orderId = UUID.fromString(refundOrderIdStr);
-                            boolean refundResult = storeService.refundOrder(orderId, refundReason);
+                            boolean refundResult = storeService.refundOrder(refundOrderIdStr, refundReason);
                             response = refundResult ?
                                     Response.success("退款成功") :
                                     Response.error("退款失败");
@@ -968,19 +1028,21 @@ public class ClientHandler implements Runnable {
                     // 🔍 搜索书籍（通过书名）
                     case "searchBooks":
                         String searchBookText = (String) request.getData().get("searchText");
-                        if (searchBookText == null) {
-                            response = Response.error("搜索参数不完整");
-                            break;
+                        String categoryStr = (String) request.getData().get("category"); // 前端传类别字符串，比如 "SCIENCE" 或 null/空表示全部
+
+                        Category categorybook = null;
+                        if (categoryStr != null) {
+                            categorybook = Category.valueOf(categoryStr); // 将字符串转为枚举
                         }
+
                         try {
-                            List<Book> books = bookService.searchBooks(searchBookText);
+                            List<Book> books = bookService.searchBooks(searchBookText, categorybook);
                             response = Response.success("搜索完成", books);
                         } catch (Exception e) {
-                            response = Response.error(500, "搜索过程中发生���误: " + e.getMessage());
+                            response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
                         }
+
                         break;
-
-
 
                     // 📖 获取个人借阅记录（通过 userId）
                     case "getOwnRecords": {
@@ -1052,8 +1114,7 @@ public class ClientHandler implements Runnable {
                             response = Response.error("缺少 uuid 或 userId 参数");
                             break;
                         }
-                        boolean result = bookService.borrowBook(userId, isbn);
-                        response = result ? Response.success("借书成功") : Response.error("借书失败");
+                        response = bookService.borrowBook(userId, isbn);
                         break;
                     }
 
@@ -1068,70 +1129,71 @@ public class ClientHandler implements Runnable {
                         response = result ? Response.success("还书成功") : Response.error("还书失败");
                         break;
                     }
+
                     // ➕ 添加书籍实体
-                        case "addBookItem": {
-                            Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
-                            BookItem newbookItem = createBookItemFromMap(bookitemData); // 需要自己写的方法，将 Map 转成 BookItem
-                            boolean result = bookService.addBookItem(newbookItem);
-                            response = result ? Response.success("添加成功", newbookItem.getUuid()) : Response.error("添加失败");
-                            break;
-                        }
+                    case "addBookItem": {
+                        Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
+                        BookItem newbookItem = createBookItemFromMap(bookitemData); // 需要自己写的方法，将 Map 转成 BookItem
+                        boolean result = bookService.addBookItem(newbookItem);
+                        response = result ? Response.success("添加成功", newbookItem.getUuid()) : Response.error("添加失败");
+                        break;
+                    }
 
-                        // ❌ 删除书籍实体
-                        case "deleteBookItem": {
-                            String uuid = (String) request.getData().get("uuid");
-                            if (uuid == null) {
-                                response = Response.error("缺少 uuid 参数");
-                                break;
-                            }
-                            boolean result = bookService.deleteBookItem(uuid);
-                            response = result ? Response.success("删除成功") : Response.error("删除失败");
+                    // ❌ 删除书籍实体
+                    case "deleteBookItem": {
+                        String uuid = (String) request.getData().get("uuid");
+                        if (uuid == null) {
+                            response = Response.error("缺少 uuid 参数");
                             break;
                         }
+                        boolean result = bookService.deleteBookItem(uuid);
+                        response = result ? Response.success("删除成功") : Response.error("删除失败");
+                        break;
+                    }
 
-                        // ✏ 更新书籍实体
-                        case "updateBookItem": {
-                            Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
-                            BookItem itemUpdate = createBookItemFromMap(bookitemData);
-                            boolean result = bookService.updateBookItem(itemUpdate);
-                            response = result ? Response.success("更新成功") : Response.error("更新失败");
-                            break;
-                        }
+                    // ✏ 更新书籍实体
+                    case "updateBookItem": {
+                        Map<String, Object> bookitemData = (Map<String, Object>) request.getData().get("bookItem");
+                        BookItem itemUpdate = createBookItemFromMap(bookitemData);
+                        boolean result = bookService.updateBookItem(itemUpdate);
+                        response = result ? Response.success("更新成功") : Response.error("更新失败");
+                        break;
+                    }
 
-                        // 🔍 查询书籍实体（根据 UUID）
-                        case "findBookItem": {
-                            String uuid = (String) request.getData().get("uuid");
-                            if (uuid == null) {
-                                response = Response.error("缺少 uuid 参数");
-                                break;
-                            }
-                            try {
-                                BookItem item = bookService.getBookItemByUuid(uuid);
-                                response = item != null ? Response.success("查询成功", item) : Response.error("未找到对应书籍实体");
-                            } catch (Exception e) {
-                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
-                            }
+                    // 🔍 查询书籍实体（根据 UUID）
+                    case "findBookItem": {
+                        String uuid = (String) request.getData().get("uuid");
+                        if (uuid == null) {
+                            response = Response.error("缺少 uuid 参数");
                             break;
                         }
-                        // 🔍 根据 ISBN 搜索书籍实体
-                        case "searchBookItems": {
-                            String isbn = (String) request.getData().get("isbn");
-                            if (isbn == null) {
-                                response = Response.error("缺少 ISBN 参数");
-                                break;
-                            }
-                            try {
-                                List<BookItem> itembooks = bookService.retrieveBookItems(isbn);
-                                response = Response.success("查询成功", itembooks);
-                            } catch (Exception e) {
-                                response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
-                            }
-                            break;
+                        try {
+                            BookItem item = bookService.getBookItemByUuid(uuid);
+                            response = item != null ? Response.success("查询成功", item) : Response.error("未找到对应书籍实体");
+                        } catch (Exception e) {
+                            response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
                         }
+                        break;
+                    }
 
+                    // 🔍 根据 ISBN 搜索书籍实体
+                    case "searchBookItems": {
+                        String isbn = (String) request.getData().get("isbn");
+                        if (isbn == null) {
+                            response = Response.error("缺少 ISBN 参数");
+                            break;
+                        }
+                        try {
+                            List<BookItem> itembooks = bookService.retrieveBookItems(isbn);
+                            response = Response.success("查询成功", itembooks);
+                        } catch (Exception e) {
+                            response = Response.error(500, "查询过程中发生错误: " + e.getMessage());
+                        }
+                        break;
+                    }
 
                     default:
-                        response = Response.error("不支持的请求类���: " + request.getType());
+                        response = Response.error("不支持的请求类型: " + request.getType());
                         break;
                 }
 
@@ -1160,7 +1222,7 @@ public class ClientHandler implements Runnable {
         String jsonResponse = gson.toJson(response);
         // 将JSON字符串转换为字节数组
         byte[] jsonBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
-        // 先发��数据长度，再发送数据本身
+        // 先发送数据长度，再发送数据本身
         out.writeInt(jsonBytes.length);
         out.write(jsonBytes);
         out.flush();
@@ -1250,6 +1312,25 @@ public class ClientHandler implements Runnable {
         }
 
         return teachingClass;
+    }
+    // 添加辅助方法，用于从Map创建Teacher对象
+    private Teacher createTeacherFromMap(Map<String, Object> teacherData) {
+        Teacher teacher = new Teacher();
+
+        if (teacherData.containsKey("teacherId")) {
+            teacher.setTeacherId(((Double) teacherData.get("teacherId")).intValue());
+        }
+        if (teacherData.containsKey("name")) {
+            teacher.setName((String) teacherData.get("name"));
+        }
+        if (teacherData.containsKey("school")) {
+            teacher.setSchool((String) teacherData.get("school"));
+        }
+        if (teacherData.containsKey("title")) {
+            teacher.setTitle((String) teacherData.get("title"));
+        }
+
+        return teacher;
     }
 
     // 添加辅助方法，用于从Map创建StoreItem对象
@@ -1369,7 +1450,7 @@ public class ClientHandler implements Runnable {
         TimeRange(LocalTime s, LocalTime e) { start = s; end = e; }
     }
 
-    // 将 schedule JSON 解析为 Map<day, List<TimeRange>>，兼容��个或逗号分隔的多个时间段
+    // 将 schedule JSON 解析为 Map<day, List<TimeRange>>，兼容单个或逗号分隔的多个时间段
     private Map<String, List<TimeRange>> parseSchedule(String scheduleJson) {
         Map<String, List<TimeRange>> map = new HashMap<>();
         if (scheduleJson == null || scheduleJson.trim().isEmpty()) return map;

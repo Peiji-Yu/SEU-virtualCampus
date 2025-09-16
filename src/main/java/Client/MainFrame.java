@@ -5,9 +5,9 @@ import Client.login.LoginClientFX;
 import Client.studentmgmt.admin.StudentAdminPanel;
 import Client.studentmgmt.student.StudentSelfPanel;
 import Client.timetable.TimetablePanel;
-import Client.courseselect.CourseSelectPanel;
+import Client.courseselect.CourseSelectMainPanel;
 import Client.teacherclass.MyClassroomPanel;
-import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.coursemgmt.admin.CourseAdminMainPanel;
 import Client.finance.FinancePanel; // 新增导入
 import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
 import Client.store.StoreMainPanel; // 新增：校园商店面板
@@ -176,12 +176,11 @@ public class MainFrame {
         Button storeBtn = new Button();
         Button aiAssistBtn = new Button();
         Button libraryBtn = new Button();
-        Button reportLossBtn = new Button();
         Button lostCardAdminBtn = new Button();
 
         // 统一尺寸与显示
         List<Button> allBtns = Arrays.asList(stuManageBtn, courseMgmtBtn, timetableBtn, courseSelectBtn,
-                myClassroomBtn, financeBtn, storeBtn, aiAssistBtn, libraryBtn, reportLossBtn, lostCardAdminBtn);
+                myClassroomBtn, financeBtn, storeBtn, aiAssistBtn, libraryBtn, lostCardAdminBtn);
         for (Button b : allBtns) {
             b.setPrefWidth(40); b.setPrefHeight(40);
             b.setMinWidth(40); b.setMinHeight(40);
@@ -228,7 +227,6 @@ public class MainFrame {
         resetButtonStyle(aiAssistBtn, normalIcon.get(aiAssistBtn));
         resetButtonStyle(libraryBtn, normalIcon.get(libraryBtn));
         resetButtonStyle(lostCardAdminBtn, normalIcon.get(lostCardAdminBtn));
-        resetButtonStyle(reportLossBtn, normalIcon.get(reportLossBtn));
 
         // ===== 简化事件处理：统一通过 mapping 切换图标与样式 =====
         stuManageBtn.setOnAction(e -> {
@@ -244,7 +242,7 @@ public class MainFrame {
             if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
             setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
             currentSelectedButton = courseMgmtBtn;
-            setCenterContent(new CourseAdminPanel());
+            setCenterContent(new CourseAdminMainPanel());
         });
 
         timetableBtn.setOnAction(e -> {
@@ -260,7 +258,7 @@ public class MainFrame {
             if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
             setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
             currentSelectedButton = courseSelectBtn;
-            setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
+            setCenterContent(new CourseSelectMainPanel(Integer.valueOf(cardNumber)));
         });
 
         myClassroomBtn.setOnAction(e -> {
@@ -313,6 +311,8 @@ public class MainFrame {
 
         // reportLossBtn 的逻辑保持不变（只是执行挂失操作），样式切换按需要可添加
 
+
+
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
         navButtons.add(stuManageBtn);
@@ -324,8 +324,6 @@ public class MainFrame {
         navButtons.add(storeBtn);   // 校园商店
         navButtons.add(aiAssistBtn); // AI 助手
         navButtons.add(libraryBtn);  // 新增：图书馆
-        navButtons.add(lostCardAdminBtn);
-        navButtons.add(reportLossBtn); // 新增：一卡通挂失按钮
         navButtons.add(lostCardAdminBtn); // 新增：挂失管理按钮
 
         // 为每个按钮添加图标与保存原文案
@@ -338,6 +336,7 @@ public class MainFrame {
         attachIconAndRememberText(storeBtn, iconStore);
         attachIconAndRememberText(aiAssistBtn, iconAI);
         attachIconAndRememberText(libraryBtn, iconLibrary); // 新增：图书馆图标
+        attachIconAndRememberText(lostCardAdminBtn, iconLostCardAdmin);
 
         // 为每个功能区按钮设置右侧 tooltip
         setRightTooltip(stuManageBtn, "学籍管理");
@@ -349,6 +348,7 @@ public class MainFrame {
         setRightTooltip(storeBtn, "校园商店");
         setRightTooltip(aiAssistBtn, "AI助手");
         setRightTooltip(libraryBtn, "图书管理"); // 新增：图书馆提示
+        setRightTooltip(lostCardAdminBtn, "挂失管理");
 
         // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
         centerContainer = new StackPane();
@@ -388,8 +388,9 @@ public class MainFrame {
                 leftBar.getChildren().add(courseMgmtBtn);
                 leftBar.getChildren().add(lostCardAdminBtn); // 新增：挂失管理
             }
+            // 删除学生的“我的课表”按钮，只保留选课按钮
             if ("student".equals(userType)) {
-                leftBar.getChildren().addAll(timetableBtn, courseSelectBtn);
+                leftBar.getChildren().addAll(courseSelectBtn);
             }
             if ("teacher".equals(userType)) {
                 leftBar.getChildren().add(myClassroomBtn);
@@ -399,11 +400,10 @@ public class MainFrame {
                 leftBar.getChildren().add(financeBtn);
                 leftBar.getChildren().add(storeBtn); // 新增：校园商店
             }
-            // AI 助手按钮添加
-            leftBar.getChildren().add(aiAssistBtn);
             // 新增：图书馆按钮添加（对所有用户类型开放）
             leftBar.getChildren().add(libraryBtn);
-
+            // AI 助手按钮添加
+            leftBar.getChildren().add(aiAssistBtn);
 
             // 初次默认选中
             if ("student".equals(userType) || "admin".equals(userType)) {
@@ -444,20 +444,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
                 currentSelectedButton = courseMgmtBtn;
-                setCenterContent(new CourseAdminPanel());
-            });
-
-            // 学生-我的课表
-            timetableBtn.setOnAction(e -> {
-                if (currentSelectedButton == timetableBtn) {
-                    return;
-                }
-                if (currentSelectedButton != null) {
-                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
-                }
-                setSelectedButtonStyle(timetableBtn, selectedIcon.get(timetableBtn));
-                currentSelectedButton = timetableBtn;
-                setCenterContent(new TimetablePanel(cardNumber));
+                setCenterContent(new CourseAdminMainPanel());
             });
 
             // 学生-选课
@@ -470,7 +457,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseSelectBtn, selectedIcon.get(courseSelectBtn));
                 currentSelectedButton = courseSelectBtn;
-                setCenterContent(new CourseSelectPanel(Integer.valueOf(cardNumber)));
+                setCenterContent(new CourseSelectMainPanel(Integer.valueOf(cardNumber)));
             });
 
             // 教师-我的课堂
@@ -531,6 +518,43 @@ public class MainFrame {
                 setCenterContent(new LibraryMainPanel(cardNumber));
             });
 
+
+            // 管理员-挂失管理
+            lostCardAdminBtn.setOnAction(e -> {
+                if (currentSelectedButton == lostCardAdminBtn) return;
+                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+                setSelectedButtonStyle(lostCardAdminBtn, selectedIcon.get(lostCardAdminBtn));
+                currentSelectedButton = lostCardAdminBtn;
+                setCenterContent(new Client.finance.LostCardAdminPanel());
+            });
+
+            // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
+            Region functionSpacer = new Region();
+            VBox.setVgrow(functionSpacer, Priority.ALWAYS);
+            leftBar.getChildren().add(functionSpacer);
+
+
+            // 新增：一卡通挂失按钮添加
+            // 左下角退出登录按钮（保持原样式与逻辑）
+            Button reportLossBtn = new Button();
+            reportLossBtn.setPrefWidth(40);
+            reportLossBtn.setPrefHeight(40);
+            reportLossBtn.setMinWidth(40);
+            reportLossBtn.setMinHeight(40);
+            reportLossBtn.setMaxWidth(40);
+            reportLossBtn.setMaxHeight(40);
+            reportLossBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            reportLossBtn.setAlignment(Pos.CENTER);
+            Image reportLossIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/挂失.png")));
+            // 使用统一方法设置图标（带固定占位 wrapper）
+            attachIconAndRememberText(reportLossBtn, reportLossIcon);
+            reportLossBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";");
+            reportLossBtn.setOnMouseEntered(e -> setButtonHoverShadow(reportLossBtn));
+            reportLossBtn.setOnMouseExited(e -> reportLossBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";"));
+            reportLossBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
+            setRightTooltip(reportLossBtn, "退出登录");
+            leftBar.getChildren().add(reportLossBtn);
+
             // 新增：一卡通挂失事件
             reportLossBtn.setOnAction(e -> {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -564,21 +588,7 @@ public class MainFrame {
                 }
             });
 
-            // 管理员-挂失管理
-            lostCardAdminBtn.setOnAction(e -> {
-                if (currentSelectedButton == lostCardAdminBtn) return;
-                if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
-                setSelectedButtonStyle(lostCardAdminBtn, selectedIcon.get(lostCardAdminBtn));
-                currentSelectedButton = lostCardAdminBtn;
-                setCenterContent(new Client.finance.LostCardAdminPanel());
-            });
-
-            // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
-            Region functionSpacer = new Region();
-            VBox.setVgrow(functionSpacer, Priority.ALWAYS);
-            leftBar.getChildren().add(functionSpacer);
-
-            // 新增：左下角"修改��码"按钮
+            // 新增：左下角"修改密码"按钮
             Button changePwdSidebarBtn = new Button();
             changePwdSidebarBtn.setPrefWidth(40);
             changePwdSidebarBtn.setPrefHeight(40);
@@ -590,11 +600,8 @@ public class MainFrame {
             changePwdSidebarBtn.setAlignment(Pos.CENTER);
             // 设置图标
             Image pwdIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/修改密码.png")));
-            ImageView pwdView = new ImageView(pwdIcon);
-            pwdView.setFitWidth(28);
-            pwdView.setFitHeight(28);
-            pwdView.setPreserveRatio(true);
-            changePwdSidebarBtn.setGraphic(pwdView);
+            // 使用统一方法设置图标（带固定占位 wrapper）
+            attachIconAndRememberText(changePwdSidebarBtn, pwdIcon);
             // 样式与功能区按钮一致
             changePwdSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";");
             // 悬停阴影
@@ -604,9 +611,6 @@ public class MainFrame {
             changePwdSidebarBtn.setOnAction(e -> new LoginClientFX().openAsRecovery(stage, cardNumber));
             // Tooltip
             setRightTooltip(changePwdSidebarBtn, "修改密码");
-            // 新增：一卡通挂失按钮添加
-            leftBar.getChildren().add(reportLossBtn);
-
             // 添加到左侧底部（退出登录按钮之上）
             leftBar.getChildren().add(changePwdSidebarBtn);
 
@@ -621,11 +625,8 @@ public class MainFrame {
             logoutSidebarBtn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             logoutSidebarBtn.setAlignment(Pos.CENTER);
             Image logoutIcon = new Image(Objects.requireNonNull(MainFrame.class.getResourceAsStream("/Image/functionbar/退出.png")));
-            ImageView logoutView = new ImageView(logoutIcon);
-            logoutView.setFitWidth(28);
-            logoutView.setFitHeight(28);
-            logoutView.setPreserveRatio(true);
-            logoutSidebarBtn.setGraphic(logoutView);
+            // 使用统一方法设置图标（带固定占位 wrapper）
+            attachIconAndRememberText(logoutSidebarBtn, logoutIcon);
             logoutSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";");
             logoutSidebarBtn.setOnMouseEntered(e -> setButtonHoverShadow(logoutSidebarBtn));
             logoutSidebarBtn.setOnMouseExited(e -> logoutSidebarBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";"));
@@ -639,7 +640,7 @@ public class MainFrame {
             noFunctionBox.setAlignment(Pos.CENTER);
             noFunctionBox.setStyle("-fx-background-color: " + BACKGROUND_COLOR + "; -fx-background-radius: 12; " +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0, 0, 2); -fx-padding: 40;");
-            Label noFunctionTitle = new Label("欢迎使用智慧���园系统");
+            Label noFunctionTitle = new Label("欢迎使用智慧校园系统");
             noFunctionTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_COLOR + ";");
             Label noFunctionDesc = new Label("您当前的账户类型暂无可用功能模块");
             noFunctionDesc.setStyle("-fx-font-size: 16px; -fx-text-fill: " + SECONDARY_TEXT_COLOR + ";");
@@ -837,7 +838,7 @@ public class MainFrame {
             if (stage != null) stage.setIconified(true);
         });
         // 悬停变灰色
-        minBtn.setOnMouseEntered(e -> minBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        minBtn.setOnMouseEntered(e -> minBtn.setStyle("-fx-background-color: #CED0D6; -fx-background-radius: 0;"));
         minBtn.setOnMouseExited(e -> minBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button maxBtn = new Button();
@@ -863,7 +864,7 @@ public class MainFrame {
             }
         });
         // 悬停变灰色
-        maxBtn.setOnMouseEntered(e -> maxBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        maxBtn.setOnMouseEntered(e -> maxBtn.setStyle("-fx-background-color: #CED0D6; -fx-background-radius: 0;"));
         maxBtn.setOnMouseExited(e -> maxBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button closeBtn = new Button();
@@ -920,7 +921,14 @@ public class MainFrame {
         iv.setFitWidth(28); // 图标宽度扩大
         iv.setFitHeight(28); // 图标高度扩大
         iv.setPreserveRatio(true);
-        btn.setGraphic(iv);
+        iv.setSmooth(true);
+        // 使用固定尺寸的容器包裹 ImageView，保证不同图片（有透明边距或实际像素不同）时图标占位一致
+        StackPane graphicWrapper = new StackPane(iv);
+        graphicWrapper.setPrefSize(28, 28);
+        graphicWrapper.setMinSize(28, 28);
+        graphicWrapper.setMaxSize(28, 28);
+        graphicWrapper.setAlignment(Pos.CENTER);
+        btn.setGraphic(graphicWrapper);
         btn.setGraphicTextGap(8);
     }
 

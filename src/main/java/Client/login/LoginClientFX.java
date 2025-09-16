@@ -116,7 +116,7 @@ public class LoginClientFX extends Application {
             root.getChildren().add(logo);
         }
 
-        welcomeLabel = new Label("welcome,");
+        welcomeLabel = new Label("Welcome,");
         welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
         welcomeLabel.setTextFill(Resources.FONT_COLOR);
         root.getChildren().add(welcomeLabel);
@@ -235,7 +235,7 @@ public class LoginClientFX extends Application {
         inAuthMode = true;
         welcomeLabel.setText("Authentication");
         // 使用系统字体以确保中文可见
-        welcomeLabel.setFont(javafx.scene.text.Font.font(32));
+        welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
         subtitleLabel.setVisible(false);
         // 清空/预填输入并切换占位
         if (externalRecoveryMode && externalCardNumber != null && !externalCardNumber.isEmpty()) {
