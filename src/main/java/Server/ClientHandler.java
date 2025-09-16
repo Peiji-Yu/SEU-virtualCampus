@@ -883,11 +883,6 @@ public class ClientHandler implements Runnable {
                         response = Response.success("获取类别商品成功", categoryItems);
                         break;
 
-//                    case "getAllCategories":
-//                        List<String> categories = storeService.getAllCategories();
-//                        response = Response.success("获取所有类别成功", categories);
-//                        break;
-
                     case "searchItemsByCategory":
                         String searchCategory = (String) request.getData().get("category");
                         String searchKeyword = (String) request.getData().get("keyword");
@@ -931,13 +926,14 @@ public class ClientHandler implements Runnable {
                                 break;
                             }
                         }
+
                         if (orderItemError) break; // 直接结束switch
                         try {
                             StoreOrder order = new StoreOrder(orderCardNumber, totalAmount, orderRemark, orderItems);
                             StoreOrder createdOrder = storeService.createOrder(order);
                             response = Response.success("创建订单成功", createdOrder);
                         } catch (Exception e) {
-                            response = Response.error("创建订单失败: " + e.getMessage());
+                            response = Response.error(e.getMessage());
                         }
                         break;
 
@@ -950,7 +946,7 @@ public class ClientHandler implements Runnable {
                         } catch (IllegalArgumentException e) {
                             response = Response.error("订单ID格式不正确");
                         } catch (Exception e) {
-                            response = Response.error("支付失败: " + e.getMessage());
+                            response = Response.error("支付失败！" + e.getMessage());
                         }
                         break;
 
@@ -1122,8 +1118,7 @@ public class ClientHandler implements Runnable {
                             response = Response.error("缺少 uuid 或 userId 参数");
                             break;
                         }
-                        boolean result = bookService.borrowBook(userId, isbn);
-                        response = result ? Response.success("借书成功") : Response.error("借书失败");
+                        response = bookService.borrowBook(userId, isbn);
                         break;
                     }
 
