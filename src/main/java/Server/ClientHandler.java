@@ -969,16 +969,19 @@ public class ClientHandler implements Runnable {
                     case "searchBooks":
                         String searchBookText = (String) request.getData().get("searchText");
                         String categoryStr = (String) request.getData().get("category"); // 前端传类别字符串，比如 "SCIENCE" 或 null/空表示全部
+
                         Category categorybook = null;
                         if (categoryStr != null) {
                             categorybook = Category.valueOf(categoryStr); // 将字符串转为枚举
                         }
+
                         try {
                             List<Book> books = bookService.searchBooks(searchBookText, categorybook);
                             response = Response.success("搜索完成", books);
                         } catch (Exception e) {
                             response = Response.error(500, "搜索过程中发生错误: " + e.getMessage());
                         }
+
                         break;
 
                     // 📖 获取个人借阅记录（通过 userId）

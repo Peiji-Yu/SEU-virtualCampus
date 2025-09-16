@@ -17,27 +17,28 @@ import Server.model.book.Category;
 import Server.util.DatabaseUtil;
 public class BookService {
 
-    // 根据ISBN检索书籍信息
-    public Book retrieveBook(String isbn) {
+//    // 根据ISBN检索书籍信息
+//    public Book retrieveBook(String isbn) {
+//        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
+//            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
+//            return bookMapper.findByIsbn(isbn);
+//        }
+//    }
+
+    // 根据书籍名称、作者、介绍、类别（可选）检索书籍信息
+    public List<Book> searchBooks(String keyword, Category category) {
         try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
             BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-            return bookMapper.findByIsbn(isbn);
+
+            if (category == null) {
+                // 如果category为空，则不按照类别查找
+                return bookMapper.findBook(keyword);
+            }
+
+            // 如果category非空，则按照类别查找
+            return bookMapper.findBookByCategory(keyword, category);
         }
     }
-
-    // 根据书籍名称检索书籍信息
-    public List<Book> searchBooks(String name, Category category) {
-        try (SqlSession sqlSession = DatabaseUtil.getSqlSession()) {
-            BookMapper bookMapper = sqlSession.getMapper(BookMapper.class);
-
-            // 如果name为空，则传null；category为空则传null
-            return bookMapper.findByNameAndCategory(
-                    (name == null || name.isBlank()) ? null : name,
-                    category
-            );
-        }
-    }
-
 
     // 根据ISBN检索实体书籍
     public List<BookItem> retrieveBookItems(String isbn) {
