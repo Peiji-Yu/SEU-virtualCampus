@@ -1,8 +1,8 @@
 package Client.library.admin;
 
 import Client.ClientNetworkHelper;
-import Client.library.util.model.BookClass;
-import Client.library.util.model.Category;
+import Client.library.model.BookClass;
+import Client.library.model.Category;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
@@ -14,17 +14,16 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
-import javafx.util.StringConverter;
 
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class AddBookPanel extends VBox {
+public class AddBookPanel extends BorderPane {
     private TextField isbnField, titleField, authorField, publisherField;
-    private ComboBox<Category> categoryComboBox;
-    private DatePicker publishDatePicker;
+    private TextField yearField, monthField, dayField;
+    private ToggleGroup categoryToggleGroup;
     private TextArea descriptionArea;
     private Label statusLabel;
 
@@ -41,210 +40,334 @@ public class AddBookPanel extends VBox {
     }
 
     private void initializeUI() {
-        setPadding(new Insets(20));
-        setSpacing(20);
-        setStyle("-fx-background-color: #f5f7fa;");
+        // 设置背景和边距
+        setPadding(new Insets(20, 80, 20, 80));
+        setStyle("-fx-background-color: white;");
 
-        // 标题
+        // 表单容器 - 放在中心
+        VBox formContainer = createFormContainer();
+        setCenter(formContainer);
+
+        // 状态标签 - 放在底部
+        statusLabel = new Label("就绪");
+        statusLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
+        BorderPane.setAlignment(statusLabel, Pos.CENTER_LEFT);
+        BorderPane.setMargin(statusLabel, new Insets(0, 35, 0, 35));
+        setBottom(statusLabel);
+    }
+
+    private VBox createFormContainer() {
+        VBox container = new VBox(5);
+        container.setPadding(new Insets(30));
+        container.setStyle("-fx-background-color: white;");
+        container.setAlignment(Pos.CENTER);
+
+        // 添加标题和说明
         Label titleLabel = new Label("添加书籍");
-        titleLabel.setFont(Font.font(24));
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        titleLabel.setFont(Font.font(32));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
 
-        // 表单容器
-        GridPane form = new GridPane();
-        form.setHgap(15);
-        form.setVgap(15);
-        form.setPadding(new Insets(25));
-        form.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0.0, 0.0);");
+        Label subtitleLabel = new Label("添加新的书籍");
+        subtitleLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
 
-        // 设置列约束，使第二列可以扩展
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPrefWidth(100);
-        ColumnConstraints col2 = new ColumnConstraints();
-        col2.setHgrow(Priority.ALWAYS);
-        form.getColumnConstraints().addAll(col1, col2);
-
-        // 创建标签样式
-        String labelStyle = "-fx-font-weight: bold; -fx-font-size: 14px;";
+        VBox headtitleBox = new VBox(5, titleLabel, subtitleLabel);
+        headtitleBox.setAlignment(Pos.CENTER_LEFT);
+        headtitleBox.setPadding(new Insets(0, 0, 20, 0));
 
         // ISBN字段
-        isbnField = createStyledTextField("ISBN号");
-        form.add(createLabel("ISBN:", labelStyle), 0, 0);
-        form.add(isbnField, 1, 0);
+        VBox isbnBox = createFieldWithLabel("ISBN号");
+        isbnField = createStyledTextField("");
+        isbnBox.getChildren().add(isbnField);
 
-        // 书名字段
-        titleField = createStyledTextField("书名");
-        form.add(createLabel("书名:", labelStyle), 0, 1);
-        form.add(titleField, 1, 1);
+        // 创建GridPane来放置表单字段
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(20);
+        formGrid.setVgap(5);
+        formGrid.setAlignment(Pos.CENTER_LEFT);
 
-        // 作者字段
-        authorField = createStyledTextField("作者");
-        form.add(createLabel("作者:", labelStyle), 0, 2);
-        form.add(authorField, 1, 2);
+        // 书名和作者
+        VBox titleBox = createFieldWithLabel("书名");
+        titleField = createStyledTextField("");
+        titleBox.getChildren().add(titleField);
+        formGrid.add(titleBox, 0, 0);
 
-        // 出版社字段
-        publisherField = createStyledTextField("出版社");
-        form.add(createLabel("出版社:", labelStyle), 0, 3);
-        form.add(publisherField, 1, 3);
+        VBox authorBox = createFieldWithLabel("作者");
+        authorField = createStyledTextField("");
+        authorBox.getChildren().add(authorField);
+        formGrid.add(authorBox, 1, 0);
 
-        // 出版日期字段
-        Label publishDateLabel = createLabel("出版日期:", labelStyle);
-        publishDatePicker = new DatePicker();
-        publishDatePicker.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px;");
-        form.add(publishDateLabel, 0, 4);
-        form.add(publishDatePicker, 1, 4);
+        // 出版社和出版日期
+        VBox publisherBox = createFieldWithLabel("出版社");
+        publisherField = createStyledTextField("");
+        publisherBox.getChildren().add(publisherField);
+        formGrid.add(publisherBox, 0, 1);
 
-        // 类别字段
-        Label categoryLabel = new Label("类别:");
-        categoryLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
-        categoryComboBox = new ComboBox<>();
-        categoryComboBox.getItems().addAll(Category.values());
-        categoryComboBox.setConverter(new StringConverter<Category>() {
-            @Override
-            public String toString(Category category) {
-                return category.getDescription();
-            }
+        VBox dateBox = createFieldWithLabel("出版日期");
+        HBox dateInputBox = new HBox(10);
+        dateInputBox.setAlignment(Pos.CENTER_LEFT);
 
-            @Override
-            public Category fromString(String string) {
-                return null; // 不需要从字符串转换
-            }
-        });
-        categoryComboBox.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px; -fx-background-radius: 5; -fx-border-radius: 5;");
-        categoryComboBox.setButtonCell(new ListCell<Category>() {
-            @Override
-            protected void updateItem(Category item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText("选择类别");
-                } else {
-                    setText(item.getDescription());
-                }
-            }
-        });
-        // 设置默认选择第一个类别
-        if (!categoryComboBox.getItems().isEmpty()) {
-            categoryComboBox.getSelectionModel().selectFirst();
+        yearField = createStyledTextField("年");
+
+        monthField = createStyledTextField("月");
+
+        dayField = createStyledTextField("日");
+
+        dateInputBox.getChildren().addAll(yearField, new Label("-"), monthField, new Label("-"), dayField);
+        dateBox.getChildren().add(dateInputBox);
+        formGrid.add(dateBox, 1, 1);
+
+        // 设置GridPane列约束，使两列等宽
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPercentWidth(50);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setPercentWidth(50);
+        formGrid.getColumnConstraints().addAll(col1, col2);
+
+        // 类别选择 - 使用单选框
+        VBox categoryBox = createFieldWithLabel("类别");
+        categoryToggleGroup = new ToggleGroup();
+
+        // 创建单选框容器
+        FlowPane categoryRadioContainer = new FlowPane();
+        categoryRadioContainer.setHgap(15);
+        categoryRadioContainer.setVgap(10);
+        categoryRadioContainer.setAlignment(Pos.TOP_LEFT);
+
+        // 为每个类别创建单选框
+        for (Category category : Category.values()) {
+            RadioButton radioButton = new RadioButton(category.getDescription());
+            radioButton.setToggleGroup(categoryToggleGroup);
+            radioButton.setUserData(category);
+            radioButton.setStyle("-fx-font-size: 14px; -fx-text-fill: #495057; " +
+                    "-fx-focus-color: #176B3A; -fx-faint-focus-color:transparent; -fx-padding: 5 10 5 5;");
+            categoryRadioContainer.getChildren().add(radioButton);
         }
 
-        form.add(categoryLabel, 0, 5);
-        form.add(categoryComboBox, 1, 5);
+        // 默认选择第一个类别
+        if (!categoryRadioContainer.getChildren().isEmpty()) {
+            ((RadioButton) categoryRadioContainer.getChildren().get(0)).setSelected(true);
+        }
+
+        // 为类别选择添加边框
+        VBox categoryBorderBox = new VBox(categoryRadioContainer);
+        categoryBorderBox.setStyle("-fx-border-color: #ced4da; -fx-border-radius: 5; -fx-padding: 10;");
+        categoryBox.getChildren().add(categoryBorderBox);
 
         // 描述字段
-        Label descriptionLabel = createLabel("描述:", labelStyle);
+        VBox descriptionBox = createFieldWithLabel("描述");
         descriptionArea = new TextArea();
-        descriptionArea.setPromptText("书籍描述");
+        descriptionArea.setPromptText("请输入书籍描述");
         descriptionArea.setWrapText(true);
-        descriptionArea.setPrefRowCount(4);
-        descriptionArea.setStyle("-fx-font-size: 14px; -fx-background-radius: 5; -fx-border-radius: 5;");
-        form.add(descriptionLabel, 0, 6);
-        form.add(descriptionArea, 1, 6);
+        descriptionArea.setPrefRowCount(6);
+
+        descriptionArea.setStyle("-fx-font-size: 14px; -fx-background-radius: 5; " +
+                "-fx-focus-color: #176B3A; -fx-faint-focus-color:transparent; " +
+                "-fx-border-radius: 5;");
+        VBox.setVgrow(descriptionArea, Priority.ALWAYS);
+        descriptionBox.getChildren().add(descriptionArea);
 
         // 按钮区域
-        HBox buttonBox = new HBox(10);
+        HBox buttonBox = new HBox(15);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
-        buttonBox.setPadding(new Insets(15, 0, 0, 0));
+        buttonBox.setPadding(new Insets(20, 0, 0, 0));
 
-        Button submitButton = new Button("添加书籍");
-        submitButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-pref-width: 120px; -fx-pref-height: 35px;");
+        Button submitButton = new Button("添加");
+        submitButton.setStyle("-fx-background-color: #176B3A; " +
+                "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-pref-width: 120px; -fx-pref-height: 45px; -fx-background-radius: 5;");
         submitButton.setOnAction(e -> addBook());
 
-        Button clearButton = new Button("清空");
-        clearButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-pref-width: 120px; -fx-pref-height: 35px;");
-        clearButton.setOnAction(e -> clearForm());
+        buttonBox.getChildren().addAll(submitButton);
 
-        buttonBox.getChildren().addAll(clearButton, submitButton);
+        // 将所有组件添加到容器
+        container.getChildren().addAll(headtitleBox, isbnBox, formGrid, categoryBox, descriptionBox, buttonBox);
 
-        // 状态标签
-        statusLabel = new Label("就绪");
-        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
-        statusLabel.setPadding(new Insets(10, 0, 0, 0));
+        return container;
+    }
 
-        // 添加到主容器
-        getChildren().addAll(titleLabel, form, buttonBox, statusLabel);
+    private VBox createFieldWithLabel(String labelText) {
+        VBox container = new VBox(8);
+
+        Label label = new Label(labelText);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #495057; -fx-font-weight: bold;");
+
+        container.getChildren().add(label);
+        return container;
     }
 
     private TextField createStyledTextField(String prompt) {
         TextField field = new TextField();
         field.setPromptText(prompt);
-        field.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px; -fx-background-radius: 5; -fx-border-radius: 5;");
+        field.setStyle("-fx-font-size: 16px; -fx-pref-height: 45px; " +
+                "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent;" +
+                "-fx-padding: 0 10px;"
+                );
         return field;
-    }
-
-    private Label createLabel(String text, String style) {
-        Label label = new Label(text);
-        label.setStyle(style);
-        return label;
     }
 
     private void addBook() {
         // 验证表单
         if (isbnField.getText().trim().isEmpty()) {
             setStatus("请输入ISBN号");
+            highlightField(isbnField);
             return;
         }
         if (titleField.getText().trim().isEmpty()) {
             setStatus("请输入书名");
+            highlightField(titleField);
             return;
         }
 
+        // 验证日期
+        String yearText = yearField.getText().trim();
+        String monthText = monthField.getText().trim();
+        String dayText = dayField.getText().trim();
+
+        if (yearText.isEmpty() || monthText.isEmpty() || dayText.isEmpty()) {
+            setStatus("请输入完整的出版日期");
+            if (yearText.isEmpty()) highlightField(yearField);
+            if (monthText.isEmpty()) highlightField(monthField);
+            if (dayText.isEmpty()) highlightField(dayField);
+            return;
+        }
+
+        try {
+            int year = Integer.parseInt(yearText);
+            int month = Integer.parseInt(monthText);
+            int day = Integer.parseInt(dayText);
+
+            // 验证月份和日期的有效性
+            if (month < 1 || month > 12) {
+                setStatus("月份必须在1-12之间");
+                highlightField(monthField);
+                return;
+            }
+
+            if (day < 1 || day > 31) {
+                setStatus("日期必须在1-31之间");
+                highlightField(dayField);
+                return;
+            }
+
+            // 验证特定月份的天数
+            if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
+                setStatus("该月份最多只有30天");
+                highlightField(dayField);
+                return;
+            }
+
+            // 验证闰年二月
+            if (month == 2) {
+                boolean isLeapYear = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+                if (isLeapYear && day > 29) {
+                    setStatus("闰年二月最多只有29天");
+                    highlightField(dayField);
+                    return;
+                } else if (!isLeapYear && day > 28) {
+                    setStatus("平年二月最多只有28天");
+                    highlightField(dayField);
+                    return;
+                }
+            }
+
+            // 验证年份合理性（假设书籍出版年份不能早于1000年）
+            if (year < 1000 || year > LocalDate.now().getYear()) {
+                setStatus("年份不合理，请检查");
+                highlightField(yearField);
+                return;
+            }
+
+            // 所有验证通过，继续添加书籍
+            final LocalDate publishDate = LocalDate.of(year, month, day);
+
+            new Thread(() -> {
+                try {
+                    Platform.runLater(() -> setStatus("添加中..."));
+
+                    String isbn = isbnField.getText().trim();
+                    String name = titleField.getText().trim();
+                    String author = authorField.getText().trim();
+                    String publisher = publisherField.getText().trim();
+
+                    // 获取选中的类别
+                    RadioButton selectedRadio = (RadioButton) categoryToggleGroup.getSelectedToggle();
+                    Category selectedCategory = (Category) selectedRadio.getUserData();
+                    String category = selectedCategory.name();
+
+                    String description = descriptionArea.getText().trim();
+
+                    // 构建书籍对象
+                    BookClass book = new BookClass();
+                    book.setIsbn(isbn);
+                    book.setName(name);
+                    book.setAuthor(author);
+                    book.setPublisher(publisher);
+                    book.setPublishDate(publishDate);
+                    book.setCategory(category);
+                    book.setInventory(0); // 默认库存量为0
+                    book.setDescription(description);
+
+                    // 构建添加请求
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("book", book);
+                    Request request = new Request("addBook", data);
+
+                    // 使用ClientNetworkHelper发送请求
+                    String response = ClientNetworkHelper.send(request);
+                    System.out.println("添加响应: " + response);
+
+                    // 解析响应
+                    Map<String, Object> responseMap = gson.fromJson(response, Map.class);
+                    int code = ((Double) responseMap.get("code")).intValue();
+
+                    if (code == 200) {
+                        Platform.runLater(() -> {
+                            setStatus("书籍添加成功");
+                            clearForm();
+                        });
+//                    } else if (code == 400) { // 假设400表示书籍已存在
+//                        Platform.runLater(() -> {
+//                            Alert alert = new Alert(Alert.AlertType.WARNING);
+//                            alert.setTitle("添加失败");
+//                            alert.setHeaderText("书籍已存在");
+//                            alert.setContentText("该ISBN的书籍已存在，请使用修改功能添加副本。");
+//                            alert.showAndWait();
+//                            setStatus("添加失败: 书籍已存在");
+//                        });
+                    } else {
+                        Platform.runLater(() ->
+                                setStatus("添加失败: " + responseMap.get("message")));
+                    }
+                } catch (Exception e) {
+                    Platform.runLater(() ->
+                            setStatus("添加错误: " + e.getMessage()));
+                    e.printStackTrace();
+                }
+            }).start();
+
+        } catch (NumberFormatException e) {
+            setStatus("出版日期必须为数字");
+            if (!yearText.matches("\\d+")) highlightField(yearField);
+            if (!monthText.matches("\\d+")) highlightField(monthField);
+            if (!dayText.matches("\\d+")) highlightField(dayField);
+        }
+    }
+
+    private void highlightField(TextField field) {
+        field.setStyle(field.getStyle() + " -fx-border-color: #dc3545; -fx-border-width: 2px; " +
+                "-fx-focus-color: transparent; -fx-faint-focus-color: transparent; ");
+        // 5秒后移除高亮
         new Thread(() -> {
             try {
-                Platform.runLater(() -> setStatus("添加中..."));
-
-                String isbn = isbnField.getText().trim();
-                String name = titleField.getText().trim();
-                String author = authorField.getText().trim();
-                String publisher = publisherField.getText().trim();
-                LocalDate publishDate = publishDatePicker.getValue();
-                String category = categoryComboBox.getValue().name(); // 获取枚举名称(如"SCIENCE")
-                String description = descriptionArea.getText().trim();
-
-                // 构建书籍对象
-                BookClass book = new BookClass();
-                book.setIsbn(isbn);
-                book.setName(name);
-                book.setAuthor(author);
-                book.setPublisher(publisher);
-                book.setPublishDate(publishDate);
-                book.setCategory(category);
-                book.setInventory(0); // 默认库存量为0
-                book.setDescription(description);
-
-                // 构建添加请求
-                Map<String, Object> data = new HashMap<>();
-                data.put("book", book);
-                Request request = new Request("addBook", data);
-
-                // 使用ClientNetworkHelper发送请求
-                String response = ClientNetworkHelper.send(request);
-                System.out.println("添加响应: " + response);
-
-                // 解析响应
-                Map<String, Object> responseMap = gson.fromJson(response, Map.class);
-                int code = ((Double) responseMap.get("code")).intValue();
-
-                if (code == 200) {
-                    Platform.runLater(() -> {
-                        setStatus("书籍添加成功");
-                        clearForm();
-                    });
-                } else if (code == 409) { // 假设409表示书籍已存在
-                    Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.WARNING);
-                        alert.setTitle("添加失败");
-                        alert.setHeaderText("书籍已存在");
-                        alert.setContentText("该ISBN的书籍已存在，请使用修改功能添加副本。");
-                        alert.showAndWait();
-                        setStatus("添加失败: 书籍已存在");
-                    });
-                } else {
-                    Platform.runLater(() ->
-                            setStatus("添加失败: " + responseMap.get("message")));
-                }
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        setStatus("添加错误: " + e.getMessage()));
+                Thread.sleep(5000);
+                Platform.runLater(() -> {
+                    field.setStyle("-fx-font-size: 16px; -fx-pref-height: 45px; " +
+                            "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                            "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent; " +
+                            "-fx-padding: 0 10px;");
+                });
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }).start();
@@ -255,10 +378,16 @@ public class AddBookPanel extends VBox {
         titleField.clear();
         authorField.clear();
         publisherField.clear();
-        publishDatePicker.setValue(null);
-        categoryComboBox.getSelectionModel().selectFirst(); // 重置为默认选择
+        yearField.clear();
+        monthField.clear();
+        dayField.clear();
+
+        // 重置类别选择为第一个选项
+        if (!categoryToggleGroup.getToggles().isEmpty()) {
+            categoryToggleGroup.selectToggle(categoryToggleGroup.getToggles().get(0));
+        }
+
         descriptionArea.clear();
-        setStatus("表单已清空");
     }
 
     private void setStatus(String message) {

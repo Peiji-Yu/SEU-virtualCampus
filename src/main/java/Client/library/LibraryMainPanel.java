@@ -81,7 +81,7 @@ public class LibraryMainPanel extends BorderPane {
             separator1.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator1.setMaxWidth(Double.MAX_VALUE);
 
-            Button modifyBookButton = new Button("修改书籍");
+            Button modifyBookButton = new Button("管理书籍");
             modifyBookButton.setPrefWidth(210);
             modifyBookButton.setPrefHeight(56);
             resetButtonStyle(modifyBookButton);

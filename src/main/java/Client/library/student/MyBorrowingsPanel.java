@@ -1,7 +1,7 @@
 package Client.library.student;
 
 import Client.ClientNetworkHelper;
-import Client.library.util.model.BookRecord;
+import Client.library.model.BookRecord;
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
