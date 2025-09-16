@@ -40,7 +40,7 @@ public class CourseAdminPanel extends BorderPane {
     }
 
     private void initializeUI() {
-        Label titleLabel = new Label("课程管理（管理员）");
+        Label titleLabel = new Label("课程管理");
         titleLabel.setFont(Font.font(20));
         titleLabel.setStyle("-fx-text-fill: #2a4d7b; -fx-font-weight: bold;");
 
@@ -74,7 +74,7 @@ public class CourseAdminPanel extends BorderPane {
         HBox searchBox = new HBox(12);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(12, 16, 12, 16));
-        searchBox.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8,0,0,2);");
+        searchBox.setStyle("-fx-background-color: #ffffff;");
 
         Label searchLabel = new Label("搜索条件:");
         searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-font-size: 14px;");
@@ -373,6 +373,58 @@ public class CourseAdminPanel extends BorderPane {
         viewListBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff;");
         viewListBtn.setOnAction(e -> showStudentListDialog(tc.getUuid(), tc.getCourseId() + " " + (tc.getCourse() == null ? "" : tc.getCourse().getCourseName())));
 
+        // 新增：添加学生按钮
+        Button addStudentBtn = new Button("添加学生");
+        addStudentBtn.setStyle("-fx-background-color: #28a745; -fx-text-fill: white;");
+        addStudentBtn.setOnAction(e -> {
+            TextInputDialog inputDialog = new TextInputDialog();
+            inputDialog.setTitle("添加学生到教学班");
+            inputDialog.setHeaderText("请输入学生一卡通号");
+            inputDialog.setContentText("一卡通号:");
+            Optional<String> result = inputDialog.showAndWait();
+            result.ifPresent(cardNumber -> {
+                String cardNum = cardNumber == null ? "" : cardNumber.trim();
+                if (cardNum.isEmpty()) {
+                    Alert a = new Alert(Alert.AlertType.ERROR, "一卡通号不能为空", ButtonType.OK);
+                    a.showAndWait();
+                    return;
+                }
+                // 校验为纯数字
+                if (!cardNum.matches("\\d+")) {
+                    Alert a = new Alert(Alert.AlertType.ERROR, "一卡通号必须为纯数字", ButtonType.OK);
+                    a.showAndWait();
+                    return;
+                }
+                new Thread(() -> {
+                    try {
+                        Map<String, Object> data = new HashMap<>();
+                        // 按 selectCourse 规范发送 Long 类型
+                        long cardLong = Long.parseLong(cardNum);
+                        data.put("cardNumber", cardLong);
+                        data.put("teachingClassUuid", tc.getUuid());
+                        Request req = new Request("selectCourse", data);
+                        String resp = ClientNetworkHelper.send(req);
+                        Response rr = new Gson().fromJson(resp, Response.class);
+                        Platform.runLater(() -> {
+                            if (rr.getCode() == 200) {
+                                Alert a = new Alert(Alert.AlertType.INFORMATION, "添加成功", ButtonType.OK);
+                                a.showAndWait();
+                                loadCourseData();
+                            } else {
+                                Alert a = new Alert(Alert.AlertType.ERROR, "添加失败: " + rr.getMessage(), ButtonType.OK);
+                                a.showAndWait();
+                            }
+                        });
+                    } catch (Exception ex) {
+                        Platform.runLater(() -> {
+                            Alert a = new Alert(Alert.AlertType.ERROR, "网络异常: " + ex.getMessage(), ButtonType.OK);
+                            a.showAndWait();
+                        });
+                    }
+                }).start();
+            });
+        });
+
         Button editBtn = new Button("编辑");
         editBtn.setStyle("-fx-background-color: #ffc107; -fx-text-fill: white;");
         editBtn.setOnAction(e -> showEditClassDialogFor(tc));
@@ -381,7 +433,7 @@ public class CourseAdminPanel extends BorderPane {
         delBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white;");
         delBtn.setOnAction(e -> deleteTeachingClassConfirmed(tc));
 
-        HBox btnRow = new HBox(8, spacer, viewListBtn, editBtn, delBtn);
+        HBox btnRow = new HBox(8, spacer, viewListBtn, addStudentBtn, editBtn, delBtn);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(teacher, schedule, place, capacity, btnRow);
