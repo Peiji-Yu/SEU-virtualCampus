@@ -7,7 +7,7 @@ import Client.studentmgmt.student.StudentSelfPanel;
 import Client.timetable.TimetablePanel;
 import Client.courseselect.CourseSelectMainPanel;
 import Client.teacherclass.MyClassroomPanel;
-import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.coursemgmt.admin.CourseAdminMainPanel;
 import Client.finance.FinancePanel; // 新增导入
 import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
 import Client.store.StoreMainPanel; // 新增：校园商店面板
@@ -242,7 +242,7 @@ public class MainFrame {
             if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
             setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
             currentSelectedButton = courseMgmtBtn;
-            setCenterContent(new CourseAdminPanel());
+            setCenterContent(new CourseAdminMainPanel());
         });
 
         timetableBtn.setOnAction(e -> {
@@ -444,7 +444,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(courseMgmtBtn, selectedIcon.get(courseMgmtBtn));
                 currentSelectedButton = courseMgmtBtn;
-                setCenterContent(new CourseAdminPanel());
+                setCenterContent(new CourseAdminMainPanel());
             });
 
             // 学生-选课

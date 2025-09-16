@@ -41,6 +41,10 @@ public class StudentSelfPanel extends VBox {
         scrollPane.setStyle("-fx-background-color: transparent; -fx-padding: 0;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        // 不显示滚动条（隐藏水平与垂直滚动条），但允许平移/拖动视图
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setPannable(true);
 
         VBox contentContainer = new VBox(15);
         contentContainer.setPadding(new Insets(20));
