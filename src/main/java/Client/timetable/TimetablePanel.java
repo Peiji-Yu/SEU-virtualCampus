@@ -22,20 +22,20 @@ import java.util.*;
  * 展示当前学期课表，支持多节连上课程显示
  */
 public class TimetablePanel extends BorderPane {
-    // 颜色定义
-    private static final String PRIMARY_COLOR = "#4e8cff";
-    private static final String BG_COLOR = "#f8fbff";
-    private static final String CARD_BG = "#ffffff";
+    // 颜色定义F4F4F4
+    private static final String PRIMARY_COLOR = "#F4F4F4";
+    private static final String BG_COLOR = "#F4F4F4";
+    private static final String CARD_BG = "#F4F4F4";
     private static final String HEADER_BG = PRIMARY_COLOR;
-    private static final String HEADER_TEXT = "#ffffff";
-    private static final String TEXT_COLOR = "#2a4d7b";
+    private static final String HEADER_TEXT = "#B0B0B8";
+    private static final String TEXT_COLOR = "#101010";
     private static final String SUB_TEXT = "#666666";
     private static final String BORDER_COLOR = "#e2e8f0";
 
     // 课程颜色池（确保视觉区分度）
     private static final String[] COURSE_COLORS = {
-            "#4e8cff", "#6EFF7E", "#ff9f43", "#ff6b6b", "#a55eea",
-            "#fd9644", "#26de81", "#fc5c65", "#778ca3", "#fed330"
+            "#BFAAF7", "#E78B74", "#7BE4D3", "#EAB776", "#7BE4D3",
+            "#DB9CAF", "#7BA6F0", "#DF9AAF", "#778ca3", "#B8A82A"
     };
 
     // 时间槽定义
@@ -558,7 +558,9 @@ public class TimetablePanel extends BorderPane {
     private void addTimeCell(GridPane grid, int col, int row, String timeText) {
         VBox cell = new VBox(2);
         cell.setAlignment(Pos.CENTER);
-        cell.setStyle("-fx-background-color: #f1f6ff; -fx-background-radius: 4;");
+        cell.setStyle("-fx-background-color: #F4F4F4; -fx-background-radius: 4; " +
+                "-fx-border-color: #e2e8f0 transparent #e2e8f0 transparent; " +
+                "-fx-border-width: 1 0 1 0;");
         cell.setPadding(new Insets(5));
 
         Label slotLabel = new Label("第" + row + "节");
@@ -619,7 +621,7 @@ public class TimetablePanel extends BorderPane {
 
     private void addEmptyCell(GridPane grid, int col, int row) {
         Pane cell = new Pane();
-        cell.setStyle("-fx-background-color: #f8fafc; -fx-border-color: " + BORDER_COLOR + "; " +
+        cell.setStyle("-fx-background-color: #F4F4F4; -fx-border-color: " + BORDER_COLOR + "; " +
                      "-fx-border-width: 0.5; -fx-border-radius: 4;");
         grid.add(cell, col, row);
     }

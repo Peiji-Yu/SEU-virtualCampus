@@ -838,7 +838,7 @@ public class MainFrame {
             if (stage != null) stage.setIconified(true);
         });
         // 悬停变灰色
-        minBtn.setOnMouseEntered(e -> minBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        minBtn.setOnMouseEntered(e -> minBtn.setStyle("-fx-background-color: #CED0D6; -fx-background-radius: 0;"));
         minBtn.setOnMouseExited(e -> minBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button maxBtn = new Button();
@@ -864,7 +864,7 @@ public class MainFrame {
             }
         });
         // 悬停变灰色
-        maxBtn.setOnMouseEntered(e -> maxBtn.setStyle("-fx-background-color: #e2e8f0; -fx-background-radius: 0;"));
+        maxBtn.setOnMouseEntered(e -> maxBtn.setStyle("-fx-background-color: #CED0D6; -fx-background-radius: 0;"));
         maxBtn.setOnMouseExited(e -> maxBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0;"));
 
         Button closeBtn = new Button();
