@@ -20,9 +20,8 @@ public interface BookMapper {
             "OR description LIKE CONCAT('%', #{keyword}, '%') OR isbn = #{keyword}")
     List<Book> findBook(@Param("keyword") String keyword);
 
-    @Select("SELECT * FROM book WHERE name LIKE CONCAT('%', #{keyword}, '%') OR author LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR description LIKE CONCAT('%', #{keyword}, '%') OR isbn = #{keyword} AND category = #{category}")
-    List<Book> findBookByCategory(@Param("keyword") String name, @Param("category") Category category);
+    @Select("SELECT * FROM book WHERE category = #{category} AND (name LIKE CONCAT('%', #{keyword}, '%') OR author LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%') OR isbn = #{keyword})")
+    List<Book> findBookByCategory(@Param("keyword") String keyword, @Param("category") Category category);
 
 //    @Select("SELECT * FROM book WHERE author LIKE CONCAT('%', #{author}, '%')")
 //    List<Book> findByAuthor(@Param("author") String author);
