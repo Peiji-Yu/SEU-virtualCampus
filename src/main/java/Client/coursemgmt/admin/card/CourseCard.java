@@ -1,5 +1,7 @@
-package Client.coursemgmt.admin;
+package Client.coursemgmt.admin.card;
 
+import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.coursemgmt.admin.service.CourseCrud;
 import Server.model.course.TeachingClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -69,6 +71,9 @@ public class CourseCard extends VBox {
         addClassBtn.setStyle("-fx-background-color: transparent;");
         addClassBtn.setPrefSize(26, 26);
         addClassBtn.setOnAction(e -> owner.showAddClassForCourse(courseId));
+        addClassBtn.setOnMouseEntered(e ->addClassBtn.setStyle("-fx-background-color: transparent;" +
+                        "-fx-effect: dropshadow(gaussian, #1E1F22, 20, 0, 0, 0);"));
+        addClassBtn.setOnMouseExited(e ->addClassBtn.setStyle("-fx-background-color: transparent;"));
 
         // 编辑课程按钮
         Button editCourseBtn = new Button();
@@ -83,6 +88,9 @@ public class CourseCard extends VBox {
         editCourseBtn.setStyle("-fx-background-color: transparent;");
         editCourseBtn.setPrefSize(26, 26);
         editCourseBtn.setOnAction(e -> CourseCrud.showEditCourseDialog(owner, course));
+        editCourseBtn.setOnMouseEntered(e ->editCourseBtn.setStyle("-fx-background-color: transparent;" +
+                "-fx-effect: dropshadow(gaussian, #1E1F22, 20, 0, 0, 0);"));
+        editCourseBtn.setOnMouseExited(e ->editCourseBtn.setStyle("-fx-background-color: transparent;"));
 
         // 删除课程按钮
         Button delCourseBtn = new Button();
@@ -97,6 +105,9 @@ public class CourseCard extends VBox {
         delCourseBtn.setStyle("-fx-background-color: transparent;");
         delCourseBtn.setPrefSize(26, 26);
         delCourseBtn.setOnAction(e -> CourseCrud.deleteCourseConfirmed(owner, course));
+        delCourseBtn.setOnMouseEntered(e ->delCourseBtn.setStyle("-fx-background-color: transparent;" +
+                "-fx-effect: dropshadow(gaussian, #1E1F22, 20, 0, 0, 0);"));
+        delCourseBtn.setOnMouseExited(e ->delCourseBtn.setStyle("-fx-background-color: transparent;"));
 
         header.getChildren().addAll(title, spacer, addClassBtn, editCourseBtn, delCourseBtn);
 

@@ -1,5 +1,6 @@
-package Client.coursemgmt.admin;
+package Client.coursemgmt.admin.service;
 
+import Client.coursemgmt.admin.CourseAdminPanel;
 import Server.model.Response;
 import Server.model.course.TeachingClass;
 import javafx.application.Platform;

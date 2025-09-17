@@ -1,13 +1,16 @@
-package Client.coursemgmt.admin;
+package Client.coursemgmt.admin.card;
 
-import Server.model.Response;
+import Client.coursemgmt.admin.CourseAdminPanel;
+import Client.coursemgmt.admin.dialog.AddStudentDialog;
+import Client.coursemgmt.admin.service.TeachingClassCrud;
 import Server.model.course.TeachingClass;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
-import java.util.*;
+import java.util.Objects;
 
 
 /**
@@ -102,65 +105,89 @@ public class TeachingClassCard extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        // 顶部行：左侧为教师信息，右侧为编辑/删除按钮
+        HBox topRow = new HBox();
+        Region topSpacer = new Region();
+        HBox.setHgrow(topSpacer, Priority.ALWAYS);
+        HBox editDelBox = new HBox(6);
+        editDelBox.setAlignment(javafx.geometry.Pos.TOP_RIGHT);
+
         Button viewListBtn = new Button("查看名单");
-        viewListBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #4e8cff;");
+        viewListBtn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 12;");
+        viewListBtn.setPrefHeight(30);
+        viewListBtn.setOnMouseEntered(e -> viewListBtn.setStyle("-fx-background-color: #176B3A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 12;"));
+        viewListBtn.setOnMouseExited(e -> viewListBtn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 13;"));
         viewListBtn.setOnAction(e -> owner.showStudentListDialog(tc.getUuid(), tc.getCourseId() + " " + (tc.getCourse() == null ? "" : tc.getCourse().getCourseName())));
 
+
+
         Button addStudentBtn = new Button("添加学生");
-        addStudentBtn.setStyle("-fx-background-color: #28a745; -fx-text-fill: white;");
-        addStudentBtn.setOnAction(e -> {
-            TextInputDialog inputDialog = new TextInputDialog();
-            inputDialog.setTitle("添加学生到教学班");
-            inputDialog.setHeaderText("请输入学生一卡通号");
-            inputDialog.setContentText("一卡通号:");
-            inputDialog.showAndWait().ifPresent(cardNumber -> {
-                String cardNum = cardNumber == null ? "" : cardNumber.trim();
-                if (cardNum.isEmpty()) {
-                    Alert a = new Alert(Alert.AlertType.ERROR, "一卡通号不能为空", ButtonType.OK);
-                    a.showAndWait();
-                    return;
-                }
-                if (!cardNum.matches("\\d+")) {
-                    Alert a = new Alert(Alert.AlertType.ERROR, "一卡通号必须为纯数字", ButtonType.OK);
-                    a.showAndWait();
-                    return;
-                }
-                new Thread(() -> {
-                    try {
-                        long cardLong = Long.parseLong(cardNum);
-                        Response rr = CourseService.sendSelectCourse(cardLong, tc.getUuid());
-                        Platform.runLater(() -> {
-                            if (rr.getCode() == 200) {
-                                Alert a = new Alert(Alert.AlertType.INFORMATION, "添加成功", ButtonType.OK);
-                                a.showAndWait();
-                                owner.loadCourseData();
-                            } else {
-                                Alert a = new Alert(Alert.AlertType.ERROR, "添加失败: " + rr.getMessage(), ButtonType.OK);
-                                a.showAndWait();
-                            }
-                        });
-                    } catch (Exception ex) {
-                        Platform.runLater(() -> {
-                            Alert a = new Alert(Alert.AlertType.ERROR, "网络异常: " + ex.getMessage(), ButtonType.OK);
-                            a.showAndWait();
-                        });
-                    }
-                }).start();
-            });
-        });
+        addStudentBtn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 12;");
+        addStudentBtn.setPrefHeight(30);
+        addStudentBtn.setOnMouseEntered(e -> addStudentBtn.setStyle("-fx-background-color: #176B3A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 12;"));
+        addStudentBtn.setOnMouseExited(e -> addStudentBtn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 6 12;"));
+        addStudentBtn.setOnAction(e -> AddStudentDialog.showAndHandle(owner, tc));
 
-        Button editBtn = new Button("编辑");
-        editBtn.setStyle("-fx-background-color: #ffc107; -fx-text-fill: white;");
+
+        Button editBtn = new Button();
+        Image editImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/编辑.png")));
+        ImageView editView = new ImageView(editImg);
+        editView.setFitWidth(20);
+        editView.setFitHeight(20);
+        editView.setPreserveRatio(true);
+        editView.setSmooth(true);
+        editBtn.setGraphic(editView);
+        editBtn.setTooltip(new Tooltip("编辑"));
+        editBtn.setStyle("-fx-background-color: transparent;");
+        editBtn.setPrefSize(26, 26);
         editBtn.setOnAction(e -> TeachingClassCrud.showEditTeachingClassDialog(owner, tc));
+        editBtn.setOnMouseEntered(e ->editBtn.setStyle("-fx-background-color: transparent;" +
+                "-fx-effect: dropshadow(gaussian, #1E1F22, 20, 0, 0, 0);"));
+        editBtn.setOnMouseExited(e ->editBtn.setStyle("-fx-background-color: transparent;"));
 
-        Button delBtn = new Button("删除");
-        delBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white;");
+
+        Button delBtn = new Button();
+        Image delImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/删除.png")));
+        ImageView delView = new ImageView(delImg);
+        delView.setFitWidth(20);
+        delView.setFitHeight(20);
+        delView.setPreserveRatio(true);
+        delView.setSmooth(true);
+        delBtn.setGraphic(delView);
+        delBtn.setTooltip(new Tooltip("删除"));
+        delBtn.setStyle("-fx-background-color: transparent;");
+        delBtn.setPrefSize(26, 26);
         delBtn.setOnAction(e -> TeachingClassCrud.deleteTeachingClassConfirmed(owner, tc));
+        delBtn.setOnMouseEntered(e ->delBtn.setStyle("-fx-background-color: transparent;" +
+                "-fx-effect: dropshadow(gaussian, #1E1F22, 20, 0, 0, 0);"));
+        delBtn.setOnMouseExited(e ->delBtn.setStyle("-fx-background-color: transparent;"));
 
-        HBox btnRow = new HBox(8, spacer, viewListBtn, addStudentBtn, editBtn, delBtn);
-        btnRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        // 将编辑和删除按钮移动到右上角容器中
+        editDelBox.getChildren().addAll(editBtn, delBtn);
 
-        this.getChildren().addAll(teacher, scheduleBox, place, capacity, btnRow);
+        HBox btnRow = new HBox();
+        double btnSpacing = 8;
+        btnRow.setSpacing(btnSpacing);
+        btnRow.setPadding(new Insets(0, btnSpacing, 0, btnSpacing));
+        btnRow.setAlignment(javafx.geometry.Pos.CENTER);
+
+        // 创建三个“弹簧”
+        Region spring1 = new Region();
+        Region spring2 = new Region();
+        Region spring3 = new Region();
+
+        // 让弹簧可以水平拉伸
+        HBox.setHgrow(spring1, Priority.ALWAYS);
+        HBox.setHgrow(spring2, Priority.ALWAYS);
+        HBox.setHgrow(spring3, Priority.ALWAYS);
+
+        // 把弹簧和按钮按顺序加入
+        btnRow.getChildren().addAll(spring1, viewListBtn, spring2, addStudentBtn, spring3);
+        btnRow.setAlignment(javafx.geometry.Pos.CENTER);
+
+        // 顶部放置教师和右侧编辑/删除按钮，底部保留查看/添加按钮
+        topRow.getChildren().addAll(teacher, topSpacer, editDelBox);
+        this.getChildren().addAll(topRow, scheduleBox, place, capacity, btnRow);
         this.requestLayout();
     }
 

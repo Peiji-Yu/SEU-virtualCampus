@@ -1107,4 +1107,3 @@ public class MainFrame {
         btn.setTooltip(tip);
     }
 }
-

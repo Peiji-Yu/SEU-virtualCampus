@@ -1,4 +1,4 @@
-package Client.coursemgmt.admin;
+package Client.coursemgmt.admin.service;
 
 import Client.ClientNetworkHelper;
 import Server.model.Request;
