@@ -55,7 +55,10 @@ public class SelectedCoursesPanel extends BorderPane {
         scrollPane.setPannable(true);
         scrollPane.setPrefViewportHeight(600);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-
+        // 不显示滚动条（隐藏水平与垂直滚动条），但允许平移/拖动视图
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setPannable(true);
         // 刷新按钮
         Button refreshButton = new Button("刷新列表");
         refreshButton.setStyle("-fx-font-family: 'Microsoft YaHei UI';-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");

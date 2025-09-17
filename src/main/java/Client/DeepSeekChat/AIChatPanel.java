@@ -215,24 +215,17 @@ public class AIChatPanel extends BorderPane {
     private HBox createHeader() {
         HBox header = new HBox();
         header.getStyleClass().add("header");
-        header.setPadding(new Insets(15));
+        header.setPadding(new Insets(20));
         header.setAlignment(Pos.CENTER_LEFT);
 
-        try {
-            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/deepseek-logo.jpeg")));
-            logo.setFitHeight(30);
-            logo.setPreserveRatio(true);
-            Label title = new Label("东南大学虚拟校园系统智能助手");
-            title.getStyleClass().add("title");
-            HBox.setMargin(title, new Insets(0,0,0,10));
-            header.getChildren().addAll(logo, title);
-        } catch (Exception e){
-            Label title = new Label("东南大学虚拟校园系统智能助手");
-            title.getStyleClass().add("title");
-            header.getChildren().add(title);
-        }
+        Label title = new Label("东南大学虚拟校园系统智能助手");
+        title.getStyleClass().add("title");
+        HBox.setMargin(title, new Insets(0, 0, 0, 15));  // 设置左边距
+        header.getChildren().add(title);  // 添加标题到 header
+
         return header;
     }
+
 
     private void createChatArea(){
         chatContainer.getStyleClass().add("chat-container");
@@ -296,7 +289,7 @@ public class AIChatPanel extends BorderPane {
         sendButton.setAlignment(Pos.CENTER);
         try {
             ImageView sendIcon = new ImageView(new Image(getClass().getResourceAsStream("/Image/deepseek/send-icon.png")));
-            sendIcon.setFitHeight(20); sendIcon.setPreserveRatio(true);
+            sendIcon.setFitWidth(30);  sendIcon.setPreserveRatio(true);
             sendButton.setGraphic(sendIcon);
         } catch (Exception ignore) {}
 

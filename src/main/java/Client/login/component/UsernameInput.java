@@ -20,15 +20,56 @@ public class UsernameInput extends AnchorPane {
     public UsernameInput(String placeholder, boolean numeric){ this(placeholder, createField(numeric)); }
     public UsernameInput(String placeholder, TextField tf){
         setStyle("-fx-background-color:transparent;");
-        background = new Rectangle(250,30); background.setFill(Color.TRANSPARENT); background.setStroke(Resources.DISABLED); background.setStrokeWidth(1.5); background.setArcHeight(8); background.setArcWidth(8); getChildren().add(background);
-        setMaxSize(250,30);
-        icon = new Label(); icon.setFont(Resources.ICON_FONT); icon.setText("\ue903"); icon.setPrefSize(25,27); icon.setTextFill(Resources.DISABLED); getChildren().add(icon); AnchorPane.setRightAnchor(icon,8.0);
-        rectangle = new Rectangle(95,18); rectangle.setFill(Resources.WHITE); rectangle.setTranslateY(-10);
-        textField = tf; textField.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:14px;-fx-text-fill:#5BA3E7"); textField.setFont(Resources.ROBOTO_REGULAR); textField.setPrefSize(220,28); textField.setFocusTraversable(false); textField.setTranslateX(-10);
-        placeHolder = new Label(placeholder); placeHolder.setFont(Resources.ROBOTO_REGULAR); placeHolder.setTextFill(Resources.DISABLED); placeHolder.setPrefHeight(28);
+        background = new Rectangle(250, 40); // 高度改为40
+        background.setFill(Color.TRANSPARENT);
+        background.setStroke(Resources.DISABLED);
+        background.setStrokeWidth(1.5);
+        background.setArcHeight(8);
+        background.setArcWidth(8);
+        getChildren().add(background);
+
+        setMaxSize(250, 40); // 高度改为40
+
+        icon = new Label();
+        icon.setFont(Resources.ICON_FONT);
+        icon.setText("\ue903");
+        icon.setPrefSize(25, 37); // 高度改为37以保持居中
+        icon.setTextFill(Resources.DISABLED);
+        getChildren().add(icon);
+        AnchorPane.setRightAnchor(icon, 8.0);
+
+        rectangle = new Rectangle(95, 18);
+        rectangle.setFill(Resources.WHITE);
+        rectangle.setTranslateY(-10);
+
+        textField = tf;
+        textField.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:14px;-fx-text-fill:#5BA3E7");
+        textField.setFont(Resources.ROBOTO_REGULAR);
+        textField.setPrefSize(220, 38); // 高度改为38
+        textField.setFocusTraversable(false);
+        textField.setTranslateX(-10);
+
+        placeHolder = new Label(placeholder);
+        placeHolder.setFont(Resources.ROBOTO_REGULAR);
+        placeHolder.setTextFill(Resources.DISABLED);
+        placeHolder.setPrefHeight(38); // 高度改为38
+
         placeHolder.setMouseTransparent(true);
-        pane = new Pane(placeHolder, textField); setPadding(new Insets(0,0,0,5)); getChildren().add(pane); AnchorPane.setLeftAnchor(pane,5.0);
-        textField.focusedProperty().addListener((o,ov,nv)-> { if(nv){ InputAnimation.forward(this, Duration.seconds(0.2)); } else { if(!isChanging){ InputAnimation.reverse(this, Duration.seconds(0.2)); } } });
+
+        pane = new Pane(placeHolder, textField);
+        setPadding(new Insets(0, 0, 0, 5));
+        getChildren().add(pane);
+        AnchorPane.setLeftAnchor(pane, 5.0);
+
+        textField.focusedProperty().addListener((o, ov, nv) -> {
+            if(nv){
+                InputAnimation.forward(this, Duration.seconds(0.2));
+            } else {
+                if(!isChanging){
+                    InputAnimation.reverse(this, Duration.seconds(0.2));
+                }
+            }
+        });
     }
     private static TextField createField(boolean numeric){ TextField f = new TextField(); if(numeric){ f.textProperty().addListener((o,ov,nv)-> { if(!nv.matches("\\d*")){ f.setText(nv.replaceAll("\\D","")); } }); } return f; }
     public String getText(){ return textField.getText(); }

@@ -4,7 +4,7 @@ import Client.ClientNetworkHelper;
 import Client.store.util.model.Order;
 import Client.store.util.model.OrderItem;
 import Client.util.adapter.LocalDateAdapter;
-import Client.util.adapter.UUIDAdapter;
+//import Client.util.adapter.UUIDAdapter;
 import Server.model.Request;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,7 +35,7 @@ public class AdminManageOrderPanel extends BorderPane {
         // 初始化Gson适配器
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDate.class, new LocalDateAdapter());
-        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
+//        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
         gson = gsonBuilder.create();
 
         initializeUI();
@@ -290,7 +290,7 @@ public class AdminManageOrderPanel extends BorderPane {
         card.setSpacing(10);
 
         // 存储订单ID和展开状态
-        String orderId = order.getUuid().toString();
+        String orderId = order.getUuid();
         boolean isExpanded = expandedOrders.getOrDefault(orderId, false);
 
         // 订单基本信息区域（始终显示）
@@ -352,7 +352,7 @@ public class AdminManageOrderPanel extends BorderPane {
             Button refundBtn = new Button("退款");
             refundBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
                     "-fx-padding: 8 16; -fx-background-radius: 5;");
-            refundBtn.setOnAction(e -> refundOrder(order.getUuid().toString()));
+            refundBtn.setOnAction(e -> refundOrder(order.getUuid()));
             buttonBox.getChildren().add(refundBtn);
         }
 
@@ -377,7 +377,7 @@ public class AdminManageOrderPanel extends BorderPane {
                         Button refundBtn = new Button("退款");
                         refundBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
                                 "-fx-padding: 8 16; -fx-background-radius: 5;");
-                        refundBtn.setOnAction(event -> refundOrder(order.getUuid().toString()));
+                        refundBtn.setOnAction(event -> refundOrder(order.getUuid()));
                         buttonBox.getChildren().setAll(refundBtn);
                     } else {
                         buttonBox.getChildren().clear();
@@ -400,7 +400,7 @@ public class AdminManageOrderPanel extends BorderPane {
 
         // 添加详细信息
         detailGrid.add(new Label("订单号:"), 0, 0);
-        detailGrid.add(new Label(order.getUuid().toString()), 1, 0);
+        detailGrid.add(new Label(order.getUuid()), 1, 0);
 
         detailGrid.add(new Label("用户卡号:"), 0, 1);
         detailGrid.add(new Label(String.valueOf(order.getCardNumber())), 1, 1);
@@ -424,7 +424,7 @@ public class AdminManageOrderPanel extends BorderPane {
         try {
             // 构建获取订单详细信息请求
             Map<String, Object> data = new HashMap<>();
-            data.put("orderId", order.getUuid().toString());
+            data.put("orderId", order.getUuid());
             Request request = new Request("getOrder", data);
 
             // 使用ClientNetworkHelper发送请求

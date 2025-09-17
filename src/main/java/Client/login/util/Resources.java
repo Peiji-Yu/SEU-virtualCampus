@@ -32,10 +32,10 @@ public class Resources {
             return Font.font(size);
         }
     }
-    public static final Font ROBOTO_BOLD = loadStream("/Font/Lobster-Regular.ttf",32);
-    public static final Font ROBOTO_BOLD_LARGE = loadStream("/Font/Lobster-Regular.ttf",40);
+    public static final Font ROBOTO_BOLD = loadStream("/Font/Lobster-Regular.ttf",34);
+    public static final Font ROBOTO_BOLD_LARGE = loadStream("/Font/Lobster-Regular.ttf",42);
     public static final Font ROBOTO_REGULAR = loadStream("/Font/Roboto-Regular-14.ttf",16);
-    public static final Font ROBOTO_REGULAR_MIN = loadStream("/Font/Roboto-Regular-14.ttf",14);
+    public static final Font ROBOTO_REGULAR_MIN = loadStream("/Font/Roboto-Regular-14.ttf",16);
     public static final Font ROBOTO_LIGHT = loadStream("/Font/Roboto-Light-10.ttf",12);
     public static final Font ICON_FONT_MIN = loadStream("/IconFont/iconfont.ttf",18);
     public static final Font ICON_FONT = loadStream("/IconFont/iconfont.ttf",22);

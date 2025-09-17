@@ -19,16 +19,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-public class BorrowBookPanel extends VBox {
+public class BorrowBookPanel extends BorderPane {
     private TextField userIdField;
     private TextField uuidField;
-    private Button borrowButton;
     private Label statusLabel;
+    private Gson gson;
 
     private static final Pattern UUID_PATTERN =
             Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
-
-    private Gson gson;
 
     public BorrowBookPanel() {
         // 创建配置了LocalDate和UUID适配器的Gson实例
@@ -41,78 +39,114 @@ public class BorrowBookPanel extends VBox {
     }
 
     private void initializeUI() {
-        setPadding(new Insets(20));
-        setSpacing(20);
-        setStyle("-fx-background-color: #f5f7fa;");
+        // 设置背景和边距
+        setPadding(new Insets(20, 80, 20, 80));
+        setStyle("-fx-background-color: white;");
 
-        // 标题
-        Label titleLabel = new Label("借书办理");
-        titleLabel.setFont(Font.font(24));
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        // 表单容器 - 放在中心
+        VBox formContainer = createFormContainer();
+        setCenter(formContainer);
 
-        // 表单容器
-        GridPane form = new GridPane();
-        form.setHgap(15);
-        form.setVgap(15);
-        form.setPadding(new Insets(25));
-        form.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0.0, 0.0);");
+        // 状态标签 - 放在底部
+        statusLabel = new Label("就绪");
+        statusLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
+        BorderPane.setAlignment(statusLabel, Pos.CENTER_LEFT);
+        BorderPane.setMargin(statusLabel, new Insets(0, 35, 0, 35));
+        setBottom(statusLabel);
+    }
 
-        // 设置列约束，使第二列可以扩展
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPrefWidth(100);
-        ColumnConstraints col2 = new ColumnConstraints();
-        col2.setHgrow(Priority.ALWAYS);
-        form.getColumnConstraints().addAll(col1, col2);
+    private VBox createFormContainer() {
+        VBox container = new VBox(5);
+        container.setPadding(new Insets(30));
+        container.setStyle("-fx-background-color: white;");
+        container.setAlignment(Pos.CENTER);
 
-        // 创建标签样式
-        String labelStyle = "-fx-font-weight: bold; -fx-font-size: 14px;";
+        // 添加标题和说明
+        Label titleLabel = new Label("办理借书");
+        titleLabel.setFont(Font.font(32));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
+
+        Label subtitleLabel = new Label("办理书籍借阅");
+        subtitleLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
+
+        VBox headtitleBox = new VBox(5, titleLabel, subtitleLabel);
+        headtitleBox.setAlignment(Pos.CENTER_LEFT);
+        headtitleBox.setPadding(new Insets(0, 0, 20, 0));
+
+        // 创建GridPane来放置表单字段
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(20);
+        formGrid.setVgap(5);
+        formGrid.setAlignment(Pos.CENTER_LEFT);
 
         // 一卡通号字段
-        userIdField = createStyledTextField("一卡通号");
+        VBox userIdBox = createFieldWithLabel("一卡通号");
+        userIdField = createStyledTextField("请输入一卡通号");
         userIdField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.matches("\\d*")) {
                 userIdField.setText(newValue.replaceAll("[^\\d]", ""));
             }
         });
-        form.add(createLabel("一卡通号:", labelStyle), 0, 0);
-        form.add(userIdField, 1, 0);
+        userIdBox.getChildren().add(userIdField);
+        formGrid.add(userIdBox, 0, 0);
 
         // UUID字段
-        uuidField = createStyledTextField("书籍副本UUID");
-        form.add(createLabel("书籍UUID:", labelStyle), 0, 1);
-        form.add(uuidField, 1, 1);
+        VBox uuidBox = createFieldWithLabel("书籍副本ID");
+        uuidField = createStyledTextField("请输入书籍副本UUID");
+        uuidBox.getChildren().add(uuidField);
+        formGrid.add(uuidBox, 0, 1);
+
+        // 设置列约束：第一列宽度随窗口扩展
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setHgrow(Priority.ALWAYS);
+        formGrid.getColumnConstraints().add(col1);
+
 
         // 按钮区域
-        HBox buttonBox = new HBox(10);
+        HBox buttonBox = new HBox(15);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
-        buttonBox.setPadding(new Insets(15, 0, 0, 0));
+        buttonBox.setPadding(new Insets(20, 0, 0, 0));
 
-        borrowButton = new Button("办理借阅");
-        borrowButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-pref-width: 120px; -fx-pref-height: 35px;");
-        borrowButton.setOnAction(e -> processBorrow());
+        Button submitButton = new Button("办理借阅");
+        submitButton.setStyle("-fx-background-color: #176B3A; " +
+                "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-pref-width: 120px; -fx-pref-height: 45px; -fx-background-radius: 5;");
+        submitButton.setOnAction(e -> processBorrow());
 
-        buttonBox.getChildren().addAll(borrowButton);
+        buttonBox.getChildren().addAll(submitButton);
 
-        // 状态标签
-        statusLabel = new Label("就绪");
-        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
-        statusLabel.setPadding(new Insets(10, 0, 0, 0));
+        // 添加透明占位部件
+        // 每个带标签输入框高度大约为: 标签高度(约20px) + 输入框高度(45px) + 间距(8px) = 73px
+        Region spacer = new Region();
+        spacer.setMinHeight(219);
+        spacer.setPrefHeight(219);
+        spacer.setStyle("-fx-background-color: transparent;");
 
-        // 添加到主容器
-        getChildren().addAll(titleLabel, form, buttonBox, statusLabel);
+        // 将所有组件添加到容器
+        container.getChildren().addAll(headtitleBox, formGrid, buttonBox, spacer);
+
+        return container;
+    }
+
+    private VBox createFieldWithLabel(String labelText) {
+        VBox container = new VBox(8);
+
+        Label label = new Label(labelText);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #495057; -fx-font-weight: bold;");
+
+        container.getChildren().add(label);
+        return container;
     }
 
     private TextField createStyledTextField(String prompt) {
         TextField field = new TextField();
         field.setPromptText(prompt);
-        field.setStyle("-fx-font-size: 14px; -fx-pref-height: 35px; -fx-background-radius: 5; -fx-border-radius: 5;");
+        field.setStyle("-fx-font-size: 16px; -fx-pref-height: 45px; " +
+                "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent;" +
+                "-fx-padding: 0 10px;"
+        );
         return field;
-    }
-
-    private Label createLabel(String text, String style) {
-        Label label = new Label(text);
-        label.setStyle(style);
-        return label;
     }
 
     private void processBorrow() {
@@ -121,24 +155,27 @@ public class BorrowBookPanel extends VBox {
 
         // 验证表单
         if (userIdStr.isEmpty()) {
-            setStatus("请输入一卡通号", "error");
+            setStatus("请输入一卡通号");
+            highlightField(userIdField);
             return;
         }
 
         if (uuid.isEmpty()) {
-            setStatus("请输入书籍副本UUID", "error");
+            setStatus("请输入书籍副本UUID");
+            highlightField(uuidField);
             return;
         }
 
         if (!UUID_PATTERN.matcher(uuid).matches()) {
-            setStatus("请输入有效的UUID格式", "error");
+            setStatus("请输入有效的UUID格式");
+            highlightField(uuidField);
             return;
         }
 
         try {
             int userId = Integer.parseInt(userIdStr);
 
-            setStatus("办理中...", "info");
+            setStatus("办理中...");
 
             new Thread(() -> {
                 try {
@@ -159,24 +196,44 @@ public class BorrowBookPanel extends VBox {
 
                     if (code == 200) {
                         Platform.runLater(() -> {
-                            setStatus("借阅成功", "success");
+                            setStatus("借阅成功");
                             clearForm();
                         });
                     } else {
                         Platform.runLater(() -> {
-                            setStatus("借阅失败: " + responseMap.get("message"), "error");
+                            setStatus("借阅失败: " + responseMap.get("message"));
                         });
                     }
                 } catch (Exception e) {
                     Platform.runLater(() -> {
-                        setStatus("通信错误: " + e.getMessage(), "error");
+                        setStatus("通信错误: " + e.getMessage());
                     });
                     e.printStackTrace();
                 }
             }).start();
         } catch (NumberFormatException e) {
-            setStatus("一卡通号必须是数字", "error");
+            setStatus("一卡通号必须是数字");
+            highlightField(userIdField);
         }
+    }
+
+    private void highlightField(TextField field) {
+        field.setStyle(field.getStyle() + " -fx-border-color: #dc3545; -fx-border-width: 2px; " +
+                "-fx-focus-color: transparent; -fx-faint-focus-color: transparent; ");
+        // 5秒后移除高亮
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+                Platform.runLater(() -> {
+                    field.setStyle("-fx-font-size: 16px; -fx-pref-height: 45px; " +
+                            "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                            "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent; " +
+                            "-fx-padding: 0 10px;");
+                });
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private void clearForm() {
@@ -184,20 +241,7 @@ public class BorrowBookPanel extends VBox {
         uuidField.clear();
     }
 
-    private void setStatus(String message, String type) {
-        Platform.runLater(() -> {
-            statusLabel.setText(message);
-            switch (type) {
-                case "error":
-                    statusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 14px;");
-                    break;
-                case "success":
-                    statusLabel.setStyle("-fx-text-fill: #2ecc71; -fx-font-size: 14px;");
-                    break;
-                default:
-                    statusLabel.setStyle("-fx-text-fill: #3498db; -fx-font-size: 14px;");
-                    break;
-            }
-        });
+    private void setStatus(String message) {
+        statusLabel.setText(message);
     }
 }

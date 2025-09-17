@@ -81,7 +81,7 @@ public class LibraryMainPanel extends BorderPane {
             separator1.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator1.setMaxWidth(Double.MAX_VALUE);
 
-            Button modifyBookButton = new Button("修改书籍");
+            Button modifyBookButton = new Button("管理书籍");
             modifyBookButton.setPrefWidth(210);
             modifyBookButton.setPrefHeight(56);
             resetButtonStyle(modifyBookButton);
@@ -105,8 +105,8 @@ public class LibraryMainPanel extends BorderPane {
             separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator2.setMaxWidth(Double.MAX_VALUE);
 
-            // 添加借书办理按钮
-            Button borrowBookButton = new Button("借书办理");
+            // 添加办理借书按钮
+            Button borrowBookButton = new Button("办理借书");
             borrowBookButton.setPrefWidth(210);
             borrowBookButton.setPrefHeight(56);
             resetButtonStyle(borrowBookButton);
@@ -117,7 +117,7 @@ public class LibraryMainPanel extends BorderPane {
                     setSelectedButtonStyle(borrowBookButton);
                     currentSelectedButton = borrowBookButton;
 
-                    // 初始化借书办理页面
+                    // 初始化办理借书页面
                     if (borrowBookPanel == null) {
                         borrowBookPanel = new BorrowBookPanel();
                     }
@@ -130,8 +130,8 @@ public class LibraryMainPanel extends BorderPane {
             separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator3.setMaxWidth(Double.MAX_VALUE);
 
-            // 添加还书办理按钮
-            Button returnBookButton = new Button("还书办理");
+            // 添加办理还书按钮
+            Button returnBookButton = new Button("办理还书");
             returnBookButton.setPrefWidth(210);
             returnBookButton.setPrefHeight(56);
             resetButtonStyle(returnBookButton);
@@ -142,7 +142,7 @@ public class LibraryMainPanel extends BorderPane {
                     setSelectedButtonStyle(returnBookButton);
                     currentSelectedButton = returnBookButton;
 
-                    // 初始化还书办理页面
+                    // 初始化办理还书页面
                     if (returnBookPanel == null) {
                         returnBookPanel = new ReturnBookPanel();
                     }
@@ -168,7 +168,7 @@ public class LibraryMainPanel extends BorderPane {
         }
         else {
             // 图书搜索按钮
-            Button searchButton = new Button("图书搜索");
+            Button searchButton = new Button("搜索图书");
             searchButton.setPrefWidth(210);
             searchButton.setPrefHeight(56);
             setSelectedButtonStyle(searchButton);
@@ -187,29 +187,6 @@ public class LibraryMainPanel extends BorderPane {
             Region separator1 = new Region();
             separator1.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator1.setMaxWidth(Double.MAX_VALUE);
-
-            // 文献检索按钮
-            Button papersketchButton = new Button("文献检索");
-            papersketchButton.setPrefWidth(210);
-            papersketchButton.setPrefHeight(56);
-            resetButtonStyle(papersketchButton);
-
-            papersketchButton.setOnAction(e -> {
-                if (currentSelectedButton != papersketchButton) {
-                    resetButtonStyle(currentSelectedButton);
-                    setSelectedButtonStyle(papersketchButton);
-                    currentSelectedButton = papersketchButton;
-
-                    // 初始化文献检索页面
-                    paperSketchPanel = new PaperSketchPanel();
-                    setCenter(paperSketchPanel);
-                }
-            });
-
-            // 添加分割线
-            Region separator2 = new Region();
-            separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
-            separator2.setMaxWidth(Double.MAX_VALUE);
 
             // 我的借阅按钮
             Button borrowingsButton = new Button("我的借阅");
@@ -234,14 +211,37 @@ public class LibraryMainPanel extends BorderPane {
             });
 
             // 添加分割线
+            Region separator2 = new Region();
+            separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator2.setMaxWidth(Double.MAX_VALUE);
+
+            // 文献检索按钮
+            Button papersketchButton = new Button("文献检索");
+            papersketchButton.setPrefWidth(210);
+            papersketchButton.setPrefHeight(56);
+            resetButtonStyle(papersketchButton);
+
+            papersketchButton.setOnAction(e -> {
+                if (currentSelectedButton != papersketchButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(papersketchButton);
+                    currentSelectedButton = papersketchButton;
+
+                    // 初始化文献检索页面
+                    paperSketchPanel = new PaperSketchPanel();
+                    setCenter(paperSketchPanel);
+                }
+            });
+
+            // 添加分割线
             Region separator3 = new Region();
             separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator3.setMaxWidth(Double.MAX_VALUE);
 
             leftBar.getChildren().addAll(leftLabel, separator,
                     searchButton, separator1,
-                    papersketchButton, separator2,
-                    borrowingsButton, separator3);
+                    borrowingsButton, separator2,
+                    papersketchButton, separator3);
             setLeft(leftBar);
 
             // 初始化面板

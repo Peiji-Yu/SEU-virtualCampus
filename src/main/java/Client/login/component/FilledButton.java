@@ -22,14 +22,14 @@ public class FilledButton extends Pane {
         this.normal = normal==null? Resources.PRIMARY : normal;
         this.hover = hover==null? Resources.SECONDARY : hover;
         this.textColor = textColor==null? Resources.WHITE : textColor;
-        background = new Rectangle(width,34);
+        background = new Rectangle(width,40);
         background.setFill(this.normal);
         background.setArcWidth(6); background.setArcHeight(6);
         getChildren().add(background);
         label = new Label(text);
         label.setFont(Resources.ROBOTO_REGULAR);
         label.setTextFill(this.textColor);
-        BorderPane bp = new BorderPane(); bp.setCenter(label); bp.setMinSize(width,34); getChildren().add(bp);
+        BorderPane bp = new BorderPane(); bp.setCenter(label); bp.setMinSize(width,40); getChildren().add(bp);
         addEventHandler(MouseEvent.MOUSE_ENTERED, e -> { FillTransition ft = new FillTransition(Duration.seconds(0.2), background, this.normal, this.hover); ft.play(); setCursor(Cursor.HAND); });
         addEventHandler(MouseEvent.MOUSE_EXITED, e -> { FillTransition ft = new FillTransition(Duration.seconds(0.2), background, this.hover, this.normal); ft.play(); setCursor(Cursor.DEFAULT); });
     }

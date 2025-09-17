@@ -1,28 +1,28 @@
 /* 浅色主题变量 */
 .root {
-    -fx-primary-color: #3b82f6;
-    -fx-primary-light: #eff6ff;
-    -fx-secondary-color: #f8fafc;
-    -fx-text-color: #1e293b;
-    -fx-border-color: #e2e8f0;
-    -fx-accent-color: #10a37f;
+    -fx-primary-color: #176b3a;  /* 主色调，绿色 */
+    -fx-primary-light: #e0f7e3;  /* 主色调的浅色 */
+    -fx-secondary-color: #f8fafc;  /* 辅助色，背景色 */
+    -fx-text-color: #1e293b;  /* 文字颜色 */
+    -fx-border-color: #d1dbe4;  /* 边框颜色 */
+    -fx-accent-color: #16a34a;  /* 强调色，亮绿色 */
 }
 
 .root {
-    -fx-background-color: #f8fafc;
+    -fx-background-color: #f1f5f9;  /* 页面背景色，淡灰蓝色 */
 }
 
 .header {
-    -fx-background-color: white;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 0 0 1px 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 2);
+    -fx-background-color: white;  /* 头部背景色为白色 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 0 0 1px 0;  /* 边框宽度，只有底部有边框 */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 12, 0, 0, 2);  /* 阴影效果 */
 }
 
 .title {
-    -fx-text-fill: #1e293b;
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b;  /* 文字颜色 */
+    -fx-font-size: 20px;  /* 字体大小 */
+    -fx-font-weight: bold;  /* 字体加粗 */
 }
 
 .scroll-pane {
@@ -39,7 +39,7 @@
 }
 
 .scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: #cbd5e1;
+    -fx-background-color: #cbd5e1;  /* 滑块背景色 */
     -fx-background-radius: 4px;
 }
 
@@ -54,93 +54,93 @@
 }
 
 .chat-container {
-    -fx-background-color: #f8fafc;
+    -fx-background-color: #f8fafc;  /* 聊天容器背景色 */
     -fx-padding: 20px;
 }
 
 .user-message-container {
-    -fx-alignment: top-right;
+    -fx-alignment: top-right;  /* 用户消息对齐到右上角 */
     -fx-padding: 0 0 15px 0;
 }
 
 .ai-message-container {
-    -fx-alignment: top-left;
+    -fx-alignment: top-left;  /* AI 消息对齐到左上角 */
     -fx-padding: 0 0 15px 0;
 }
 
 .message-name {
-    -fx-text-fill: #64748b;
+    -fx-text-fill: #64748b;  /* 消息发送者姓名的颜色 */
     -fx-font-size: 12px;
     -fx-padding: 0 0 5px 0;
 }
 
 .user-message {
-    -fx-background-color: #88cff0;
-    -fx-background-radius: 18px;
+    -fx-background-color: #5dcc91;  /* 用户消息背景色 */
+    -fx-background-radius: 18px;  /* 圆角 */
     -fx-padding: 12px 18px;
-    -fx-text-fill: white;
+    -fx-text-fill: white;  /* 文字颜色 */
     -fx-font-size: 14px;
     -fx-border-radius: 18px;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(16, 163, 127, 0.2), 8, 0, 0, 2);  /* 阴影效果 */
 }
 
 .ai-message {
-    -fx-background-color: white;
-    -fx-background-radius: 18px;
-    -fx-padding: 12px 18px;
-    -fx-text-fill: #1e293b;
-    -fx-font-size: 14px;
-    -fx-border-radius: 18px;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);
+    -fx-background-color: white;  /* AI 消息背景色 */
+    -fx-background-radius: 18px;  /* 圆角 */
+    -fx-padding: 12px 18px;  /* 内边距 */
+    -fx-text-fill: #1e293b;  /* 文字颜色 */
+    -fx-font-size: 14px;  /* 字体大小 */
+    -fx-border-radius: 18px;  /* 边框圆角 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 1px;  /* 边框宽度 */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);  /* 阴影效果 */
 }
 
 .ai-avatar {
-    -fx-fill: #10a37f;
+    -fx-fill: #16a34a;  /* AI 头像颜色 */
 }
 
 .input-area {
-    -fx-background-color: white;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 1px 0 0 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, -2);
+    -fx-background-color: white;  /* 输入区域背景色 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 1px 0 0 0;  /* 边框宽度 */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, -2);  /* 阴影效果 */
 }
 
 .input-field {
-    -fx-background-color: white;
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 1px;
-    -fx-text-fill: #1e293b;
-    -fx-prompt-text-fill: #94a3b8;
-    -fx-padding: 0 0 0 15px;
-    -fx-font-size: 14px;
+    -fx-background-color: white;  /* 背景色 */
+    -fx-background-radius: 20;  /* 圆角 */
+    -fx-border-radius: 20;  /* 边框圆角 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 1px;  /* 边框宽度 */
+    -fx-text-fill: #1e293b;  /* 文字颜色 */
+    -fx-prompt-text-fill: #94a3b8;  /* 提示文本颜色 */
+    -fx-padding: 0 0 0 15px;  /* 内边距 */
+    -fx-font-size: 14px;  /* 字体大小 */
 }
 
 .input-field:focused {
-    -fx-border-color: #3b82f6;
-    -fx-border-width: 1px;
-    -fx-border-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 0);
+    -fx-border-color: #176b3a;  /* 聚焦时边框颜色 */
+    -fx-border-width: 1px;  /* 边框宽度 */
+    -fx-border-radius: 20;  /* 边框圆角 */
+    -fx-effect: dropshadow(gaussian, rgba(23, 107, 58, 0.2), 4, 0, 0, 0);  /* 阴影效果 */
 }
 
 .send-button {
-    -fx-background-color: #3b82f6;
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.3), 6, 0, 0, 2);
+    -fx-background-color: #176b3a;  /* 发送按钮背景色 */
+    -fx-background-radius: 20;  /* 圆角 */
+    -fx-border-radius: 20;  /* 边框圆角 */
+    -fx-cursor: hand;  /* 鼠标悬浮时显示手型 */
+    -fx-effect: dropshadow(gaussian, rgba(23, 107, 58, 0.3), 6, 0, 0, 2);  /* 阴影效果 */
 }
 
 .send-button:hover {
-    -fx-background-color: #2563eb;
+    -fx-background-color: #145a2c;  /* 悬浮时背景颜色 */
 }
 
 .send-button:pressed {
-    -fx-background-color: #1d4ed8;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 1);
+    -fx-background-color: #0f4621;  /* 按下时背景颜色 */
+    -fx-effect: dropshadow(gaussian, rgba(23, 107, 58, 0.2), 4, 0, 0, 1);  /* 阴影效果 */
 }
 
 .typing-indicator {
@@ -149,7 +149,7 @@
 
 .typing-dots {
     -fx-padding: 12px 18px;
-    -fx-background-color: white;
+    -fx-background-color: white;  /* 输入框背景 */
     -fx-background-radius: 18px;
     -fx-border-color: #e2e8f0;
     -fx-border-width: 1px;
@@ -157,7 +157,7 @@
 }
 
 .typing-dot {
-    -fx-fill: #94a3b8;
+    -fx-fill: #94a3b8;  /* 打字指示的颜色 */
 }
 
 /* 动画关键帧 */
@@ -170,40 +170,39 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
 }
 
-
 .message-time {
-    -fx-text-fill: #94a3b8;
-    -fx-font-size: 10px;
+    -fx-text-fill: #94a3b8;  /* 消息时间颜色 */
+    -fx-font-size: 10px;  /* 字体大小 */
     -fx-padding: 2px 0 0 0;
 }
 
 /* 滚动到最新消息按钮 */
 .scroll-to-bottom {
-    -fx-background-color: white;
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 1px;
+    -fx-background-color: white;  /* 按钮背景色为白色 */
+    -fx-background-radius: 20;  /* 圆角 */
+    -fx-border-radius: 20;  /* 边框圆角 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 1px;  /* 边框宽度 */
     -fx-padding: 8px;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 6, 0, 0, 2);
+    -fx-cursor: hand;  /* 鼠标悬浮时显示手型 */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 6, 0, 0, 2);  /* 阴影效果 */
 }
 
 .scroll-to-bottom:hover {
-    -fx-background-color: #f1f5f9;
+    -fx-background-color: #f1f5f9;  /* 悬浮时背景颜色 */
 }
 
 /* 主题切换按钮 */
 .theme-toggle {
-    -fx-background-color: transparent;
-    -fx-border-color: #e2e8f0;
-    -fx-border-width: 1px;
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
+    -fx-background-color: transparent;  /* 背景透明 */
+    -fx-border-color: #e2e8f0;  /* 边框颜色 */
+    -fx-border-width: 1px;  /* 边框宽度 */
+    -fx-border-radius: 15;  /* 边框圆角 */
+    -fx-background-radius: 15;  /* 背景圆角 */
     -fx-padding: 5px;
-    -fx-cursor: hand;
+    -fx-cursor: hand;  /* 鼠标悬浮时显示手型 */
 }
 
 .theme-toggle:hover {
-    -fx-background-color: #f1f5f9;
+    -fx-background-color: #f1f5f9;  /* 悬浮时背景颜色 */
 }

@@ -1,4 +1,4 @@
-package Client.library.util.model;
+package Client.library.model;
 
 
 public enum BookStatus {

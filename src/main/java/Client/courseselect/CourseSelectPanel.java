@@ -72,6 +72,10 @@ public class CourseSelectPanel extends BorderPane {
         scrollPane.setPannable(true);
         scrollPane.setPrefViewportHeight(720); // 增大视口高度，显示更多内容
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        // 不显示滚动条（隐藏水平与垂直滚动条），但允许平移/拖动视图
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setPannable(true);
 
         // 刷新按钮
         Button refreshButton = new Button("刷新课程列表");

@@ -12,21 +12,28 @@ public class PasswordInput extends UsernameInput {
     private boolean visible = false; private final TextField plainField = new TextField(); private final PasswordField pwdField; private String cache;
     public PasswordInput(String placeholder){
         super(placeholder, new PasswordField());
-        rectangle = new Rectangle(75,18); rectangle.setFill(Resources.WHITE); rectangle.setTranslateY(-10);
+        rectangle = new Rectangle(75, 28); // 高度从18改为28
+        rectangle.setFill(Resources.WHITE);
+        rectangle.setTranslateY(-15); // 调整垂直偏移量
+
         this.getIcon().setText("\ue902");
         pwdField = (PasswordField) this.textField;
+
         plainField.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:14px;-fx-text-fill:#5BA3E7");
         plainField.setFont(Resources.ROBOTO_REGULAR);
-        plainField.setPrefSize(220,28);
+        plainField.setPrefSize(220, 38); // 高度从28改为38
         plainField.setFocusTraversable(false);
         plainField.setTranslateX(-10);
+
         // 只注册一次监听，避免重复 forward 叠加
         plainField.focusedProperty().addListener((o,ov,nv)-> {
             if(nv){ InputAnimation.forward(this, Duration.seconds(0.2)); }
             else { if(!isChanging){ InputAnimation.reverse(this, Duration.seconds(0.2)); } }
         });
+
         this.textField.textProperty().addListener((o,ov,nv)-> cache = nv);
         plainField.textProperty().addListener((o,ov,nv)-> cache = nv);
+
         this.getIcon().setOnMouseClicked(e -> {
             isChanging = true;
             if(!visible){
@@ -50,8 +57,14 @@ public class PasswordInput extends UsernameInput {
             }
         });
     }
+
     public String getPassword(){ return cache == null ? "" : cache; }
-    public void setOnAction(Runnable r){ this.textField.setOnAction(e-> r.run()); plainField.setOnAction(e-> r.run()); }
+
+    public void setOnAction(Runnable r){
+        this.textField.setOnAction(e-> r.run());
+        plainField.setOnAction(e-> r.run());
+    }
+
     public void clear(){
         this.cache = "";
         // 同步清空两种输入框

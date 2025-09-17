@@ -5,7 +5,6 @@ import Server.model.student.Student;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ScrollPane;
@@ -41,6 +40,10 @@ public class StudentSelfPanel extends VBox {
         scrollPane.setStyle("-fx-background-color: transparent; -fx-padding: 0;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        // 不显示滚动条（隐藏水平与垂直滚动条），但允许平移/拖动视图
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setPannable(true);
 
         VBox contentContainer = new VBox(15);
         contentContainer.setPadding(new Insets(20));
@@ -167,59 +170,9 @@ public class StudentSelfPanel extends VBox {
 
         studyInfoCard.getChildren().add(studyGrid);
 
-        // 刷新按钮
-        Button refresh = new Button("刷新信息");
-        refresh.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " +
-                "-fx-background-color: linear-gradient(to right, #4f46e5, #7c3aed); " +
-                "-fx-text-fill: white; -fx-background-radius: 8px; " +
-                "-fx-padding: 10px 24px; -fx-cursor: hand;");
+        // 已移除刷新按钮，界面为只读展示
 
-        refresh.setOnMouseEntered(e -> refresh.setStyle(
-                "-fx-font-size: 14px; -fx-font-weight: bold; " +
-                        "-fx-background-color: linear-gradient(to right, #4338ca, #6d28d9); " +
-                        "-fx-text-fill: white; -fx-background-radius: 8px; " +
-                        "-fx-padding: 10px 24px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(79,70,229,0.3), 8, 0, 0, 2);"
-        ));
-
-        refresh.setOnMouseExited(e -> refresh.setStyle(
-                "-fx-font-size: 14px; -fx-font-weight: bold; " +
-                        "-fx-background-color: linear-gradient(to right, #4f46e5, #7c3aed); " +
-                        "-fx-text-fill: white; -fx-background-radius: 8px; " +
-                        "-fx-padding: 10px 24px; -fx-cursor: hand;"
-        ));
-
-        refresh.setOnAction(e -> {
-            container.getChildren().clear();
-            container.getChildren().add(titleBox);
-            Label reloadLabel = new Label("正在重新加载学籍信息...");
-            reloadLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 16px; -fx-font-style: italic;");
-            container.getChildren().add(reloadLabel);
-
-            new Thread(() -> {
-                try {
-                    Student stu = service.getSelf(Integer.parseInt(cardNumber));
-                    Platform.runLater(() -> {
-                        container.getChildren().remove(reloadLabel);
-                        if (stu != null) {
-                            display(stu, container);
-                        } else {
-                            showError("学籍信息获取失败，请稍后重试", container);
-                        }
-                    });
-                } catch (Exception ex) {
-                    Platform.runLater(() -> {
-                        container.getChildren().remove(reloadLabel);
-                        showError("网络连接失败: " + ex.getMessage(), container);
-                    });
-                }
-            }).start();
-        });
-
-        HBox buttonContainer = new HBox(refresh);
-        buttonContainer.setAlignment(Pos.CENTER);
-        buttonContainer.setPadding(new Insets(20, 0, 0, 0));
-
-        mainContainer.getChildren().addAll(baseInfoCard, separator, studyInfoCard, buttonContainer);
+        mainContainer.getChildren().addAll(baseInfoCard, separator, studyInfoCard);
         container.getChildren().add(mainContainer);
     }
 

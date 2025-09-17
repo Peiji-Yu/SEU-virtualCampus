@@ -46,7 +46,7 @@ public class LoginClientFX extends Application {
     private static final double ROOT_WIDTH = 375;
     private static final double ROOT_HEIGHT = 575;
 
-    private static final double LOGO_SIZE = 64;
+    private static final double LOGO_SIZE = 74;
     private static final double LOGO_TOP = 60;
 
     private static final double WELCOME_TOP = 176;
@@ -140,7 +140,7 @@ public class LoginClientFX extends Application {
         VBox formBox = new VBox(); formBox.setSpacing(34);
         cardInput = new UsernameInput("Card Number", true);
         passwordInput = new PasswordInput("Password");
-        VBox inputGroup = new VBox(cardInput, passwordInput); inputGroup.setSpacing(23);
+        VBox inputGroup = new VBox(cardInput, passwordInput); inputGroup.setSpacing(20);
         forgetLabel = new Label("                                                     Forget Password?");
         forgetLabel.setFont(Resources.ROBOTO_LIGHT); forgetLabel.setTextFill(Resources.DISABLED);
         forgetLabel.setOnMouseEntered(e -> new ColorTransition(forgetLabel, Duration.seconds(0.2), Resources.SECONDARY).play());
@@ -284,7 +284,7 @@ public class LoginClientFX extends Application {
         inAuthMode = false;
         authRequestInProgress = false;
         // 恢复 Roboto 字体
-        welcomeLabel.setText("welcome,");
+        welcomeLabel.setText("Welcome,");
         welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
         subtitleLabel.setVisible(true);
         // 清空输入并恢复占位
@@ -438,7 +438,7 @@ public class LoginClientFX extends Application {
         passwordResetInProgress = false;
         currentCardNumber = null;
 
-        welcomeLabel.setText("welcome,");
+        welcomeLabel.setText("Welcome,");
         welcomeLabel.setFont(Resources.ROBOTO_BOLD_LARGE);
         subtitleLabel.setVisible(true);
 

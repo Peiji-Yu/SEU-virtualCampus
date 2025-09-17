@@ -10,11 +10,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Microsoft YaHei UI';
         }
 
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: white;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -83,9 +83,9 @@
         }
 
         .database-btn.active {
-            background: #3498db;
+            background: #176b3a;
             color: white;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 4px 15px rgba(23, 107, 58, 0.3);
         }
 
         .search-box {
@@ -104,12 +104,12 @@
 
         .search-input:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #176b3a;
         }
 
         .search-btn {
             padding: 0 30px;
-            background: #3498db;
+            background: #176b3a;
             color: white;
             border: none;
             border-radius: 0 12px 12px 0;
@@ -120,7 +120,7 @@
         }
 
         .search-btn:hover {
-            background: #2980b9;
+            background: #145a2c;
         }
 
         .advanced-options {
@@ -142,7 +142,8 @@
             font-weight: 500;
         }
 
-        .filter-group select, .filter-group input {
+        .filter-group select,
+        .filter-group input {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -198,11 +199,11 @@
         }
 
         .topic {
-            background: #e3f2fd;
+            background: #f8f9fa;
             padding: 8px 15px;
             border-radius: 20px;
             font-size: 0.9rem;
-            color: #1565c0;
+            color: #34495e;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -242,6 +243,7 @@
         .database-icon {
             font-size: 1.2rem;
         }
+
     </style>
 </head>
 <body>
