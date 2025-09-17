@@ -259,6 +259,11 @@ public class CourseSelectPanel extends BorderPane {
         for (Map<String, Object> course : courseList) {
             String courseId = String.valueOf(course.get("courseId"));
             String courseName = course.get("courseName") == null ? "" : String.valueOf(course.get("courseName"));
+            // 支持后端不同命名：优先使用 courseCredit/college，回退到 credit/school
+            Object credObj = course.get("courseCredit") != null ? course.get("courseCredit") : course.get("credit");
+            Object schoolObj = course.get("college") != null ? course.get("college") : course.get("school");
+            String courseCredit = credObj == null ? "" : String.valueOf(credObj);
+            String college = schoolObj == null ? "" : String.valueOf(schoolObj);
             List<TeachingClass> tcs = teachingClassesByCourse.getOrDefault(courseId, Collections.emptyList());
 
             // 课程卡片头部（增大卡片尺寸以形成更大的课程表格）
@@ -270,7 +275,14 @@ public class CourseSelectPanel extends BorderPane {
 
             HBox header = new HBox();
             header.setAlignment(Pos.CENTER_LEFT);
-            Label title = new Label(courseId + "  " + courseName);
+            // 将学分与学院信息附加到标题中，格式与管理员界面一致
+            String titleText = courseId + "  " + courseName;
+            if (!courseCredit.isEmpty() || !college.isEmpty()) {
+                titleText += "  (" + (courseCredit.isEmpty() ? "?" : courseCredit) + "学分";
+                if (!college.isEmpty()) titleText += ", " + college;
+                titleText += ")";
+            }
+            Label title = new Label(titleText);
             title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -592,7 +604,40 @@ public class CourseSelectPanel extends BorderPane {
         card.setAlignment(Pos.CENTER_LEFT);
 
         VBox info = new VBox(6);
-        Label title = new Label(tc.getCourseId() + "  " + (tc.getCourse() != null ? tc.getCourse().getCourseName() : ""));
+        // 在已选课程卡片标题中展示学分与学院信息，和管理员界面保持一致
+        String courseName = tc.getCourse() != null ? tc.getCourse().getCourseName() : "";
+        String courseCredit = "";
+        String college = "";
+        if (tc.getCourse() != null) {
+            // Course 类使用 getCredit()/getSchool()，兼容后端不同命名时尽量支持多种字段
+            Object credObj = null;
+            Object schoolObj = null;
+            try {
+                // 优先尝试 Course 中可能存在的字段名（防护性访问）
+                // 如果 Course 中没有额外的方法，回退到已有的 getCredit()/getSchool()
+                java.lang.reflect.Method m1 = tc.getCourse().getClass().getMethod("getCourseCredit");
+                if (m1 != null) credObj = m1.invoke(tc.getCourse());
+            } catch (Exception ignore) {
+                // 回退到标准方法
+                try { credObj = tc.getCourse().getCredit(); } catch (Exception ignore2) { }
+            }
+            try {
+                java.lang.reflect.Method m2 = tc.getCourse().getClass().getMethod("getCollege");
+                if (m2 != null) schoolObj = m2.invoke(tc.getCourse());
+            } catch (Exception ignore) {
+                // 回退到标准方法
+                try { schoolObj = tc.getCourse().getSchool(); } catch (Exception ignore2) { }
+            }
+            courseCredit = credObj == null ? "" : String.valueOf(credObj);
+            college = schoolObj == null ? "" : String.valueOf(schoolObj);
+        }
+        String titleText = tc.getCourseId() + "  " + courseName;
+        if (!courseCredit.isEmpty() || !college.isEmpty()) {
+            titleText += "  (" + (courseCredit.isEmpty() ? "?" : courseCredit) + "学分";
+            if (!college.isEmpty()) titleText += ", " + college;
+            titleText += ")";
+        }
+        Label title = new Label(titleText);
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
         Label teacher = new Label("教师: " + (tc.getTeacherName() == null ? "" : tc.getTeacherName()));
         teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
