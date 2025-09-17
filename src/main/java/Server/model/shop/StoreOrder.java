@@ -25,7 +25,11 @@ public class StoreOrder {
     public StoreOrder() {}
 
     public StoreOrder(Integer cardNumber, Integer totalAmount, String remark, List<StoreOrderItem> items) {
-        this.id = "0";
+        String timePart = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")
+                .format(java.time.LocalDateTime.now());
+        String randomPart = String.format("%03d", (int)(Math.random() * 1000));
+        this.id = timePart + randomPart;
+
         this.cardNumber = cardNumber;
         this.totalAmount = totalAmount;
         this.time = LocalDateTime.now();

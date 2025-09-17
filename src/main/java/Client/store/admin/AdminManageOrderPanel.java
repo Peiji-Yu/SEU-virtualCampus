@@ -35,7 +35,7 @@ public class AdminManageOrderPanel extends BorderPane {
         // 初始化Gson适配器
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDate.class, new LocalDateAdapter());
-        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
+//        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
         gson = gsonBuilder.create();
 
         initializeUI();
@@ -290,7 +290,7 @@ public class AdminManageOrderPanel extends BorderPane {
         card.setSpacing(10);
 
         // 存储订单ID和展开状态
-        String orderId = order.getUuid().toString();
+        String orderId = order.getUuid();
         boolean isExpanded = expandedOrders.getOrDefault(orderId, false);
 
         // 订单基本信息区域（始终显示）
