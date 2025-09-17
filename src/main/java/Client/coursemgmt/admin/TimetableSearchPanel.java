@@ -80,7 +80,7 @@ public class TimetableSearchPanel extends BorderPane {
         HBox topBar = new HBox(8);
         topBar.setPadding(new Insets(8, 12, 8, 12));
         topBar.setAlignment(Pos.CENTER_LEFT);
-        TextField cardInput = new TextField();
+        TextField cardInput = createStyledTextField("请输入一卡通号");
         cardInput.setPromptText("输入一卡通号");
         cardInput.setPrefWidth(220);
         Button searchBtn = new Button("查询");
@@ -1003,5 +1003,16 @@ public class TimetableSearchPanel extends BorderPane {
         java.util.regex.Matcher m5 = p5.matcher(t);
         if (m5.find()) return m5.group(1);
         return null;
+    }
+
+    private TextField createStyledTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setStyle("-fx-font-size: 14px; -fx-pref-height: 30px; " +
+                "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent;" +
+                "-fx-padding: 0 10px;"
+        );
+        return field;
     }
 }

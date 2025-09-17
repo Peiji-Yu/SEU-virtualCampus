@@ -48,10 +48,14 @@ public class TeachingClassCard extends VBox {
 
         // 将 schedule 字符串解析为 Map<String,String> 并格式化显示，行为与学生端一致
         VBox scheduleBox = new VBox(2);
+        HBox scheduleHeader = new HBox(2);
+        VBox timeBox = new VBox(2);
         scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        scheduleHeader.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        timeBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
         Label timeTitle = new Label("时间:");
         timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
-        scheduleBox.getChildren().add(timeTitle);
+        scheduleHeader.getChildren().add(timeTitle);
 
         String scheduleJson = tc.getSchedule();
         if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
@@ -64,26 +68,27 @@ public class TeachingClassCard extends VBox {
                         Label dayLine = new Label(e.getKey() + ": " + formatted);
                         dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
                         dayLine.setWrapText(true);
-                        scheduleBox.getChildren().add(dayLine);
+                        timeBox.getChildren().add(dayLine);
                     }
                 } else {
                     Label raw = new Label(scheduleJson);
                     raw.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
                     raw.setWrapText(true);
-                    scheduleBox.getChildren().add(raw);
+                    timeBox.getChildren().add(raw);
                 }
             } catch (Exception ex) {
                 Label raw = new Label(scheduleJson);
                 raw.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
                 raw.setWrapText(true);
-                scheduleBox.getChildren().add(raw);
+                timeBox.getChildren().add(raw);
             }
         } else {
             Label unset = new Label("未设置");
             unset.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-            scheduleBox.getChildren().add(unset);
+            timeBox.getChildren().add(unset);
         }
-
+        scheduleHeader.getChildren().add(timeBox);
+        scheduleBox.getChildren().add(scheduleHeader);
         Label place = new Label("地点: " + (tc.getPlace() == null ? "未设置" : tc.getPlace()));
         place.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
         place.setWrapText(true);

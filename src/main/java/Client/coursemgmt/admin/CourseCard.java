@@ -5,14 +5,18 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 课程卡片（包含课程头部与对应教学班的 FlowPane 列表）
@@ -42,7 +46,9 @@ public class CourseCard extends VBox {
         String titleText = courseId + "  " + courseName;
         if (!courseCredit.isEmpty() || !college.isEmpty()) {
             titleText += "  (" + (courseCredit.isEmpty() ? "?" : courseCredit) + "学分";
-            if (!college.isEmpty()) titleText += ", " + college;
+            if (!college.isEmpty()) {
+                titleText += ", " + college;
+            }
             titleText += ")";
         }
         Label title = new Label(titleText);
@@ -50,16 +56,46 @@ public class CourseCard extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button addClassBtn = new Button("新增教学班");
-        addClassBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white;");
+        // 添加教学班按钮
+        Button addClassBtn = new Button();
+        Image addImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/增加.png")));
+        ImageView addView = new ImageView(addImg);
+        addView.setFitWidth(18);
+        addView.setFitHeight(18);
+        addView.setPreserveRatio(true);
+        addView.setSmooth(true);
+        addClassBtn.setGraphic(addView);
+        addClassBtn.setTooltip(new Tooltip("添加教学班"));
+        addClassBtn.setStyle("-fx-background-color: transparent;");
+        addClassBtn.setPrefSize(26, 26);
         addClassBtn.setOnAction(e -> owner.showAddClassForCourse(courseId));
 
-        Button editCourseBtn = new Button("编辑课程");
-        editCourseBtn.setStyle("-fx-background-color: #ffc107; -fx-text-fill: white;");
-                                                                                                                           editCourseBtn.setOnAction(e -> CourseCrud.showEditCourseDialog(owner, course));
+        // 编辑课程按钮
+        Button editCourseBtn = new Button();
+        Image editImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/编辑.png")));
+        ImageView editView = new ImageView(editImg);
+        editView.setFitWidth(18);
+        editView.setFitHeight(18);
+        editView.setPreserveRatio(true);
+        editView.setSmooth(true);
+        editCourseBtn.setGraphic(editView);
+        editCourseBtn.setTooltip(new Tooltip("编辑课程"));
+        editCourseBtn.setStyle("-fx-background-color: transparent;");
+        editCourseBtn.setPrefSize(26, 26);
+        editCourseBtn.setOnAction(e -> CourseCrud.showEditCourseDialog(owner, course));
 
-        Button delCourseBtn = new Button("删除课程");
-        delCourseBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white;");
+        // 删除课程按钮
+        Button delCourseBtn = new Button();
+        Image delImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/删除.png")));
+        ImageView delView = new ImageView(delImg);
+        delView.setFitWidth(18);
+        delView.setFitHeight(18);
+        delView.setPreserveRatio(true);
+        delView.setSmooth(true);
+        delCourseBtn.setGraphic(delView);
+        delCourseBtn.setTooltip(new Tooltip("删除课程"));
+        delCourseBtn.setStyle("-fx-background-color: transparent;");
+        delCourseBtn.setPrefSize(26, 26);
         delCourseBtn.setOnAction(e -> CourseCrud.deleteCourseConfirmed(owner, course));
 
         header.getChildren().addAll(title, spacer, addClassBtn, editCourseBtn, delCourseBtn);
@@ -72,6 +108,7 @@ public class CourseCard extends VBox {
         details.setVisible(false);
         details.setManaged(false);
 
+        delCourseBtn.setPrefSize(26, 26);
         if (tcs != null) {
             for (TeachingClass tc : tcs) {
                 details.getChildren().add(new TeachingClassCard(tc, owner, details));

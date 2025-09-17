@@ -83,10 +83,10 @@ public class CourseAdminPanel extends BorderPane {
     // 统一样式化主按钮（用于搜索/清除等按钮）
     private void stylePrimaryButton(Button btn) {
         if (btn == null) return;
-        btn.setStyle("-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
+        btn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
         btn.setPrefHeight(40);
-        btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #0056b3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"));
-        btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"));
+        btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #176B3A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"));
+        btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"));
     }
 
     public CourseAdminPanel() {
@@ -102,7 +102,7 @@ public class CourseAdminPanel extends BorderPane {
         HBox titleBox = new HBox();
         titleBox.setAlignment(Pos.CENTER_LEFT);
         titleBox.setPadding(new Insets(16));
-        titleBox.setStyle("-fx-background-color: #F3F5F8;");
+        titleBox.setStyle("-fx-background-color: #FFFFFF;");
 
         // 占位区域以将刷新图标推到右侧
         Region spacer = new Region();
@@ -160,18 +160,14 @@ public class CourseAdminPanel extends BorderPane {
         searchType.setPrefHeight(40);
         searchType.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #e0e6ed; -fx-border-width: 1;");
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("输入搜索关键词（回车或点击搜索）");
-        searchField.setPrefHeight(40);
-        searchField.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #e0e6ed; -fx-border-width: 1; -fx-font-size: 14px;");
-
+        TextField searchField = createStyledTextField("");
         Button searchBtn = new Button("搜索");
         Button clearBtn = new Button("清除");
 
         HBox searchBox = new HBox(12);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(12, 16, 12, 16));
-        searchBox.setStyle("-fx-background-color: #F3F5F8;");
+        searchBox.setStyle("-fx-background-color: #FFFFFF;");
 
         Label searchLabel = new Label("搜索条件:");
         searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-font-size: 14px;");
@@ -219,7 +215,7 @@ public class CourseAdminPanel extends BorderPane {
         scrollPane.setPannable(true);
 
         VBox body = new VBox(statusBox, searchBox, scrollPane);
-        body.setStyle("-fx-background-color: #F3F5F8; -fx-background-radius: 12;");
+        body.setStyle("-fx-background-color: #FFFFFF; -fx-background-radius: 12;");
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         scrollPane.setMaxHeight(Double.MAX_VALUE);
         body.prefWidthProperty().bind(this.widthProperty().subtract(40));
@@ -227,7 +223,7 @@ public class CourseAdminPanel extends BorderPane {
 
         setCenter(body);
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: #F3F5F8;");
+        setStyle("-fx-background-color: #FFFFFF;");
     }
 
     void loadCourseData() {
@@ -527,19 +523,18 @@ public class CourseAdminPanel extends BorderPane {
         dialog.setTitle("新增教学班");
         dialog.setHeaderText("为课程 " + courseId + " 添加教学班");
 
-        TextField teacherField = new TextField();
+        TextField teacherField = createStyledTextField("");
         // 新：以可编辑的 day 选择 + time 输入 + 列表方式管理多个上课日/时间
         javafx.scene.control.ComboBox<String> dayChoice = new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList("周一", "周二", "周三", "周四", "周五", "周六", "周日"));
         dayChoice.setEditable(true);
         dayChoice.setPrefWidth(140);
-        TextField timeInput = new TextField();
-        timeInput.setPromptText("例如: 9-11节 或 09:00-10:40");
+        TextField timeInput = createStyledTextField("例如: 9-11节");
         Button addScheduleBtn = new Button("添加到列表");
         ListView<String> scheduleList = new ListView<>(FXCollections.observableArrayList());
         scheduleList.setPrefHeight(120);
         Button removeScheduleBtn = new Button("移除所选");
-        TextField placeField = new TextField();
-        TextField capacityField = new TextField();
+        TextField placeField = createStyledTextField("");
+        TextField capacityField = createStyledTextField("");
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -659,5 +654,16 @@ public class CourseAdminPanel extends BorderPane {
                 }
             }).start();
         });
+    }
+
+    private TextField createStyledTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setStyle("-fx-font-size: 16px; -fx-pref-height: 45px; " +
+                "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-focus-color: #176B3A; -fx-faint-focus-color: transparent;" +
+                "-fx-padding: 0 10px;"
+        );
+        return field;
     }
 }
