@@ -92,36 +92,46 @@ public class FinancePanel extends BorderPane {
         separator2.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
         separator2.setMaxWidth(Double.MAX_VALUE);
 
-        // 挂失管理按钮
-        Button lostCardButton = new Button("挂失管理");
-        lostCardButton.setPrefWidth(210);
-        lostCardButton.setPrefHeight(56);
-        resetButtonStyle(lostCardButton);
+        if (admin) {
+            // 管理员才显示挂失管理按钮
+            // 挂失管理按钮
+            Button lostCardButton = new Button("挂失管理");
+            lostCardButton.setPrefWidth(210);
+            lostCardButton.setPrefHeight(56);
+            resetButtonStyle(lostCardButton);
 
-        lostCardButton.setOnAction(e -> {
-            if (currentSelectedButton != lostCardButton) {
-                resetButtonStyle(currentSelectedButton);
-                setSelectedButtonStyle(lostCardButton);
-                currentSelectedButton = lostCardButton;
+            lostCardButton.setOnAction(e -> {
+                if (currentSelectedButton != lostCardButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(lostCardButton);
+                    currentSelectedButton = lostCardButton;
 
-                if (lostCardPanel == null) {
-                    lostCardPanel = new LostCardAdminPanel();
+                    if (lostCardPanel == null) {
+                        lostCardPanel = new LostCardAdminPanel();
+                    }
+                    lostCardPanel.refreshData();
+                    setCenter(lostCardPanel);
                 }
-                lostCardPanel.refreshData();
-                setCenter(lostCardPanel);
-            }
-        });
+            });
 
-        // 添加分割线
-        Region separator3 = new Region();
-        separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
-        separator3.setMaxWidth(Double.MAX_VALUE);
+            // 添加分割线
+            Region separator3 = new Region();
+            separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator3.setMaxWidth(Double.MAX_VALUE);
 
-        // NOTE: 不要在此处将组件添加到 leftBar，稍后会在创建所有按钮后一次性添加，避免重复添加导致异常
-        leftBar.getChildren().addAll(leftLabel, separator,
-                cardInfoButton, separator1,
-                transactionButton, separator2, lostCardButton, separator3);
-        setLeft(leftBar);
+            // NOTE: 不要在此处将组件添加到 leftBar，稍后会在创建所有按钮后一次性添加，避免重复添加导致异常
+            leftBar.getChildren().addAll(leftLabel, separator,
+                    cardInfoButton, separator1,
+                    transactionButton, separator2, lostCardButton, separator3);
+            setLeft(leftBar);
+        }
+        else {
+            // 普通用户不显示挂失管理按钮
+            leftBar.getChildren().addAll(leftLabel, separator,
+                    cardInfoButton, separator1,
+                    transactionButton, separator2);
+            setLeft(leftBar);
+        }
 
         // 初始化默认面板
         cardInfoPanel = new CardInfoPanel(selfCardNumber, admin);
