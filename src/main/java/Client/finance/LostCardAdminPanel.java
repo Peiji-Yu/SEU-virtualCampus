@@ -292,4 +292,7 @@ public class LostCardAdminPanel extends VBox {
         statusCol.setPrefWidth(wStatus);
         actionCol.setPrefWidth(wAction);
     }
+    public void refreshData() {
+        refreshList();
+    }
 }
