@@ -1313,6 +1313,7 @@ public class ClientHandler implements Runnable {
 
         return teachingClass;
     }
+
     // 添加辅助方法，用于从Map创建Teacher对象
     private Teacher createTeacherFromMap(Map<String, Object> teacherData) {
         Teacher teacher = new Teacher();
@@ -1402,6 +1403,7 @@ public class ClientHandler implements Runnable {
 
         return book;
     }
+
     public BookItem createBookItemFromMap(Map<String, Object> map) {
         if (map == null) return null;
 

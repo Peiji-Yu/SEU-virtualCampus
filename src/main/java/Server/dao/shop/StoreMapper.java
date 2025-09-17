@@ -143,9 +143,9 @@ public interface StoreMapper {
     /**
      * 根据ID查询订单（包含商品项和商品详细信息）
      */
-    @Select("SELECT * FROM store_order WHERE uuid = #{uuid}")
+    @Select("SELECT * FROM store_order WHERE uuid = #{id}")
     @Results({
-            @Result(property = "id", column = "uuid"),
+            @Result(property = "uuid", column = "uuid"),
             @Result(property = "cardNumber", column = "card_number"),
             @Result(property = "totalAmount", column = "total_amount"),
             @Result(property = "time", column = "time"),

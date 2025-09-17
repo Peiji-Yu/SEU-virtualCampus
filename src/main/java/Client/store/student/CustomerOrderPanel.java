@@ -184,7 +184,7 @@ public class CustomerOrderPanel extends BorderPane {
 
         List<Order> filteredOrders = new ArrayList<>();
         for (Order order : orders) {
-            if (order.getUuid().toString().toLowerCase().contains(keyword)) {
+            if (order.getUuid().toLowerCase().contains(keyword)) {
                 filteredOrders.add(order);
             }
         }
@@ -219,7 +219,7 @@ public class CustomerOrderPanel extends BorderPane {
         card.setSpacing(10);
 
         // 存储订单ID和展开状态
-        String orderId = order.getUuid().toString();
+        String orderId = order.getUuid();
         boolean isExpanded = expandedOrders.getOrDefault(orderId, false);
 
         // 订单基本信息区域（始终显示）
@@ -280,12 +280,12 @@ public class CustomerOrderPanel extends BorderPane {
                 Button payBtn = new Button("支付");
                 payBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; " +
                         "-fx-padding: 8 16; -fx-background-radius: 5;");
-                payBtn.setOnAction(e -> payOrder(order.getUuid().toString()));
+                payBtn.setOnAction(e -> payOrder(order.getUuid()));
 
                 Button cancelBtn = new Button("取消");
                 cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
                         "-fx-padding: 8 16; -fx-background-radius: 5;");
-                cancelBtn.setOnAction(e -> cancelOrder(order.getUuid().toString()));
+                cancelBtn.setOnAction(e -> cancelOrder(order.getUuid()));
 
                 buttonBox.getChildren().addAll(payBtn, cancelBtn);
             }
@@ -312,12 +312,12 @@ public class CustomerOrderPanel extends BorderPane {
                         Button payBtn = new Button("支付");
                         payBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; " +
                                 "-fx-padding: 8 16; -fx-background-radius: 5;");
-                        payBtn.setOnAction(event -> payOrder(order.getUuid().toString()));
+                        payBtn.setOnAction(event -> payOrder(order.getUuid()));
 
                         Button cancelBtn = new Button("取消");
                         cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
                                 "-fx-padding: 8 16; -fx-background-radius: 5;");
-                        cancelBtn.setOnAction(event -> cancelOrder(order.getUuid().toString()));
+                        cancelBtn.setOnAction(event -> cancelOrder(order.getUuid()));
 
                         buttonBox.getChildren().setAll(payBtn, cancelBtn);
                     } else {
@@ -341,7 +341,7 @@ public class CustomerOrderPanel extends BorderPane {
 
         // 添加详细信息
         detailGrid.add(new Label("订单号:"), 0, 0);
-        detailGrid.add(new Label(order.getUuid().toString()), 1, 0);
+        detailGrid.add(new Label(order.getUuid()), 1, 0);
 
         detailGrid.add(new Label("订单时间:"), 0, 1);
         detailGrid.add(new Label(order.getTime().replace("T", " ")), 1, 1);
@@ -364,7 +364,7 @@ public class CustomerOrderPanel extends BorderPane {
         try {
             // 构建获取订单详细信息请求
             Map<String, Object> data = new HashMap<>();
-            data.put("orderId", order.getUuid().toString());
+            data.put("orderId", order.getUuid());
             Request request = new Request("getOrder", data);
 
             // 使用ClientNetworkHelper发送请求
