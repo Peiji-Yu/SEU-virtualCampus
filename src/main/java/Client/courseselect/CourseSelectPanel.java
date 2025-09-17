@@ -9,6 +9,8 @@ import Server.model.course.TeachingClass;
 import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -16,7 +18,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
+
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,9 +57,9 @@ public class CourseSelectPanel extends BorderPane {
         // 顶部标题
         Label titleLabel = new Label("课程选课");
         titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-        HBox titleBox = new HBox(titleLabel);
-        titleBox.setPadding(new Insets(20));
+        HBox titleBox = new HBox();
         titleBox.setAlignment(Pos.CENTER_LEFT);
+        titleBox.setPadding(new Insets(0, 0, 15, 0));
 
         // 状态标签
         statusLabel = new Label("正在加载课程数据...");
@@ -78,15 +83,24 @@ public class CourseSelectPanel extends BorderPane {
         scrollPane.setPannable(true);
 
         // 刷新按钮
-        Button refreshButton = new Button("刷新课程列表");
-        refreshButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
+        Image refreshImg= new Image(getClass().getResourceAsStream("/Image/刷新.png"));
+        ImageView refreshImgView = new ImageView(refreshImg);
+        // 缩小刷新图标并保持长宽比
+        refreshImgView.setFitWidth(18);
+        refreshImgView.setFitHeight(18);
+        refreshImgView.setPreserveRatio(true);
+        refreshImgView.setSmooth(true);
+
+        Button refreshButton = new Button();
+        refreshButton.setGraphic(refreshImgView);
+        // 减小按钮内边距以适配小图标
+        refreshButton.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-text-fill: #3b82f6; " +
+                "-fx-cursor: hand; -fx-padding: 4 6 4 6; -fx-border-radius: 8px; -fx-background-radius: 8px;");
         refreshButton.setOnAction(e -> loadCourseData());
 
-        HBox buttonBox = new HBox(refreshButton);
-        buttonBox.setPadding(new Insets(10, 20, 20, 20));
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        titleBox.getChildren().addAll(titleLabel, refreshButton);
 
-        VBox mainContainer = new VBox(titleBox, statusBox, scrollPane, buttonBox);
+        VBox mainContainer = new VBox(titleBox, statusBox, scrollPane);
         mainContainer.setStyle("-fx-background-color: #F3F5F8; -fx-background-radius: 12;");
 
         // 使 mainContainer 填满 CourseSelectPanel 的中心区域
@@ -309,9 +323,11 @@ public class CourseSelectPanel extends BorderPane {
     // 创建单个教学班卡片（用于课程详情展开内显示）
     private Node createTeachingClassCard(TeachingClass tc, FlowPane parent) {
         boolean isSelected = isCourseSelected(tc.getUuid());
-        // 判断是否与任一已选教学班冲突（仅对未选中的教学班进行高亮）
+        // 判断是否与任一已选教学班冲突（时间冲突）以及是否在同一课程下已选了其他教学班（同课冲突）
         boolean isConflict = false;
+        boolean sameCourseSelected = false;
         try {
+            // 检查时间冲突（仅对未选中的教学班）
             if (!isSelected && tc != null && tc.getSchedule() != null && !selectedUuids.isEmpty()) {
                 for (String selUuid : selectedUuids) {
                     if (selUuid == null) continue;
@@ -319,6 +335,19 @@ public class CourseSelectPanel extends BorderPane {
                     if (existTc == null) continue;
                     if (schedulesConflict(existTc.getSchedule(), tc.getSchedule())) {
                         isConflict = true;
+                        break;
+                    }
+                }
+            }
+
+            // 检查是否已在相同课程下选择了其他教学班（只要已选集合中存在相同 courseId 的不同 uuid 即为已选该课程）
+            if (!isSelected && tc != null && tc.getCourseId() != null && !selectedUuids.isEmpty()) {
+                for (String selUuid : selectedUuids) {
+                    if (selUuid == null) continue;
+                    TeachingClass existTc = teachingClassMap.get(selUuid.trim().toLowerCase());
+                    if (existTc == null || existTc.getCourseId() == null) continue;
+                    if (existTc.getCourseId().equals(tc.getCourseId()) && !selUuid.trim().equalsIgnoreCase(tc.getUuid())) {
+                        sameCourseSelected = true;
                         break;
                     }
                 }
@@ -334,6 +363,9 @@ public class CourseSelectPanel extends BorderPane {
             card.setStyle("-fx-background-radius: 6; -fx-border-color: #cfe8d8; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #e6f6ec;");
         } else if (isConflict) {
             // 冲突：红色提示背景（不改变按钮逻辑）
+            card.setStyle("-fx-background-radius: 6; -fx-border-color: #f5c2c7; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #fdecec;");
+        } else if (sameCourseSelected) {
+            // 如果同课程已选，则在界面上同冲突课程一样高亮（视觉上与时间冲突一致）
             card.setStyle("-fx-background-radius: 6; -fx-border-color: #f5c2c7; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: #fdecec;");
         }
         card.setAlignment(Pos.TOP_LEFT);
@@ -419,6 +451,13 @@ public class CourseSelectPanel extends BorderPane {
             selectButton.setText("处理中");
             selectButton.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-font-weight: bold;");
             selectButton.setDisable(true);
+        } else if (sameCourseSelected) {
+            // 相同课程中已选了另一个教学班：显示为冲突样式，点击提示已选该课程
+            selectButton.setText("已选该课程");
+            selectButton.setStyle("-fx-background-color: #f59e9e; -fx-text-fill: white; -fx-font-weight: bold;");
+            // 保持按钮可点击以给出提示，但不发起选课请求
+            selectButton.setDisable(false);
+            selectButton.setOnAction(e -> showAlert("提示", "已选该课程", Alert.AlertType.INFORMATION));
         } else {
             selectButton.setText("选课");
             selectButton.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-font-weight: bold;");
@@ -494,15 +533,15 @@ public class CourseSelectPanel extends BorderPane {
         // 简单映射：节次 -> 时间段。可根据实际校历调整。
         String[] periodStart = new String[]{
                 "", // 0 占位
-                "08:00", "08:50", "10:00", "10:50",
+                "08:00", "08:50", "9:50", "10:40","11:30",
                 "14:00", "14:50", "15:50", "16:40",
-                "19:00", "19:50", "20:10", "20:55"
+                "17:30", "19:00", "19:50", "20:40"
         };
         String[] periodEnd = new String[]{
-                "",
-                "08:45", "09:35", "10:45", "11:30",
+                "", // 0 占位
+                "08:45", "09:35", "10:35", "11:25", "12:15",
                 "14:45", "15:35", "16:35", "17:25",
-                "19:45", "20:35", "20:50", "21:40"
+                "18:15", "19:45", "20:35", "21:25"
         };
 
         // 匹配范围，例如 "1-2节" 或 "1-2"
