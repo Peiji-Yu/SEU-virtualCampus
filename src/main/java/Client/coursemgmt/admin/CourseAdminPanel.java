@@ -102,7 +102,7 @@ public class CourseAdminPanel extends BorderPane {
         HBox titleBox = new HBox();
         titleBox.setAlignment(Pos.CENTER_LEFT);
         titleBox.setPadding(new Insets(16));
-        titleBox.setStyle("-fx-background-color: #F6F8FA; -fx-border-color: #F6F8FA; -fx-border-width: 0 0 0 0;");
+        titleBox.setStyle("-fx-background-color: #F3F5F8;");
 
         // 占位区域以将刷新图标推到右侧
         Region spacer = new Region();
@@ -124,9 +124,27 @@ public class CourseAdminPanel extends BorderPane {
         }
         refreshIconBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
         refreshIconBtn.setOnAction(e -> loadCourseData());
-        refreshIconBtn.setTooltip(new Tooltip("刷新课程数据"));
+        refreshIconBtn.setTooltip(new Tooltip("刷新课程"));
 
-        titleBox.getChildren().addAll(titleLabel, spacer, refreshIconBtn);
+        Button addCourseBtn;
+        try {
+            javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream("/Image/增加.png"));
+            javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
+            iv.setFitWidth(28);
+            iv.setFitHeight(28);
+            iv.setPreserveRatio(true);
+            iv.setSmooth(true);
+            addCourseBtn = new javafx.scene.control.Button();
+            addCourseBtn.setGraphic(iv);
+        } catch (Exception ex) {
+            // 资源加载失败时回退为文字按钮
+            addCourseBtn = new javafx.scene.control.Button("添加课程");
+        }
+        addCourseBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        addCourseBtn.setOnAction(e -> CourseCrud.showAddCourseDialog(this));
+        addCourseBtn.setTooltip(new Tooltip("添加课程"));
+
+        titleBox.getChildren().addAll(titleLabel, refreshIconBtn, spacer, addCourseBtn);
         setTop(titleBox);
 
         statusLabel = new Label("正在加载课程数据...");
@@ -153,7 +171,7 @@ public class CourseAdminPanel extends BorderPane {
         HBox searchBox = new HBox(12);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(12, 16, 12, 16));
-        searchBox.setStyle("-fx-background-color: #F6F8FA;");
+        searchBox.setStyle("-fx-background-color: #F3F5F8;");
 
         Label searchLabel = new Label("搜索条件:");
         searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-font-size: 14px;");
@@ -186,34 +204,30 @@ public class CourseAdminPanel extends BorderPane {
         });
 
         // 列表容器
-        courseListContainer = new VBox(16);
-        courseListContainer.setPadding(new Insets(16, 20, 20, 20));
+        courseListContainer = new VBox(20);
+        courseListContainer.setPadding(new Insets(16, 24, 24, 24));
         courseListContainer.setPrefWidth(1000);
 
         scrollPane = new ScrollPane(courseListContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setPannable(true);
+        scrollPane.setPrefViewportHeight(720);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-        // 允许搜索结果/课程列表向下延伸并占满可用空间：优先让 ScrollPane 在父容器中垂直扩展
-        scrollPane.setPrefViewportHeight(600);
-        courseListContainer.setPrefHeight(600);
+
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setPannable(true);
+
+        VBox body = new VBox(statusBox, searchBox, scrollPane);
+        body.setStyle("-fx-background-color: #F3F5F8; -fx-background-radius: 12;");
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
-
-        // 底部仅保留“新增课程”按钮，刷新已移动到顶部标题栏
-        Button addCourseBtn = new Button("新增课程");
-        addCourseBtn.setStyle("-fx-background-color: #28a745; -fx-text-fill: white;");
-        addCourseBtn.setOnAction(e -> CourseCrud.showAddCourseDialog(this));
-        HBox btnBox = new HBox(8, addCourseBtn);
-        btnBox.setAlignment(Pos.CENTER_RIGHT);
-        btnBox.setPadding(new Insets(8, 16, 12, 16));
-
-        VBox body = new VBox(statusBox, searchBox, scrollPane, btnBox);
-        body.setStyle("-fx-background-color: #F6F8FA; -fx-background-radius: 12;");
-        body.setPadding(new Insets(12));
+        scrollPane.setMaxHeight(Double.MAX_VALUE);
+        body.prefWidthProperty().bind(this.widthProperty().subtract(40));
+        body.prefHeightProperty().bind(this.heightProperty().subtract(40));
 
         setCenter(body);
-        setPadding(new Insets(12));
-        setStyle("-fx-background-color: #F6F8FA;");
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: #F3F5F8;");
     }
 
     void loadCourseData() {

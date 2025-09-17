@@ -7,6 +7,8 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.util.*;
+
 
 /**
  * 将原来 CourseAdminPanel 中 createTeachingClassCard 的逻辑独立成组件，行为通过 CourseAdminPanel 回调
@@ -24,11 +26,8 @@ public class TeachingClassCard extends VBox {
 
     private void initUI(FlowPane parent) {
         this.setPadding(new Insets(10));
-        String normalStyle = "-fx-background-radius: 6; -fx-border-color: #cfe4ff; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: linear-gradient(to bottom, #eaf4ff, #dceeff);";
-        String hoverStyle = "-fx-background-radius: 6; -fx-border-color: #9fd0ff; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-color: linear-gradient(to bottom, #d6eeff, #c0e6ff); -fx-effect: dropshadow(gaussian, rgba(30,80,150,0.12), 8,0,0,2);";
+        String normalStyle = "-fx-background-radius: 6; -fx-background-color: #F5F7FA;";
         this.setStyle(normalStyle);
-        this.setOnMouseEntered(e -> this.setStyle(hoverStyle));
-        this.setOnMouseExited(e -> this.setStyle(normalStyle));
         this.setPrefHeight(Region.USE_COMPUTED_SIZE);
         this.setMinHeight(Region.USE_COMPUTED_SIZE);
 
@@ -47,9 +46,43 @@ public class TeachingClassCard extends VBox {
         teacher.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
         teacher.setWrapText(true);
 
-        Label schedule = new Label("时间: " + (tc.getSchedule() == null ? "未设置" : tc.getSchedule()));
-        schedule.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
-        schedule.setWrapText(true);
+        // 将 schedule 字符串解析为 Map<String,String> 并格式化显示，行为与学生端一致
+        VBox scheduleBox = new VBox(2);
+        scheduleBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        Label timeTitle = new Label("时间:");
+        timeTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666; -fx-font-weight: bold;");
+        scheduleBox.getChildren().add(timeTitle);
+
+        String scheduleJson = tc.getSchedule();
+        if (scheduleJson != null && !scheduleJson.trim().isEmpty()) {
+            try {
+                java.lang.reflect.Type mapType = new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType();
+                java.util.Map<String, String> scheduleMap = new com.google.gson.Gson().fromJson(scheduleJson, mapType);
+                if (scheduleMap != null && !scheduleMap.isEmpty()) {
+                    for (java.util.Map.Entry<String, String> e : scheduleMap.entrySet()) {
+                        String formatted = formatScheduleValue(e.getValue());
+                        Label dayLine = new Label(e.getKey() + ": " + formatted);
+                        dayLine.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                        dayLine.setWrapText(true);
+                        scheduleBox.getChildren().add(dayLine);
+                    }
+                } else {
+                    Label raw = new Label(scheduleJson);
+                    raw.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                    raw.setWrapText(true);
+                    scheduleBox.getChildren().add(raw);
+                }
+            } catch (Exception ex) {
+                Label raw = new Label(scheduleJson);
+                raw.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+                raw.setWrapText(true);
+                scheduleBox.getChildren().add(raw);
+            }
+        } else {
+            Label unset = new Label("未设置");
+            unset.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+            scheduleBox.getChildren().add(unset);
+        }
 
         Label place = new Label("地点: " + (tc.getPlace() == null ? "未设置" : tc.getPlace()));
         place.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
@@ -122,7 +155,58 @@ public class TeachingClassCard extends VBox {
         HBox btnRow = new HBox(8, spacer, viewListBtn, addStudentBtn, editBtn, delBtn);
         btnRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-        this.getChildren().addAll(teacher, schedule, place, capacity, btnRow);
+        this.getChildren().addAll(teacher, scheduleBox, place, capacity, btnRow);
         this.requestLayout();
+    }
+
+    // 与学生端保持一致的时间格式化逻辑（将节次等简单表达转换为具体时间段）
+    private String formatScheduleValue(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        if (s.isEmpty()) return "";
+        if (s.contains(":")) return s;
+
+        String[] periodStart = new String[]{"", "08:00", "08:50", "9:50", "10:40","11:30",
+                "14:00", "14:50", "15:50", "16:40",
+                "17:30", "19:00", "19:50", "20:40"};
+        String[] periodEnd = new String[]{"", "08:45", "09:35", "10:35", "11:25", "12:15",
+                "14:45", "15:35", "16:35", "17:25",
+                "18:15", "19:45", "20:35", "21:25"};
+
+        java.util.regex.Pattern rangePat = java.util.regex.Pattern.compile("^(\\d+)\\s*-\\s*(\\d+)\\s*节?$");
+        java.util.regex.Matcher m = rangePat.matcher(s);
+        if (m.find()) {
+            try {
+                int a = Integer.parseInt(m.group(1));
+                int b = Integer.parseInt(m.group(2));
+                if (a < 1) a = 1;
+                if (b < 1) b = 1;
+                if (a >= periodStart.length) a = periodStart.length - 1;
+                if (b >= periodEnd.length) b = periodEnd.length - 1;
+                if (a > b) { int tmp=a; a=b; b=tmp; }
+                String start = periodStart[a];
+                String end = periodEnd[b];
+                if (start != null && !start.isEmpty() && end != null && !end.isEmpty()) {
+                    return s + " (" + start + "-" + end + ")";
+                }
+            } catch (Exception ignored) {}
+        }
+
+        java.util.regex.Pattern singlePat = java.util.regex.Pattern.compile("^(\\d+)\\s*节?$");
+        m = singlePat.matcher(s);
+        if (m.find()) {
+            try {
+                int p = Integer.parseInt(m.group(1));
+                if (p < 1) p = 1;
+                if (p >= periodStart.length) p = periodStart.length - 1;
+                String start = periodStart[p];
+                String end = periodEnd[p];
+                if (start != null && !start.isEmpty() && end != null && !end.isEmpty()) {
+                    return s + " (" + start + "-" + end + ")";
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return s;
     }
 }
