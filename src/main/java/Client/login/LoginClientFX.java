@@ -1,12 +1,31 @@
 package Client.login;
 
-import Client.MainFrame;
+import java.lang.reflect.Type;
+import java.util.Map;
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import Client.MainFrame;
+import Client.login.component.FilledButton;
+import Client.login.component.Header;
+import Client.login.component.LoginButton;
+import Client.login.component.PasswordInput;
+import Client.login.component.UsernameInput;
+import Client.login.net.RequestSender;
+import Client.login.util.ColorTransition;
+import Client.login.util.DragHandler;
+import Client.login.util.FadeAnimation;
+import Client.login.util.Resources;
+import Client.util.AsyncFX;
+import Client.util.UIUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType; // 添加缺失导入
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -14,19 +33,10 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
-
-import Client.login.component.*;
-import Client.login.util.*;
-import Client.util.AsyncFX;
-import Client.login.net.RequestSender;
-import javafx.stage.Modality; // 添加缺失导入
-import Client.util.UIUtil;
-
-import java.lang.reflect.Type;
-import java.util.Map;
 
 /** 登录界面（固定尺寸与显式参数布局版本）
  *  @author Msgo-srAm
@@ -108,7 +118,7 @@ public class LoginClientFX extends Application {
             root.getChildren().add(0, bg);
         }
 
-        logo = loadImage("/Image/Logo.png");
+        logo = loadImage("/Image/loglogo.png");
         if (logo != null) {
             logo.setFitWidth(LOGO_SIZE);
             logo.setFitHeight(LOGO_SIZE);
@@ -121,7 +131,7 @@ public class LoginClientFX extends Application {
         welcomeLabel.setTextFill(Resources.FONT_COLOR);
         root.getChildren().add(welcomeLabel);
 
-        subtitleLabel = new Label("SEUer!");
+        subtitleLabel = new Label(" SEUer!");
         subtitleLabel.setFont(Resources.ROBOTO_BOLD);
         subtitleLabel.setTextFill(Resources.FONT_COLOR);
         root.getChildren().add(subtitleLabel);
@@ -322,15 +332,18 @@ public class LoginClientFX extends Application {
         if(cancelButton!=null) { cancelButton.setBusy(busy); }
     }
 
-    private void doAuthRequest(String cardNum, String idNum){
-        try{
+    private void doAuthRequest(String cardNum, String idNum) {
+        try {
             String resp = RequestSender.forgetPwd(cardNum, idNum);
             Platform.runLater(() -> handleAuthResponse(resp, cardNum));
-        } catch (Exception ex){
+        } catch (Exception ex) {
             Platform.runLater(() -> {
                 // 重置请求状态
                 authRequestInProgress = false;
                 setAuthBusy(false);
+                // 打印异常详细信息到控制台
+                ex.printStackTrace();  // 打印详细的异常堆栈信息
+                
                 // 判断异常类型，提供更准确的错误提示
                 String errorMsg;
                 if (ex.getMessage().contains("Connection refused") ||
