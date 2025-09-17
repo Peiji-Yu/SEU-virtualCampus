@@ -75,6 +75,8 @@ public class TimetableSearchPanel extends BorderPane {
         setPadding(new Insets(0));
 
         // 顶部搜索栏：输入 cardNumber 并搜索
+        Label titleLabel = new Label("学生课表");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
         HBox topBar = new HBox(8);
         topBar.setPadding(new Insets(8, 12, 8, 12));
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -88,7 +90,7 @@ public class TimetableSearchPanel extends BorderPane {
         });
         // 回车触发查询
         cardInput.setOnAction(e -> searchBtn.fire());
-        topBar.getChildren().addAll(cardInput, searchBtn);
+        topBar.getChildren().addAll(titleLabel, cardInput, searchBtn);
         setTop(topBar);
 
         // 不在顶部显示标题，节省垂直空间以显示更多表格内容

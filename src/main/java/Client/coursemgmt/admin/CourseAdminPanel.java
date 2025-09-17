@@ -41,13 +41,12 @@ public class CourseAdminPanel extends BorderPane {
 
     private void initializeUI() {
         Label titleLabel = new Label("课程管理");
-        titleLabel.setFont(Font.font(20));
-        titleLabel.setStyle("-fx-text-fill: #2a4d7b; -fx-font-weight: bold;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
         HBox titleBox = new HBox(titleLabel);
         titleBox.setAlignment(Pos.CENTER_LEFT);
         titleBox.setPadding(new Insets(16));
-        titleBox.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
+        titleBox.setStyle("-fx-background-color: #F6F8FA; -fx-border-color: #F6F8FA; -fx-border-width: 0 0 0 0;");
         setTop(titleBox);
 
         statusLabel = new Label("正在加载课程数据...");
@@ -74,7 +73,7 @@ public class CourseAdminPanel extends BorderPane {
         HBox searchBox = new HBox(12);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(12, 16, 12, 16));
-        searchBox.setStyle("-fx-background-color: #ffffff;");
+        searchBox.setStyle("-fx-background-color: #F6F8FA;");
 
         Label searchLabel = new Label("搜索条件:");
         searchLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b; -fx-font-size: 14px;");
@@ -131,12 +130,12 @@ public class CourseAdminPanel extends BorderPane {
         btnBox.setPadding(new Insets(8, 16, 12, 16));
 
         VBox body = new VBox(statusBox, searchBox, scrollPane, btnBox);
-        body.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12;");
+        body.setStyle("-fx-background-color: #F6F8FA; -fx-background-radius: 12;");
         body.setPadding(new Insets(12));
 
         setCenter(body);
         setPadding(new Insets(12));
-        setStyle("-fx-background-color: #f8fbff;");
+        setStyle("-fx-background-color: #F6F8FA;");
     }
 
     private void loadCourseData() {
@@ -240,7 +239,7 @@ public class CourseAdminPanel extends BorderPane {
             courseCard.setPadding(new Insets(12));
             courseCard.setPrefWidth(980);
             courseCard.setMaxWidth(Double.MAX_VALUE);
-            courseCard.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-width: 1; -fx-border-radius: 10;");
+            courseCard.setStyle("-fx-background-color: #F6F8FA; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-width: 1; -fx-border-radius: 10;");
 
             HBox header = new HBox();
             header.setAlignment(Pos.CENTER_LEFT);

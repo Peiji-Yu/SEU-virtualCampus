@@ -50,8 +50,7 @@ public class CardInfoPanel extends BorderPane {
 
         VBox container = new VBox(24);
         container.setPadding(new Insets(32));
-        container.setStyle("-fx-background-color: #ffffff; " +
-                "-fx-background-radius: 16; " +
+        container.setStyle("-fx-background-color: #F6F8FA; " +
                 "-fx-border-color: #e0e0e0; " +
                 "-fx-border-width: 1; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 12, 0, 0, 4);");
