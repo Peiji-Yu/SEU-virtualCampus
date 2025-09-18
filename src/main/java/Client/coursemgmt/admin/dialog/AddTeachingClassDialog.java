@@ -12,6 +12,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
 import java.util.*;
 
@@ -21,46 +23,68 @@ import java.util.*;
 public class AddTeachingClassDialog {
     public static void showForCourse(CourseAdminPanel owner, String courseId) {
         Dialog<TeachingClass> dialog = new Dialog<>();
+        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
         dialog.setTitle("新增教学班");
         dialog.setHeaderText("为课程 " + courseId + " 添加教学班");
+        dialog.getDialogPane().getStylesheets().add("/styles/dialog.css");
 
-        TextField teacherField = owner.createStyledTextField("");
-        javafx.scene.control.ComboBox<String> dayChoice = new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList("周一", "周二", "周三", "周四", "周五", "周六", "周日"));
+        // 创建表单字段
+        TextField teacherField = createTextField("请输入教师姓名");
+        ComboBox<String> dayChoice = new ComboBox<>(FXCollections.observableArrayList("周一", "周二", "周三", "周四", "周五", "周六", "周日"));
         dayChoice.setEditable(true);
-        dayChoice.setPrefWidth(140);
-        TextField timeInput = owner.createStyledTextField("例如: 9-11节");
-        Button addScheduleBtn = new Button("添加到列表");
+        dayChoice.setPrefWidth(120);
+        dayChoice.setPromptText("选择上课日");
+        TextField timeInput = createTextField("例如: 9-11节");
+        Button addScheduleBtn = createButton("添加到列表");
         ListView<String> scheduleList = new ListView<>(FXCollections.observableArrayList());
         scheduleList.setPrefHeight(120);
-        Button removeScheduleBtn = new Button("移除所选");
-        TextField placeField = owner.createStyledTextField("");
-        TextField capacityField = owner.createStyledTextField("");
+        Button removeScheduleBtn = createButton("移除所选");
+        TextField placeField = createTextField("请输入上课地点");
+        TextField capacityField = createTextField("请输入容量（数字）");
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-        grid.add(new Label("教师姓名:"), 0, 0);
+        grid.setHgap(15);
+        grid.setVgap(12);
+        grid.setPadding(new Insets(20, 25, 15, 25));
+        grid.setAlignment(Pos.CENTER);
+
+        // 添加标签和输入框
+        grid.add(createLabel("教师姓名:"), 0, 0);
         grid.add(teacherField, 1, 0);
-        grid.add(new Label("时间安排 (可添加多条):"), 0, 1);
-        HBox schedInputRow = new HBox(8, dayChoice, timeInput, addScheduleBtn, removeScheduleBtn);
+        grid.add(createLabel("时间安排:"), 0, 1);
+
+        HBox schedInputRow = new HBox(10, dayChoice, timeInput, addScheduleBtn, removeScheduleBtn);
         schedInputRow.setAlignment(Pos.CENTER_LEFT);
         grid.add(schedInputRow, 1, 1);
+
+        grid.add(new Label(), 0, 2); // 空标签占位
         grid.add(scheduleList, 1, 2);
-        grid.add(new Label("地点:"), 0, 3);
+
+        grid.add(createLabel("地点:"), 0, 3);
         grid.add(placeField, 1, 3);
-        grid.add(new Label("容量:"), 0, 4);
+
+        grid.add(createLabel("容量:"), 0, 4);
         grid.add(capacityField, 1, 4);
 
-        dialog.getDialogPane().setContent(grid);
-        ButtonType addType = new ButtonType("添加", ButtonBar.ButtonData.OK_DONE);
+        // 设置列约束
+        GridPane.setHgrow(teacherField, Priority.ALWAYS);
+        GridPane.setHgrow(timeInput, Priority.ALWAYS);
+        GridPane.setHgrow(placeField, Priority.ALWAYS);
+        GridPane.setHgrow(capacityField, Priority.ALWAYS);
+        GridPane.setHgrow(scheduleList, Priority.ALWAYS);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+        content.getChildren().addAll(grid);
+
+        dialog.getDialogPane().setContent(content);
+        ButtonType addType = new ButtonType("添加", ButtonBar.ButtonData.LEFT);
         dialog.getDialogPane().getButtonTypes().addAll(addType, ButtonType.CANCEL);
 
         addScheduleBtn.setOnAction(e -> {
             String day = dayChoice.getEditor().getText();
             if (day == null || day.trim().isEmpty()) {
-                Alert a = new Alert(Alert.AlertType.ERROR, "请填写上课日（如 周一）", ButtonType.OK);
-                a.showAndWait();
+                showErrorAlert("验证失败", "请填写上课日（如 周一）");
                 return;
             }
             String time = timeInput.getText() == null ? "" : timeInput.getText().trim();
@@ -68,6 +92,7 @@ public class AddTeachingClassDialog {
             scheduleList.getSelectionModel().clearSelection();
             timeInput.clear();
         });
+
         removeScheduleBtn.setOnAction(e -> {
             int sel = scheduleList.getSelectionModel().getSelectedIndex();
             if (sel >= 0) scheduleList.getItems().remove(sel);
@@ -76,10 +101,26 @@ public class AddTeachingClassDialog {
         dialog.setResultConverter(bt -> {
             if (bt == addType) {
                 try {
+                    // 验证必填字段
+                    String teacherName = teacherField.getText() == null ? "" : teacherField.getText().trim();
+                    String place = placeField.getText() == null ? "" : placeField.getText().trim();
+                    String capacityText = capacityField.getText() == null ? "" : capacityField.getText().trim();
+
+                    if (teacherName.isEmpty() || place.isEmpty() || capacityText.isEmpty()) {
+                        showErrorAlert("验证失败", "教师姓名、地点和容量为必填项");
+                        return null;
+                    }
+
+                    if (scheduleList.getItems().isEmpty()) {
+                        showErrorAlert("验证失败", "请至少添加一条时间安排");
+                        return null;
+                    }
+
                     TeachingClass tc = new TeachingClass();
                     tc.setUuid(UUID.randomUUID().toString());
                     tc.setCourseId(courseId);
-                    tc.setTeacherName(teacherField.getText());
+                    tc.setTeacherName(teacherName);
+
                     Map<String, String> schedMap = new LinkedHashMap<>();
                     for (String item : scheduleList.getItems()) {
                         if (item == null) continue;
@@ -99,13 +140,12 @@ public class AddTeachingClassDialog {
                         }
                     }
                     tc.setSchedule(new Gson().toJson(schedMap));
-                    tc.setPlace(placeField.getText());
-                    tc.setCapacity(Integer.parseInt(capacityField.getText()));
+                    tc.setPlace(place);
+                    tc.setCapacity(Integer.parseInt(capacityText));
                     tc.setSelectedCount(0);
                     return tc;
                 } catch (NumberFormatException ex) {
-                    Alert a = new Alert(Alert.AlertType.ERROR, "容量必须为整数", ButtonType.OK);
-                    a.showAndWait();
+                    showErrorAlert("输入错误", "容量必须为有效的整数");
                     return null;
                 }
             }
@@ -131,22 +171,54 @@ public class AddTeachingClassDialog {
                     Response rr = CourseService.addTeachingClass(data);
                     Platform.runLater(() -> {
                         if (rr.getCode() == 200) {
-                            Alert a = new Alert(Alert.AlertType.INFORMATION, "新增成功", ButtonType.OK);
-                            a.showAndWait();
+                            showSuccessAlert("操作成功", "新增教学班成功");
                             owner.loadCourseData();
                         } else {
-                            Alert a = new Alert(Alert.AlertType.ERROR, "新增失败: " + rr.getMessage(), ButtonType.OK);
-                            a.showAndWait();
+                            showErrorAlert("操作失败", "新增教学班失败: " + rr.getMessage());
                         }
                     });
                 } catch (Exception ex) {
                     Platform.runLater(() -> {
-                        Alert a = new Alert(Alert.AlertType.ERROR, "网络异常: " + ex.getMessage(), ButtonType.OK);
-                        a.showAndWait();
+                        showErrorAlert("网络异常", "网络连接异常: " + ex.getMessage());
                     });
                 }
             }).start();
         });
     }
-}
 
+    private static TextField createTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setPrefWidth(250);
+        field.setMaxWidth(Double.MAX_VALUE);
+        return field;
+    }
+
+    private static Button createButton(String text) {
+        Button button = new Button(text);
+        button.setPrefWidth(100);
+        return button;
+    }
+
+    private static Label createLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #495057;");
+        return label;
+    }
+
+    private static void showErrorAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private static void showSuccessAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}
