@@ -1,10 +1,10 @@
 package Client.store;
 
-import Client.store.admin.AdminAddProductPanel;
-import Client.store.admin.AdminManageOrderPanel;
-import Client.store.admin.AdminManageProductPanel;
-import Client.store.student.CustomerOrderPanel;
-import Client.store.student.CustomerProductPanel;
+import Client.store.admin.AddProductPanel;
+import Client.store.admin.ManageOrderPanel;
+import Client.store.admin.ManageProductPanel;
+import Client.store.student.MyOrderPanel;
+import Client.store.student.ProductSearchPanel;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -12,11 +12,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 public class StoreMainPanel extends BorderPane {
-    private CustomerProductPanel customerProductPanel;
-    private CustomerOrderPanel customerOrderPanel;
-    private AdminAddProductPanel adminAddProductPanel;
-    private AdminManageProductPanel adminManageProductPanel;
-    private AdminManageOrderPanel adminManageOrderPanel;
+    private ProductSearchPanel productSearchPanel;
+    private MyOrderPanel myOrderPanel;
+    private AddProductPanel addProductPanel;
+    private ManageProductPanel manageProductPanel;
+    private ManageOrderPanel manageOrderPanel;
     private Button currentSelectedButton;
     private final String cardNumber;
     private final boolean isAdmin;
@@ -61,10 +61,10 @@ public class StoreMainPanel extends BorderPane {
                     currentSelectedButton = addProductButton;
 
                     // 初始化添加商品页面
-                    if (adminAddProductPanel == null) {
-                        adminAddProductPanel = new AdminAddProductPanel();
+                    if (addProductPanel == null) {
+                        addProductPanel = new AddProductPanel();
                     }
-                    setCenter(adminAddProductPanel);
+                    setCenter(addProductPanel);
                 }
             });
 
@@ -85,10 +85,10 @@ public class StoreMainPanel extends BorderPane {
                     currentSelectedButton = manageProductButton;
 
                     // 初始化管理商品页面
-                    if (adminManageProductPanel == null) {
-                        adminManageProductPanel = new AdminManageProductPanel();
+                    if (manageProductPanel == null) {
+                        manageProductPanel = new ManageProductPanel();
                     }
-                    setCenter(adminManageProductPanel);
+                    setCenter(manageProductPanel);
                 }
             });
 
@@ -110,10 +110,10 @@ public class StoreMainPanel extends BorderPane {
                     currentSelectedButton = manageOrderButton;
 
                     // 初始化管理订单页面
-                    if (adminManageOrderPanel == null) {
-                        adminManageOrderPanel = new AdminManageOrderPanel();
+                    if (manageOrderPanel == null) {
+                        manageOrderPanel = new ManageOrderPanel();
                     }
-                    setCenter(adminManageOrderPanel);
+                    setCenter(manageOrderPanel);
                 }
             });
 
@@ -129,12 +129,12 @@ public class StoreMainPanel extends BorderPane {
             setLeft(leftBar);
 
             // 初始化默认面板
-            adminAddProductPanel = new AdminAddProductPanel();
-            setCenter(adminAddProductPanel);
+            addProductPanel = new AddProductPanel();
+            setCenter(addProductPanel);
         }
         else {
-            // 商品浏览按钮
-            Button productButton = new Button("商品浏览");
+            // 浏览商品按钮
+            Button productButton = new Button("浏览商品");
             productButton.setPrefWidth(210);
             productButton.setPrefHeight(56);
             setSelectedButtonStyle(productButton);
@@ -146,11 +146,11 @@ public class StoreMainPanel extends BorderPane {
                     setSelectedButtonStyle(productButton);
                     currentSelectedButton = productButton;
 
-                    // 初始化商品浏览页面
-                    if (customerProductPanel == null) {
-                        customerProductPanel = new CustomerProductPanel(cardNumber);
+                    // 初始化浏览商品页面
+                    if (productSearchPanel == null) {
+                        productSearchPanel = new ProductSearchPanel(cardNumber);
                     }
-                    setCenter(customerProductPanel);
+                    setCenter(productSearchPanel);
                 }
             });
 
@@ -172,10 +172,10 @@ public class StoreMainPanel extends BorderPane {
                     currentSelectedButton = orderButton;
 
                     // 初始化我的订单页面
-                    if (customerOrderPanel == null) {
-                        customerOrderPanel = new CustomerOrderPanel(cardNumber);
+                    if (myOrderPanel == null) {
+                        myOrderPanel = new MyOrderPanel(cardNumber);
                     }
-                    setCenter(customerOrderPanel);
+                    setCenter(myOrderPanel);
                 }
             });
 
@@ -190,8 +190,8 @@ public class StoreMainPanel extends BorderPane {
             setLeft(leftBar);
 
             // 初始化面板
-            customerProductPanel = new CustomerProductPanel(cardNumber);
-            setCenter(customerProductPanel);
+            productSearchPanel = new ProductSearchPanel(cardNumber);
+            setCenter(productSearchPanel);
         }
     }
 

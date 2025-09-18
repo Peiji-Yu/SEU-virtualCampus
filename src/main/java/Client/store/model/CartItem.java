@@ -1,4 +1,4 @@
-package Client.store.util.model;
+package Client.store.model;
 
 import Client.store.util.StoreUtils;
 

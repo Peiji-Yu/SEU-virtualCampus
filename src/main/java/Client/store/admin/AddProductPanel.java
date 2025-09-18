@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class AdminAddProductPanel extends BorderPane {
+public class AddProductPanel extends BorderPane {
     private TextField nameField, priceField, stockField, barcodeField, pictureField;
     private TextArea descriptionField;
     private ToggleGroup categoryToggleGroup;
@@ -28,7 +28,7 @@ public class AdminAddProductPanel extends BorderPane {
 
     private Gson gson;
 
-    public AdminAddProductPanel() {
+    public AddProductPanel() {
         // 创建配置了LocalDate和UUID适配器的Gson实例
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDate.class, new LocalDateAdapter());

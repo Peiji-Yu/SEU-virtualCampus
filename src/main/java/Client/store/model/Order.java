@@ -1,4 +1,4 @@
-package Client.store.util.model;
+package Client.store.model;
 
 import Client.store.util.StoreUtils;
 import java.util.List;
@@ -16,7 +16,6 @@ public class Order {
     public String getUuid() {
         return uuid;
     }
-
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
@@ -24,11 +23,9 @@ public class Order {
     public int getTotalAmount() {
         return totalAmount;
     }
-
     public void setTotalAmount(int totalAmount) {
         this.totalAmount = totalAmount;
     }
-
     public String getTotalYuan() {
         return StoreUtils.fenToYuan(totalAmount);
     }
@@ -36,7 +33,6 @@ public class Order {
     public String getStatus() {
         return status;
     }
-
     public void setStatus(String status) {
         this.status = status;
     }
@@ -44,7 +40,6 @@ public class Order {
     public String getTime() {
         return time;
     }
-
     public void setTime(String time) {
         this.time = time;
     }
@@ -52,7 +47,6 @@ public class Order {
     public String getRemark() {
         return remark;
     }
-
     public void setRemark(String remark) {
         this.remark = remark;
     }
@@ -60,7 +54,6 @@ public class Order {
     public List<OrderItem> getItems() {
         return items;
     }
-
     public void setItems(List<OrderItem> items) {
         this.items = items;
     }
@@ -68,7 +61,6 @@ public class Order {
     public int getCardNumber() {
         return cardNumber;
     }
-
     public void setCardNumber(int cardNumber) {
         this.cardNumber = cardNumber;
     }
