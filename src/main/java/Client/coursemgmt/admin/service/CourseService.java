@@ -115,5 +115,16 @@ public class CourseService {
         String resp = ClientNetworkHelper.send(req);
         return G.fromJson(resp, Response.class);
     }
-}
 
+    // 获取所有教学班（供前端冲突检测使用）
+    public static List<TeachingClass> fetchAllTeachingClasses() throws Exception {
+        String respStr = ClientNetworkHelper.getAllTeachingClasses();
+        Response resp = G.fromJson(respStr, Response.class);
+        List<TeachingClass> list = new ArrayList<>();
+        if (resp.getCode() == 200 && resp.getData() != null) {
+            Object tcData = resp.getData();
+            list = G.fromJson(G.toJson(tcData), new com.google.gson.reflect.TypeToken<List<TeachingClass>>(){}.getType());
+        }
+        return list;
+    }
+}
