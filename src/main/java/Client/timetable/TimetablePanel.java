@@ -48,14 +48,23 @@ public class TimetablePanel extends BorderPane {
     private static final String[] DAYS_OF_WEEK = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
     private final String cardNumber;
+    // 新增：记录当前面板对应的用户类型（"student" | "teacher" | null）
+    private final String userType;
     private final List<Map<String, Object>> courses = new ArrayList<>();
     private final Map<String, List<CourseSlot>> scheduleMap = new HashMap<>();
     private final List<CourseSlot> unscheduledCourses = new ArrayList<>();
     private GridPane timetableGrid;
     private Label loadingLabel;
 
+    // 保留原有单参数构造器以兼容现有调用，默认 userType 为 "student"
     public TimetablePanel(String cardNumber) {
+        this(cardNumber, "student");
+    }
+
+    // 新增构造器，允许调用方指定 userType（例如教师面板会传入 "teacher"）
+    public TimetablePanel(String cardNumber, String userType) {
         this.cardNumber = cardNumber;
+        this.userType = userType == null ? "student" : userType;
         initializeUI();
         loadTimetableData();
     }
@@ -90,62 +99,118 @@ public class TimetablePanel extends BorderPane {
                 boolean handled = false;
                 if (cardNumber != null && !cardNumber.trim().isEmpty()) {
                     try {
-                        // 构造请求，确保 cardNumber 以数字类型发送（服务器期望数字）
-                        Map<String, Object> data = new HashMap<>();
-                        try {
-                            data.put("cardNumber", Integer.parseInt(cardNumber));
-                        } catch (NumberFormatException nfe) {
-                            // 如果不是纯数字，仍传字符串作为回退
-                            data.put("cardNumber", cardNumber);
-                        }
-                        Request req = new Request("getStudentSelectedCourses", data);
-                        String selResp = ClientNetworkHelper.send(req);
-                        System.out.println("[Timetable] getStudentSelectedCourses raw: " + selResp);
-                        Map<String, Object> selResult = gson.fromJson(selResp, Map.class);
-                        if (selResult != null && Boolean.TRUE.equals(selResult.get("success"))) {
-                            Object selDataObj = selResult.get("data");
-                            if (selDataObj instanceof List) {
-                                List<Map<String, Object>> tcs = (List<Map<String, Object>>) selDataObj;
-                                courses.clear();
-                                scheduleMap.clear();
-                                unscheduledCourses.clear();
-                                for (Map<String, Object> tc : tcs) {
-                                    String sched = tc.get("schedule") == null ? "" : String.valueOf(tc.get("schedule"));
-                                    String place = tc.get("place") == null ? "" : String.valueOf(tc.get("place"));
-                                    String teacher = tc.get("teacherName") == null ? (tc.get("teacher") == null ? "" : String.valueOf(tc.get("teacher"))) : String.valueOf(tc.get("teacherName"));
-                                    String cname = "";
-                                    Object courseObj = tc.get("course");
-                                    if (courseObj instanceof Map) {
-                                        Object cn = ((Map) courseObj).get("courseName");
-                                        if (cn != null) cname = String.valueOf(cn);
-                                    }
-                                    // 如果 course 字段未返回课程名，尝试通过 courseId 向后端请求课程详情以获取 courseName
-                                    Object cidObj = tc.get("courseId");
-                                    String courseId = cidObj == null ? "" : String.valueOf(cidObj);
-                                    if ((cname == null || cname.trim().isEmpty()) && !courseId.isEmpty()) {
-                                        try {
-                                            String courseResp = ClientNetworkHelper.getCourseById(courseId);
-                                            Map<String, Object> courseResult = gson.fromJson(courseResp, Map.class);
-                                            if (courseResult != null && Boolean.TRUE.equals(courseResult.get("success"))) {
-                                                Object courseDataObj = courseResult.get("data");
-                                                if (courseDataObj instanceof Map) {
-                                                    Object cn = ((Map) courseDataObj).get("courseName");
-                                                    if (cn != null) cname = String.valueOf(cn);
+                        // 如果当前面板对应教师身份，则使用教师教学班查询接口
+                        if ("teacher".equalsIgnoreCase(userType)) {
+                            try {
+                                String selResp = ClientNetworkHelper.getTeachingClassesByTeacherCardNumber(cardNumber);
+                                System.out.println("[Timetable] getTeachingClassesByTeacherCardNumber raw: " + selResp);
+                                Map<String, Object> selResult = gson.fromJson(selResp, Map.class);
+                                if (selResult != null && Boolean.TRUE.equals(selResult.get("success"))) {
+                                    Object selDataObj = selResult.get("data");
+                                    if (selDataObj instanceof List) {
+                                        List<Map<String, Object>> tcs = (List<Map<String, Object>>) selDataObj;
+                                        courses.clear();
+                                        scheduleMap.clear();
+                                        unscheduledCourses.clear();
+                                        for (Map<String, Object> tc : tcs) {
+                                            String sched = tc.get("schedule") == null ? "" : String.valueOf(tc.get("schedule"));
+                                            String place = tc.get("place") == null ? "" : String.valueOf(tc.get("place"));
+                                            String teacher = tc.get("teacherName") == null ? (tc.get("teacher") == null ? "" : String.valueOf(tc.get("teacher"))) : String.valueOf(tc.get("teacherName"));
+                                            String cname = "";
+                                            Object courseObj = tc.get("course");
+                                            if (courseObj instanceof Map) {
+                                                Object cn = ((Map) courseObj).get("courseName");
+                                                if (cn != null) cname = String.valueOf(cn);
+                                            }
+                                            // 兼容教学班直接携带 courseId 的情形
+                                            Object cidObj = tc.get("courseId");
+                                            String courseId = cidObj == null ? "" : String.valueOf(cidObj);
+                                            if ((cname == null || cname.trim().isEmpty()) && !courseId.isEmpty()) {
+                                                try {
+                                                    String courseResp = ClientNetworkHelper.getCourseById(courseId);
+                                                    Map<String, Object> courseResult = gson.fromJson(courseResp, Map.class);
+                                                    if (courseResult != null && Boolean.TRUE.equals(courseResult.get("success"))) {
+                                                        Object courseDataObj = courseResult.get("data");
+                                                        if (courseDataObj instanceof Map) {
+                                                            Object cn = ((Map) courseDataObj).get("courseName");
+                                                            if (cn != null) cname = String.valueOf(cn);
+                                                        }
+                                                    }
+                                                } catch (Exception ignored) {
+                                                    // 允许忽略网络错误，继续使用 courseId 作为回退显示
                                                 }
                                             }
-                                        } catch (Exception ignored) {
-                                            // 允许忽略网络错误，继续使用 courseId 作为回退显示
-                                        }
-                                    }
-                                    if (cname.isEmpty()) cname = courseId.isEmpty() ? "" : courseId;
+                                            if (cname.isEmpty()) cname = courseId.isEmpty() ? "" : courseId;
 
-                                    parseScheduleEntry(cname, sched, place, teacher);
+                                            parseScheduleEntry(cname, sched, place, teacher);
+                                        }
+                                        handled = true;
+                                        Platform.runLater(this::renderTimetable);
+                                    }
+                                } else {
+                                    System.out.println("[Timetable] getTeachingClassesByTeacherCardNumber returned no data or failed: " + selResp);
                                 }
-                                handled = true;
-                                Platform.runLater(this::renderTimetable);
+                            } catch (Exception ex) {
+                                System.out.println("[Timetable] getTeachingClassesByTeacherCardNumber error: " + ex.getMessage());
                             }
                         } else {
-                            System.out.println("[Timetable] getStudentSelectedCourses returned no data or failed: " + selResp);
+                            // 学生路径：构造请求，确保 cardNumber 以数字类型发送（服务器期望数字）
+                            Map<String, Object> data = new HashMap<>();
+                            try {
+                                data.put("cardNumber", Integer.parseInt(cardNumber));
+                            } catch (NumberFormatException nfe) {
+                                // 如果不是纯数字，仍传字符串作为回退
+                                data.put("cardNumber", cardNumber);
+                            }
+                            Request req = new Request("getStudentSelectedCourses", data);
+                            String selResp = ClientNetworkHelper.send(req);
+                            System.out.println("[Timetable] getStudentSelectedCourses raw: " + selResp);
+                            Map<String, Object> selResult = gson.fromJson(selResp, Map.class);
+                            if (selResult != null && Boolean.TRUE.equals(selResult.get("success"))) {
+                                Object selDataObj = selResult.get("data");
+                                if (selDataObj instanceof List) {
+                                    List<Map<String, Object>> tcs = (List<Map<String, Object>>) selDataObj;
+                                    courses.clear();
+                                    scheduleMap.clear();
+                                    unscheduledCourses.clear();
+                                    for (Map<String, Object> tc : tcs) {
+                                        String sched = tc.get("schedule") == null ? "" : String.valueOf(tc.get("schedule"));
+                                        String place = tc.get("place") == null ? "" : String.valueOf(tc.get("place"));
+                                        String teacher = tc.get("teacherName") == null ? (tc.get("teacher") == null ? "" : String.valueOf(tc.get("teacher"))) : String.valueOf(tc.get("teacherName"));
+                                        String cname = "";
+                                        Object courseObj = tc.get("course");
+                                        if (courseObj instanceof Map) {
+                                            Object cn = ((Map) courseObj).get("courseName");
+                                            if (cn != null) cname = String.valueOf(cn);
+                                        }
+                                        // 如果 course 字段未返回课程名，尝试通过 courseId 向后端请求课程详情以获取 courseName
+                                        Object cidObj = tc.get("courseId");
+                                        String courseId = cidObj == null ? "" : String.valueOf(cidObj);
+                                        if ((cname == null || cname.trim().isEmpty()) && !courseId.isEmpty()) {
+                                            try {
+                                                String courseResp = ClientNetworkHelper.getCourseById(courseId);
+                                                Map<String, Object> courseResult = gson.fromJson(courseResp, Map.class);
+                                                if (courseResult != null && Boolean.TRUE.equals(courseResult.get("success"))) {
+                                                    Object courseDataObj = courseResult.get("data");
+                                                    if (courseDataObj instanceof Map) {
+                                                        Object cn = ((Map) courseDataObj).get("courseName");
+                                                        if (cn != null) cname = String.valueOf(cn);
+                                                    }
+                                                }
+                                            } catch (Exception ignored) {
+                                                // 允许忽略网络错误，继续使用 courseId 作为回退显示
+                                            }
+                                        }
+                                        if (cname.isEmpty()) cname = courseId.isEmpty() ? "" : courseId;
+
+                                        parseScheduleEntry(cname, sched, place, teacher);
+                                    }
+                                    handled = true;
+                                    Platform.runLater(this::renderTimetable);
+                                }
+                            } else {
+                                System.out.println("[Timetable] getStudentSelectedCourses returned no data or failed: " + selResp);
+                            }
                         }
                     } catch (Exception ex) {
                         System.out.println("[Timetable] getStudentSelectedCourses error: " + ex.getMessage());
@@ -958,3 +1023,4 @@ public class TimetablePanel extends BorderPane {
         return null;
     }
 }
+
