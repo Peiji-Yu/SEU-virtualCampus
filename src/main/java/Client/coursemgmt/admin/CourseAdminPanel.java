@@ -95,7 +95,7 @@ public class CourseAdminPanel extends BorderPane {
 
     private void initializeUI() {
         Label titleLabel = new Label("课程管理");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: black;");
 
         // 顶部标题栏：标题左侧，刷新图标放在右侧
         HBox titleBox = new HBox();

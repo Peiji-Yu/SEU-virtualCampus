@@ -32,7 +32,7 @@ public class LostCardAdminPanel extends VBox {
 
         Label title = new Label("挂失管理");
         title.setFont(Font.font(22));
-        title.setStyle("-fx-font-weight: bold; -fx-text-fill: #2a4d7b;");
+        title.setStyle("-fx-font-weight: bold; -fx-text-fill: black;");
         getChildren().add(title);
 
         statusLabel = new Label("");
@@ -165,7 +165,7 @@ public class LostCardAdminPanel extends VBox {
         opBox.setPadding(new Insets(15, 0, 0, 0));
         opBox.setAlignment(Pos.CENTER);
         Button refreshBtn = new Button("刷新");
-        refreshBtn.setStyle("-fx-background-color: #4e8cff; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 15px; -fx-font-weight: bold;");
+        refreshBtn.setStyle("-fx-background-color: #1D8C4F; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 15px; -fx-font-weight: bold;");
         refreshBtn.setPrefWidth(110);
         refreshBtn.setOnAction(e -> refreshList());
         opBox.getChildren().add(refreshBtn);

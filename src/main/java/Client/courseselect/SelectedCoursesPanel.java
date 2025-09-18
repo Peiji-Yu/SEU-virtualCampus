@@ -34,7 +34,7 @@ public class SelectedCoursesPanel extends BorderPane {
     private void initializeUI() {
         // 顶部标题
         Label titleLabel = new Label("已选课程");
-        titleLabel.setStyle("-fx-font-family: 'Microsoft YaHei UI';-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        titleLabel.setStyle("-fx-font-family: 'Microsoft YaHei UI';-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: black;");
         HBox titleBox = new HBox(titleLabel);
         titleBox.setPadding(new Insets(20));
         titleBox.setAlignment(Pos.CENTER_LEFT);

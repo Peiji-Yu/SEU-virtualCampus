@@ -76,7 +76,7 @@ public class TimetableSearchPanel extends BorderPane {
 
         // 顶部搜索栏：输入 cardNumber 并搜索
         Label titleLabel = new Label("学生课表");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: black;");
         HBox topBar = new HBox(8);
         topBar.setPadding(new Insets(8, 12, 8, 12));
         topBar.setAlignment(Pos.CENTER_LEFT);
