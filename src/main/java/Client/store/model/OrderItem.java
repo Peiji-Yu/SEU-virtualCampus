@@ -1,11 +1,11 @@
-package Client.store.util.model;
+package Client.store.model;
 
 // 订单项类
 public class OrderItem {
     private String uuid;
     private String orderUuid;
     private String itemUuid;
-    private int itemPrice; // 总价(分)
+    private int itemPrice; // 商品单价(分)
     private int amount;
     private Item item;
 
