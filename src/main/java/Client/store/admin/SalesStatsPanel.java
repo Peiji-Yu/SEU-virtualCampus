@@ -177,7 +177,7 @@ public class SalesStatsPanel extends BorderPane {
         return card;
     }
 
-    private void loadSalesData() {
+    public void loadSalesData() {
         new Thread(() -> {
             try {
                 // 获取今日销售总额

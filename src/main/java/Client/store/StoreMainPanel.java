@@ -140,6 +140,7 @@ public class StoreMainPanel extends BorderPane {
                     if (salesStatsPanel == null) {
                         salesStatsPanel = new SalesStatsPanel();
                     }
+                    salesStatsPanel.loadSalesData();
                     setCenter(salesStatsPanel);
                 }
             });
