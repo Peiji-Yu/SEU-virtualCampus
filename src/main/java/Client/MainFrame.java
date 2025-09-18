@@ -174,10 +174,11 @@ public class MainFrame {
         Button storeBtn = new Button();
         Button aiAssistBtn = new Button();
         Button libraryBtn = new Button();
+        Button teacherTimetableBtn = new Button(); // 新增教师课表按钮
 
         // 统一尺寸与显示
         List<Button> allBtns = Arrays.asList(stuManageBtn, courseMgmtBtn, timetableBtn, courseSelectBtn,
-                myClassroomBtn, financeBtn, storeBtn, aiAssistBtn, libraryBtn);
+                myClassroomBtn, financeBtn, storeBtn, aiAssistBtn, libraryBtn, teacherTimetableBtn);
         for (Button b : allBtns) {
             b.setPrefWidth(40); b.setPrefHeight(40);
             b.setMinWidth(40); b.setMinHeight(40);
@@ -196,6 +197,7 @@ public class MainFrame {
         attachIconAndRememberText(storeBtn, iconStore);
         attachIconAndRememberText(aiAssistBtn, iconAI);
         attachIconAndRememberText(libraryBtn, iconLibrary);
+        attachIconAndRememberText(teacherTimetableBtn, iconTimetable); // 教师课表按钮图标
         // reportLossBtn 已单独设置图标
 
         // 使用 map 维护每个按钮对应的普通/选中图标，方便统一切换
@@ -210,6 +212,7 @@ public class MainFrame {
         normalIcon.put(storeBtn, iconStore); selectedIcon.put(storeBtn, iconStore_1);
         normalIcon.put(aiAssistBtn, iconAI); selectedIcon.put(aiAssistBtn, iconAI_1);
         normalIcon.put(libraryBtn, iconLibrary); selectedIcon.put(libraryBtn, iconLibrary_1);
+        normalIcon.put(teacherTimetableBtn, iconTimetable); selectedIcon.put(teacherTimetableBtn, iconTimetable_1); // 教师课表按钮图标
         // 将样式初始化为未选中状态
         resetButtonStyle(stuManageBtn, normalIcon.get(stuManageBtn));
         resetButtonStyle(courseMgmtBtn, normalIcon.get(courseMgmtBtn));
@@ -220,6 +223,7 @@ public class MainFrame {
         resetButtonStyle(storeBtn, normalIcon.get(storeBtn));
         resetButtonStyle(aiAssistBtn, normalIcon.get(aiAssistBtn));
         resetButtonStyle(libraryBtn, normalIcon.get(libraryBtn));
+        resetButtonStyle(teacherTimetableBtn, normalIcon.get(teacherTimetableBtn)); // 教师课表按钮样式
 
         // ===== 简化事件处理：统一通过 mapping 切换图标与样式 =====
         stuManageBtn.setOnAction(e -> {
@@ -294,6 +298,13 @@ public class MainFrame {
             setCenterContent(new LibraryMainPanel(cardNumber));
         });
 
+        teacherTimetableBtn.setOnAction(e -> {
+            if (currentSelectedButton == teacherTimetableBtn) return;
+            if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+            setSelectedButtonStyle(teacherTimetableBtn, selectedIcon.get(teacherTimetableBtn));
+            currentSelectedButton = teacherTimetableBtn;
+            setCenterContent(new Client.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
+        });
 
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
         List<Button> navButtons = new ArrayList<>();
@@ -306,6 +317,7 @@ public class MainFrame {
         navButtons.add(storeBtn);   // 校园商店
         navButtons.add(aiAssistBtn); // AI 助手
         navButtons.add(libraryBtn);  // 新增：图书馆
+        navButtons.add(teacherTimetableBtn); // 教师课表按钮
 
         // 为每个按钮添加图标与保存原文案
         attachIconAndRememberText(stuManageBtn, iconStudent);
@@ -316,7 +328,8 @@ public class MainFrame {
         attachIconAndRememberText(financeBtn, iconFinance);
         attachIconAndRememberText(storeBtn, iconStore);
         attachIconAndRememberText(aiAssistBtn, iconAI);
-        attachIconAndRememberText(libraryBtn, iconLibrary); // 新增：图书馆图标
+        attachIconAndRememberText(libraryBtn, iconLibrary);
+        attachIconAndRememberText(teacherTimetableBtn, iconTimetable); // 教师课表按钮图标
 
         // 为每个功能区按钮设置右侧 tooltip
         setRightTooltip(stuManageBtn, "学籍管理");
@@ -328,6 +341,7 @@ public class MainFrame {
         setRightTooltip(storeBtn, "校园商店");
         setRightTooltip(aiAssistBtn, "AI助手");
         setRightTooltip(libraryBtn, "图书管理"); // 新增：图书馆提示
+        setRightTooltip(teacherTimetableBtn, "教师课表"); // 教师课表按钮提示
 
         // 中心内容容器（StackPane，便于后续叠加遮罩/弹层）
         centerContainer = new StackPane();
@@ -372,6 +386,7 @@ public class MainFrame {
             }
             if ("teacher".equals(userType)) {
                 leftBar.getChildren().add(myClassroomBtn);
+                leftBar.getChildren().add(teacherTimetableBtn); // 教师课表按钮
             }
             // 三类角色统一添加交易管理
             if ("student".equals(userType) || "admin".equals(userType) || "teacher".equals(userType)) {
@@ -494,6 +509,19 @@ public class MainFrame {
                 currentSelectedButton = libraryBtn;
                 // 创建图书馆主面板并显示在右侧，传递一卡通号
                 setCenterContent(new LibraryMainPanel(cardNumber));
+            });
+
+            // 新增：教师课表事件
+            teacherTimetableBtn.setOnAction(e -> {
+                if (currentSelectedButton == teacherTimetableBtn) {
+                    return;
+                }
+                if (currentSelectedButton != null) {
+                    resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
+                }
+                setSelectedButtonStyle(teacherTimetableBtn, selectedIcon.get(teacherTimetableBtn));
+                currentSelectedButton = teacherTimetableBtn;
+                setCenterContent(new Client.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
             });
 
             // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
