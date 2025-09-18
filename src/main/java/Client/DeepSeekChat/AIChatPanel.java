@@ -103,7 +103,7 @@ public class AIChatPanel extends BorderPane {
                         "4. 图书管理模块：学生查询可借书籍以及借阅信息，管理员管理图书及读者信息。\n" +
                         "5. 商店模块：商品浏览、搜索、购物车、订单管理，后台管理仅商店管理员可操作。\n" +
                         "\n" +
-                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。避免使用表情符号。";
+                        "请根据提供信息回答问题，如果没有对应信息优先引导学生完成校园系统操作，而不是直接给答案。避免使用表情符号。回答语言风格可爱友善。不需要使用表情符号等。";
 
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
@@ -174,7 +174,7 @@ public class AIChatPanel extends BorderPane {
                     );
                     Response orderDetailResponse = gson.fromJson(orderDetailJson, Response.class);
                     if (orderDetailResponse.isSuccess()) {
-                        shopSb.append("订单详情: ").append(orderDetailResponse.getData()).append("\n\n");
+                        shopSb.append("订单详情: 注意，订单金额以分为单位。").append(orderDetailResponse.getData()).append("\n\n");
                     } else {
                         shopSb.append("订单详情获取失败: ").append(orderDetailResponse.getMessage()).append("\n\n");
                     }

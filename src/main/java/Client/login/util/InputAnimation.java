@@ -52,7 +52,7 @@ public class InputAnimation {
                 Label temp = new Label(); temp.setMouseTransparent(true); temp.setStyle("-fx-font-size:14px;-fx-text-fill:#B4C0C7;-fx-background-color:white"); temp.setFont(Resources.ROBOTO_REGULAR); temp.setPrefHeight(15);
                 ui.getChildren().add(temp); AnchorPane.setLeftAnchor(temp,5.0); AnchorPane.setTopAnchor(temp,6.0);
                 Timeline color = new Timeline(new KeyFrame(Duration.ZERO,new KeyValue(temp.textFillProperty(),Resources.DISABLED)),new KeyFrame(Duration.seconds(0.2),new KeyValue(temp.textFillProperty(),Resources.SECONDARY)));
-                color.play(); tf.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:14px;-fx-text-fill:#5BA3E7");
+                color.play(); tf.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:14px;-fx-text-fill:#429866");
                 color.setOnFinished(e-> ui.getChildren().remove(temp));
             }
         }

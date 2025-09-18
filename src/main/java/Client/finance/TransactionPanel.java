@@ -17,20 +17,20 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
-
+import javafx.scene.text.Font;
 /**
  * 交易记录面板：显示交易历史记录
  */
 class TransactionPanel extends BorderPane {
     private static final Gson GSON = new Gson();
     private static final String PRIMARY = "#176B3A";
-    private static final String PRIMARY_LIGHT = "#D4EDDA";
+    private static final String PRIMARY_LIGHT = "#e8f5ee";
     private static final String SUCCESS = "#28a745";
     private static final String DANGER = "#dc3545";
-    private static final String TEXT = "#2a4d7b";
+    private static final String TEXT = "#2c3e50";
     private static final String SUB = "#6c757d";
     private static final String BORDER = "#e9ecef";
-    private static final String BACKGROUND = "#f8f9fa";
+    private static final String BACKGROUND = "white";
 
     private final String selfCardNumber;
     private final boolean admin;
@@ -40,6 +40,7 @@ class TransactionPanel extends BorderPane {
     private VBox recordsContainer;
     private Button queryTxBtn;
     private ProgressIndicator loadingIndicator;
+    private Label resultsLabel;
 
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final DateTimeFormatter isoOutFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -52,51 +53,61 @@ class TransactionPanel extends BorderPane {
     }
 
     private void initializeUI() {
-        // 主容器
-        VBox container = new VBox(20);
-        container.setPadding(new Insets(24));
-        container.setStyle("-fx-background-color: #F8F9FA;");
+        setPadding(new Insets(40, 80, 20, 80));
+        setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // 标题区域
-        HBox titleBox = new HBox();
-        titleBox.setAlignment(Pos.CENTER_LEFT);
-        titleBox.setPadding(new Insets(0, 0, 10, 0));
+        // 顶部标题和搜索区域
+        VBox topContainer = new VBox(5);
+        topContainer.setPadding(new Insets(30, 30, 0, 30));
 
-        Label title = new Label("交易记录");
-        title.setStyle("-fx-font-size: 28px; -fx-font-weight: 800; -fx-text-fill: #2c3e50;");
+        // 标题
+        Label titleLabel = new Label("交易记录");
+        titleLabel.setFont(Font.font(32));
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
 
-        // 不显示标题左侧圆点，只添加标题文字
-        titleBox.getChildren().add(title);
+        Label subtitleLabel = new Label("查看您的交易历史");
+        subtitleLabel.setStyle("-fx-text-fill: #6c757d; -fx-font-size: 14px;");
+
+        VBox headtitleBox = new VBox(5, titleLabel, subtitleLabel);
+        headtitleBox.setAlignment(Pos.CENTER_LEFT);
+        headtitleBox.setPadding(new Insets(0, 0, 20, 0));
+
+        // 查询区域
+        VBox searchBox = new VBox(15);
+        searchBox.setPadding(new Insets(0, 0, 5, 0));
+        searchBox.setStyle("-fx-background-color: white;");
 
         // 查询控制栏
-        HBox controlBar = new HBox(16);
+        HBox controlBar = new HBox(20);
         controlBar.setAlignment(Pos.CENTER_LEFT);
-        controlBar.setPadding(new Insets(16));
-        controlBar.setStyle("-fx-background-color: " + PRIMARY_LIGHT + "; -fx-background-radius: 12;");
 
         Label cardLb = new Label("一卡通号:");
         cardLb.setStyle("-fx-text-fill: " + TEXT + "; -fx-font-weight: 600; -fx-font-size: 14px;");
 
-        cardField = new TextField(selfCardNumber);
-        cardField.setPromptText("输入一卡通号");
+        cardField = createStyledTextField("输入一卡通号");
+        cardField.setText(selfCardNumber);
         cardField.setDisable(!admin);
-        cardField.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + BORDER + "; -fx-padding: 10 14; -fx-font-size: 14px;");
-        cardField.setPrefWidth(120);
+        cardField.setPrefWidth(180);
 
         Label typeLb = new Label("交易类型:");
-        typeLb.setStyle("-fx-text-fill: " + SUB + "; -fx-font-size: 14px;");
+        typeLb.setStyle("-fx-text-fill: " + TEXT + "; -fx-font-weight: 600; -fx-font-size: 14px;");
 
         typeFilter = new ComboBox<>();
         typeFilter.getItems().addAll("全部", "充值", "消费", "退款");
         typeFilter.getSelectionModel().selectFirst();
-        typeFilter.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: " + BORDER + "; -fx-pref-width: 100;");
+        typeFilter.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-border-color: " + BORDER + "; -fx-pref-width: 120; -fx-pref-height: 40px; " +
+                "-fx-padding: 0 10px; -fx-font-size: 14px;");
+
         typeFilter.setCellFactory(lv -> new ListCell<>() {
-            @Override protected void updateItem(String item, boolean empty) {
+            @Override
+            protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(item);
                 setStyle("-fx-padding: 8 12; -fx-font-size: 14px;");
             }
         });
+
         typeFilter.valueProperty().addListener((obs, oldV, newV) -> {
             String sel = newV;
             if (sel == null || "全部".equals(sel)) {
@@ -105,8 +116,10 @@ class TransactionPanel extends BorderPane {
             fetchTransactions(sel);
         });
 
-        queryTxBtn = new Button("查询交易");
-        queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 10 20; -fx-font-weight: 600; -fx-font-size: 14px;");
+        queryTxBtn = new Button("查询");
+        queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; " +
+                "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-min-width: 120px; -fx-pref-height: 40px; -fx-background-radius: 5;");
         queryTxBtn.setOnAction(e -> {
             String sel = typeFilter.getValue();
             if (sel == null || "全部".equals(sel)) {
@@ -120,8 +133,17 @@ class TransactionPanel extends BorderPane {
         loadingIndicator.setVisible(false);
         loadingIndicator.setPrefSize(20, 20);
         loadingIndicator.setStyle("-fx-progress-color: " + PRIMARY + ";");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        controlBar.getChildren().addAll(cardLb, cardField, typeLb, typeFilter, spacer, queryTxBtn, loadingIndicator);
 
-        controlBar.getChildren().addAll(cardLb, cardField, typeLb, typeFilter, queryTxBtn, loadingIndicator);
+        // 结果标签
+        resultsLabel = new Label("找到 0 条交易记录");
+        resultsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #34495e;");
+
+        searchBox.getChildren().addAll(headtitleBox, controlBar, resultsLabel);
+        topContainer.getChildren().addAll(searchBox);
+        setTop(topContainer);
 
         // 交易记录容器
         recordsContainer = new VBox(15);
@@ -132,17 +154,17 @@ class TransactionPanel extends BorderPane {
         scrollPane.setStyle("-fx-background: white; -fx-background-color: white; -fx-border-color: white;");
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setCenter(scrollPane);
+    }
 
-        // 空状态提示
-        Label emptyLabel = new Label("暂无交易记录");
-        emptyLabel.setStyle("-fx-text-fill: " + SUB + "; -fx-font-size: 16px; -fx-padding: 40;");
-        recordsContainer.getChildren().add(emptyLabel);
-
-        container.getChildren().addAll(titleBox, controlBar, scrollPane);
-        setCenter(container);
-
-        // 设置整体背景
-        setStyle("-fx-background-color: " + BACKGROUND + "; -fx-padding: 20;");
+    private TextField createStyledTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setStyle("-fx-font-size: 16px; -fx-pref-height: 40px; " +
+                "-fx-background-radius: 5; -fx-border-radius: 5; " +
+                "-fx-focus-color: " + PRIMARY + "; -fx-faint-focus-color: transparent;" +
+                "-fx-padding: 0 10px; -fx-border-color: " + BORDER + ";");
+        return field;
     }
 
     private Integer parseTargetCard() {
@@ -186,8 +208,11 @@ class TransactionPanel extends BorderPane {
                         Label emptyLabel = new Label("暂无交易记录");
                         emptyLabel.setStyle("-fx-text-fill: " + SUB + "; -fx-font-size: 16px; -fx-padding: 40;");
                         recordsContainer.getChildren().add(emptyLabel);
+                        resultsLabel.setText("找到 0 条交易记录");
                         return;
                     }
+
+                    resultsLabel.setText("找到 " + arr.size() + " 条交易记录");
 
                     for (JsonElement el : arr) {
                         if (!el.isJsonObject()) {
@@ -230,9 +255,9 @@ class TransactionPanel extends BorderPane {
 
     private VBox createTransactionCard(String id, String type, String amount, String description, String time) {
         VBox card = new VBox(12);
-        card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
-                "-fx-border-color: " + BORDER + "; -fx-border-radius: 8; -fx-border-width: 1;");
+        card.setPadding(new Insets(15));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 5; " +
+                "-fx-border-color: #dddddd; -fx-border-radius: 5; -fx-border-width: 1;");
 
         // 交易基本信息区域
         HBox summaryBox = new HBox();
@@ -241,7 +266,7 @@ class TransactionPanel extends BorderPane {
 
         // 交易类型图标
         Label typeIcon = new Label();
-        typeIcon.setStyle("-fx-font-size: 20px; -fx-min-width: 40px; -fx-alignment: CENTER;");
+        typeIcon.setStyle("-fx-font-size: 30px; -fx-min-width: 40px; -fx-alignment: CENTER;");
 
         // 根据交易类型设置不同的样式
         String typeColor = TEXT;
@@ -251,11 +276,11 @@ class TransactionPanel extends BorderPane {
         if ("充值".equals(type) || "退款".equals(type)) {
             typeColor = SUCCESS;
             amountColor = SUCCESS;
-            iconText = "⬆️";
+            iconText = "+";
         } else if ("消费".equals(type)) {
             typeColor = DANGER;
             amountColor = DANGER;
-            iconText = "⬇️";
+            iconText = "-";
         }
 
         typeIcon.setText(iconText);
@@ -312,7 +337,9 @@ class TransactionPanel extends BorderPane {
 
     private void runAsync(SupplierWithException<String> supplier, java.util.function.Consumer<String> onSuccess) {
         queryTxBtn.setDisable(true);
-        queryTxBtn.setStyle("-fx-background-color: #a0aec0; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 10 20;");
+        queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; " +
+                "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-min-width: 120px; -fx-pref-height: 40px; -fx-background-radius: 5;");
         loadingIndicator.setVisible(true);
 
         Task<String> task = new Task<>() {
@@ -320,13 +347,17 @@ class TransactionPanel extends BorderPane {
         };
         task.setOnSucceeded(e -> {
             queryTxBtn.setDisable(false);
-            queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 10 20;");
+            queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; " +
+                    "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                    "-fx-min-width: 120px; -fx-pref-height: 40px; -fx-background-radius: 5;");
             loadingIndicator.setVisible(false);
             onSuccess.accept(task.getValue());
         });
         task.setOnFailed(e -> {
             queryTxBtn.setDisable(false);
-            queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 10 20;");
+            queryTxBtn.setStyle("-fx-background-color: " + PRIMARY + "; " +
+                    "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                    "-fx-min-width: 120px; -fx-pref-height: 40px; -fx-background-radius: 5;");
             loadingIndicator.setVisible(false);
             showAlert("错误", "网络或服务器错误" + Optional.ofNullable(task.getException()).map(ex -> ": " + ex.getMessage()).orElse(""), Alert.AlertType.ERROR);
         });
