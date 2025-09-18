@@ -7,8 +7,11 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -16,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 拆分出的“查看已选学生”模态窗口
+ * 美化后的"查看已选学生"模态窗口
  */
 public class StudentListDialog {
     public static void show(CourseAdminPanel owner, String teachingClassUuid, String title) {
@@ -29,38 +32,66 @@ public class StudentListDialog {
         StageWrapper stage = new StageWrapper();
         javafx.stage.Stage dialog = stage.createModal("已选学生 - " + (title == null ? teachingClassUuid : title));
 
-        VBox root = new VBox(8);
-        root.setPadding(new Insets(12));
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(15));
+        root.setStyle("-fx-background-color: #f8f9fa;");
+
+        // 标题栏
+        HBox headerBox = new HBox();
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+        headerBox.setPadding(new Insets(0, 0, 10, 0));
+
+        Label titleLabel = new Label("已选学生列表");
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #176B3A;");
+        headerBox.getChildren().add(titleLabel);
 
         Label status = new Label("正在加载名单...");
-        status.setStyle("-fx-text-fill: #666666;");
+        status.setStyle("-fx-font-size: 14px; -fx-text-fill: #6c757d; -fx-padding: 5px 0;");
 
         TableView<StudentRow> tv = new TableView<>();
+        tv.setStyle("-fx-background-color: white; -fx-border-color: #ced4da; -fx-border-radius: 4px;");
+
         TableColumn<StudentRow, String> c1 = new TableColumn<>("学号");
         c1.setCellValueFactory(d -> d.getValue().sidProperty());
         c1.setPrefWidth(140);
+        c1.setStyle("-fx-alignment: CENTER_LEFT;");
+
         TableColumn<StudentRow, String> c2 = new TableColumn<>("姓名");
         c2.setCellValueFactory(d -> d.getValue().nameProperty());
         c2.setPrefWidth(120);
+        c2.setStyle("-fx-alignment: CENTER_LEFT;");
+
         TableColumn<StudentRow, String> c3 = new TableColumn<>("专业");
         c3.setCellValueFactory(d -> d.getValue().majorProperty());
         c3.setPrefWidth(160);
+        c3.setStyle("-fx-alignment: CENTER_LEFT;");
+
         TableColumn<StudentRow, String> c4 = new TableColumn<>("学院");
         c4.setCellValueFactory(d -> d.getValue().schoolProperty());
         c4.setPrefWidth(140);
+        c4.setStyle("-fx-alignment: CENTER_LEFT;");
 
         TableColumn<StudentRow, Void> actionCol = new TableColumn<>("操作");
         actionCol.setPrefWidth(100);
+        actionCol.setStyle("-fx-alignment: CENTER;");
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button dropBtn = new Button("退选");
             {
-                dropBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;");
+                dropBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold; " +
+                        "-fx-padding: 6px 12px; -fx-border-radius: 4px; -fx-background-radius: 4px;");
                 dropBtn.setOnAction(e -> {
                     StudentRow sr = getTableRow() == null ? null : (StudentRow) getTableRow().getItem();
                     if (sr == null) return;
-                    Alert conf = new Alert(Alert.AlertType.CONFIRMATION, "确认将该学生从本教学班退选吗？", ButtonType.OK, ButtonType.CANCEL);
+
+                    Alert conf = new Alert(Alert.AlertType.CONFIRMATION);
+                    conf.setTitle("确认退选");
+                    conf.setHeaderText(null);
+                    conf.setContentText("确认将该学生从本教学班退选吗？");
+                    conf.getDialogPane().getStylesheets().add("/styles/dialog.css");
+
                     Optional<ButtonType> r = conf.showAndWait();
                     if (!(r.isPresent() && r.get() == ButtonType.OK)) return;
+
                     dropBtn.setDisable(true);
                     new Thread(() -> {
                         try {
@@ -68,6 +99,7 @@ public class StudentListDialog {
                             if (cardStr == null || cardStr.trim().isEmpty()) {
                                 Platform.runLater(() -> {
                                     Alert a = new Alert(Alert.AlertType.ERROR, "无法解析一卡通号（为空），已取消退选操作", ButtonType.OK);
+                                    a.getDialogPane().getStylesheets().add("/styles/dialog.css");
                                     a.showAndWait();
                                     dropBtn.setDisable(false);
                                 });
@@ -84,6 +116,7 @@ public class StudentListDialog {
                                 } catch (Exception ignore) {
                                     Platform.runLater(() -> {
                                         Alert a = new Alert(Alert.AlertType.ERROR, "无法解析一卡通号: " + cardStr + "，已取消退选操作", ButtonType.OK);
+                                        a.getDialogPane().getStylesheets().add("/styles/dialog.css");
                                         a.showAndWait();
                                         dropBtn.setDisable(false);
                                     });
@@ -96,8 +129,16 @@ public class StudentListDialog {
                                     tv.getItems().remove(sr);
                                     status.setText("共 " + tv.getItems().size() + " 名学生");
                                     owner.loadCourseData();
+
+                                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                                    success.setTitle("操作成功");
+                                    success.setHeaderText(null);
+                                    success.setContentText("退选成功");
+                                    success.getDialogPane().getStylesheets().add("/styles/dialog.css");
+                                    success.showAndWait();
                                 } else {
                                     Alert a = new Alert(Alert.AlertType.ERROR, "退选失败: " + rr.getMessage(), ButtonType.OK);
+                                    a.getDialogPane().getStylesheets().add("/styles/dialog.css");
                                     a.showAndWait();
                                     dropBtn.setDisable(false);
                                 }
@@ -105,6 +146,7 @@ public class StudentListDialog {
                         } catch (Exception ex) {
                             Platform.runLater(() -> {
                                 Alert a = new Alert(Alert.AlertType.ERROR, "网络错误: " + ex.getMessage(), ButtonType.OK);
+                                a.getDialogPane().getStylesheets().add("/styles/dialog.css");
                                 a.showAndWait();
                                 dropBtn.setDisable(false);
                             });
@@ -124,9 +166,14 @@ public class StudentListDialog {
         tv.getColumns().addAll(c1, c2, c3, c4, actionCol);
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        root.getChildren().addAll(status, tv);
+        VBox contentBox = new VBox(10);
+        contentBox.getChildren().addAll(headerBox, status, tv);
+        VBox.setVgrow(tv, Priority.ALWAYS);
 
-        Scene scene = new Scene(root, 620, 420);
+        root.getChildren().add(contentBox);
+
+        Scene scene = new Scene(root, 700, 450);
+        scene.getStylesheets().add("/styles/dialog.css");
         dialog.setScene(scene);
         dialog.show();
 
