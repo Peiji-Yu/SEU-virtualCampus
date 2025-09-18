@@ -223,8 +223,8 @@ public class SelectedCoursesPanel extends BorderPane {
         if (s.isEmpty()) return "";
         if (s.contains(":")) return s;
 
-        String[] periodStart = new String[]{"", "08:00", "08:50", "10:00", "10:50", "14:00", "14:50", "15:50", "16:40", "19:00", "19:50", "20:10", "20:55"};
-        String[] periodEnd = new String[]{"", "08:45", "09:35", "10:45", "11:30", "14:45", "15:35", "16:35", "17:25", "19:45", "20:35", "20:50", "21:40"};
+        String[] periodStart = new String[]{"", "08:00", "08:50", "9:50", "10:40", "11:30", "14:00", "14:50", "15:50", "16:40", "17:30", "19:00", "19:50", "20:40"};
+        String[] periodEnd = new String[]{"", "08:45", "09:35", "10:35", "11:25", "12:15", "14:45", "15:35", "16:35", "17:25", "18:15", "19:45", "20:35", "21:25"};
 
         Pattern rangePat = Pattern.compile("^(\\d+)\\s*-\\s*(\\d+)\\s*节?$");
         Matcher m = rangePat.matcher(s);

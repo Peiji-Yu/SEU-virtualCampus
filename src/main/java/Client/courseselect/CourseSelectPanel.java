@@ -795,8 +795,8 @@ public class CourseSelectPanel extends BorderPane {
             Map<String, String> raw = new Gson().fromJson(scheduleJson, mapType);
             if (raw == null) return map;
 
-            String[] periodStart = new String[]{"", "08:00","08:50","10:00","10:50","14:00","14:50","15:50","16:40","19:00","19:50","20:10","20:55"};
-            String[] periodEnd = new String[]{"", "08:45","09:35","10:45","11:30","14:45","15:35","16:35","17:25","19:45","20:35","20:50","21:40"};
+            String[] periodStart = new String[]{"", "08:00", "08:50", "9:50", "10:40", "11:30", "14:00", "14:50", "15:50", "16:40", "17:30", "19:00", "19:50", "20:40"};
+            String[] periodEnd = new String[]{"", "08:45", "09:35", "10:35", "11:25", "12:15", "14:45", "15:35", "16:35", "17:25", "18:15", "19:45", "20:35", "21:25"};
 
             for (Map.Entry<String, String> e : raw.entrySet()) {
                 String day = e.getKey();
@@ -863,16 +863,30 @@ public class CourseSelectPanel extends BorderPane {
         if (s1 == null || s2 == null) return false;
         Map<String, List<TimeRange>> m1 = parseScheduleClient(s1);
         Map<String, List<TimeRange>> m2 = parseScheduleClient(s2);
+
         for (String day : m1.keySet()) {
             if (!m2.containsKey(day)) continue;
             List<TimeRange> r1 = m1.get(day);
             List<TimeRange> r2 = m2.get(day);
-            for (TimeRange a : r1) for (TimeRange b : r2) {
-                if (a.start.isBefore(b.end) && b.start.isBefore(a.end)) return true;
+
+            for (TimeRange a : r1) {
+                for (TimeRange b : r2) {
+                    // 打印调试信息
+                    System.out.printf(
+                            "比较 %s：A=[%s - %s), B=[%s - %s)%n",
+                            day, a.start, a.end, b.start, b.end
+                    );
+
+                    if (a.start.isBefore(b.end) && b.start.isBefore(a.end)) {
+                        System.out.printf("⚠️ 冲突: %s 与 %s%n", a, b);
+                        return true;
+                    }
+                }
             }
         }
         return false;
     }
+
 
     public void refreshData() {
         loadCourseData();
