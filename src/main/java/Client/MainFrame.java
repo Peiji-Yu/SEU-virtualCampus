@@ -14,9 +14,11 @@ import Client.store.StoreMainPanel; // 新增：校园商店面板
 import Client.library.LibraryMainPanel; // 新增：导入图书馆面板
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle; // 新增导入
 import javafx.scene.input.MouseEvent;
@@ -44,7 +46,8 @@ public class MainFrame {
     private static final String SECONDARY_TEXT_COLOR = "#666666";
     // 新增：顶部栏固定高度（使右上角三个按钮与顶部栏上下边界重合）
     private static final double TOP_BAR_HEIGHT = 48.0;
-
+    private double prevX, prevY, prevW, prevH;
+    private boolean isMaximized = false;
     // 折叠侧边栏尺寸
     private static final double SIDEBAR_EXPANDED_WIDTH = 180;
     // 调小收起宽度到能显示图标（含左右padding≈30 + 图标≈20，预留6）
@@ -124,9 +127,6 @@ public class MainFrame {
 
         // 顶部用户栏容器
         HBox topBar = buildTopBar();
-        // 增加底部分割线
-//        topBar.setStyle("-fx-background-color: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8,0,0,2);" +
-//                " -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1px 0;");
         VBox topContainer = new VBox(topBar);
         topContainer.setFillWidth(true);
         mainLayout.setTop(topContainer);
@@ -293,11 +293,6 @@ public class MainFrame {
             currentSelectedButton = libraryBtn;
             setCenterContent(new LibraryMainPanel(cardNumber));
         });
-
-
-
-        // reportLossBtn 的逻辑保持不变（只是执行挂失操作），样式切换按需要可添加
-
 
 
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
@@ -826,14 +821,31 @@ public class MainFrame {
         maxBtn.setGraphic(maxView);
         maxBtn.setOnAction(e -> {
             if (stage != null) {
-                boolean toMax = !stage.isMaximized();
-                stage.setMaximized(toMax);
-                // 切换图标
-                if (toMax) {
-                    maxView.setImage(imgRestore);
+                if (!isMaximized) {
+                    // 保存当前位置和大小
+                    prevX = stage.getX();
+                    prevY = stage.getY();
+                    prevW = stage.getWidth();
+                    prevH = stage.getHeight();
+
+                    // 最大化到可见区域（不覆盖任务栏）
+                    Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+                    stage.setX(bounds.getMinX());
+                    stage.setY(bounds.getMinY());
+                    stage.setWidth(bounds.getWidth());
+                    stage.setHeight(bounds.getHeight());
+
+                    maxView.setImage(imgRestore); // 换成还原图标
                 } else {
-                    maxView.setImage(imgMax);
+                    // 还原
+                    stage.setX(prevX);
+                    stage.setY(prevY);
+                    stage.setWidth(prevW);
+                    stage.setHeight(prevH);
+
+                    maxView.setImage(imgMax); // 换成最大化图标
                 }
+                isMaximized = !isMaximized;
             }
         });
         // 悬停变灰色

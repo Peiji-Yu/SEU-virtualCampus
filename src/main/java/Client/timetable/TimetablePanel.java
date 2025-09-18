@@ -22,10 +22,10 @@ import java.util.*;
  * 展示当前学期课表，支持多节连上课程显示
  */
 public class TimetablePanel extends BorderPane {
-    // 颜色定义F4F4F4
-    private static final String PRIMARY_COLOR = "#F4F4F4";
-    private static final String BG_COLOR = "#F4F4F4";
-    private static final String CARD_BG = "#F4F4F4";
+    // 颜色定义
+    private static final String PRIMARY_COLOR = "#ffffff";
+    private static final String BG_COLOR = "#ffffff";
+    private static final String CARD_BG = "#ffffff";
     private static final String HEADER_BG = PRIMARY_COLOR;
     private static final String HEADER_TEXT = "#B0B0B8";
     private static final String TEXT_COLOR = "#101010";
@@ -558,7 +558,7 @@ public class TimetablePanel extends BorderPane {
     private void addTimeCell(GridPane grid, int col, int row, String timeText) {
         VBox cell = new VBox(2);
         cell.setAlignment(Pos.CENTER);
-        cell.setStyle("-fx-background-color: #F4F4F4; -fx-background-radius: 4; " +
+        cell.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 4; " +
                 "-fx-border-color: #e2e8f0 transparent #e2e8f0 transparent; " +
                 "-fx-border-width: 1 0 1 0;");
         cell.setPadding(new Insets(5));
@@ -621,7 +621,7 @@ public class TimetablePanel extends BorderPane {
 
     private void addEmptyCell(GridPane grid, int col, int row) {
         Pane cell = new Pane();
-        cell.setStyle("-fx-background-color: #F4F4F4; -fx-border-color: " + BORDER_COLOR + "; " +
+        cell.setStyle("-fx-background-color: #ffffff; -fx-border-color: " + BORDER_COLOR + "; " +
                 "-fx-border-width: 0.5; -fx-border-radius: 4;");
         grid.add(cell, col, row);
     }

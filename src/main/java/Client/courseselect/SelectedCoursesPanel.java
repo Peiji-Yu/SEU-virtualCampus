@@ -69,7 +69,7 @@ public class SelectedCoursesPanel extends BorderPane {
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
         VBox mainContainer = new VBox(titleBox, statusBox, scrollPane, buttonBox);
-        mainContainer.setStyle("-fx-background-color: #F3F5F8; -fx-background-radius: 12;");
+        mainContainer.setStyle("-fx-background-color: #FFFFFF; -fx-background-radius: 12;");
 
         // 使 mainContainer 填满 CourseSelectPanel 的中心区域
         mainContainer.setFillWidth(true);
@@ -82,7 +82,7 @@ public class SelectedCoursesPanel extends BorderPane {
 
         this.setCenter(mainContainer);
         this.setPadding(new Insets(20));
-        this.setStyle("-fx-background-color: #F3F5F8;");
+        this.setStyle("-fx-background-color: #FFFFFF;");
     }
 
     private void loadSelectedCourses() {
