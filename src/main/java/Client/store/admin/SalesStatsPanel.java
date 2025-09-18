@@ -1,6 +1,7 @@
 package Client.store.admin;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -186,7 +187,8 @@ public class SalesStatsPanel extends BorderPane {
                 int todaySalesCode = ((Double) todaySalesResponseMap.get("code")).intValue();
 
                 if (todaySalesCode == 200) {
-                    int todaySalesFen = ((Double) todaySalesResponseMap.get("data")).intValue();
+                    Object todaySalesData = todaySalesResponseMap.get("data");
+                    int todaySalesFen = todaySalesData != null ? ((Double) todaySalesData).intValue() : 0;
                     String todaySalesYuan = StoreUtils.fenToYuan(todaySalesFen);
 
                     Platform.runLater(() -> {
@@ -201,7 +203,8 @@ public class SalesStatsPanel extends BorderPane {
                 int totalSalesCode = ((Double) totalSalesResponseMap.get("code")).intValue();
 
                 if (totalSalesCode == 200) {
-                    int totalSalesFen = ((Double) totalSalesResponseMap.get("data")).intValue();
+                    Object totalSalesData = totalSalesResponseMap.get("data");
+                    int totalSalesFen = totalSalesData != null ? ((Double) totalSalesData).intValue() : 0;
                     String totalSalesYuan = StoreUtils.fenToYuan(totalSalesFen);
 
                     Platform.runLater(() -> {
@@ -217,14 +220,19 @@ public class SalesStatsPanel extends BorderPane {
 
                 if (todayStatsCode == 200) {
                     Type salesStatsListType = new TypeToken<List<SalesStatItem>>(){}.getType();
-                    List<SalesStatItem> todaySalesStats = gson.fromJson(
-                            gson.toJson(todayStatsResponseMap.get("data")),
-                            salesStatsListType
-                    );
+                    List<SalesStatItem> todaySalesStats = new ArrayList<>();
 
+                    if (todayStatsResponseMap.get("data") != null) {
+                        todaySalesStats = gson.fromJson(
+                                gson.toJson(todayStatsResponseMap.get("data")),
+                                salesStatsListType
+                        );
+                    }
+
+                    List<SalesStatItem> finalTodaySalesStats = todaySalesStats;
                     Platform.runLater(() -> {
                         todayStatsData.clear();
-                        todayStatsData.addAll(todaySalesStats);
+                        todayStatsData.addAll(finalTodaySalesStats);
                         displayStatsTable(todayStatsContainer, todayStatsData);
                     });
                 }
@@ -237,14 +245,19 @@ public class SalesStatsPanel extends BorderPane {
 
                 if (totalStatsCode == 200) {
                     Type salesStatsListType = new TypeToken<List<SalesStatItem>>(){}.getType();
-                    List<SalesStatItem> totalSalesStats = gson.fromJson(
-                            gson.toJson(totalStatsResponseMap.get("data")),
-                            salesStatsListType
-                    );
+                    List<SalesStatItem> totalSalesStats = new ArrayList<>();
 
+                    if (totalStatsResponseMap.get("data") != null) {
+                        totalSalesStats = gson.fromJson(
+                                gson.toJson(totalStatsResponseMap.get("data")),
+                                salesStatsListType
+                        );
+                    }
+
+                    List<SalesStatItem> finalTotalSalesStats = totalSalesStats;
                     Platform.runLater(() -> {
                         totalStatsData.clear();
-                        totalStatsData.addAll(totalSalesStats);
+                        totalStatsData.addAll(finalTotalSalesStats);
                         displayStatsTable(totalStatsContainer, totalStatsData);
                     });
                 }

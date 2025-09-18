@@ -767,9 +767,9 @@ public class MainFrame {
         userInfo.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
 
         // 左侧组合容器，提供水平内边距
-        HBox leftGroup = new HBox(6);
+        HBox leftGroup = new HBox(20);
         leftGroup.setAlignment(Pos.CENTER_LEFT);
-        leftGroup.setPadding(new Insets(0, 6, 0, 6));
+        leftGroup.setPadding(new Insets(0, 0, 0, 11));
 
 
         // 只显示 logo 和用户信息
