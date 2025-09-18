@@ -45,7 +45,7 @@ public interface UserMapper {
      * @param user 用户对象
      * @return 插入影响的行数
      */
-    @Insert("INSERT INTO user (id, card_number, password) VALUES (#{identity}, #{cardNumber}, #{password})")
+    @Insert("INSERT INTO user (id, card_number, password, name) VALUES (#{identity}, #{cardNumber}, #{password}, #{name})")
     int insertUser(User user);
 
     /**

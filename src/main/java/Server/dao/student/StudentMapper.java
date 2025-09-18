@@ -38,7 +38,7 @@ public interface StudentMapper {
     // 更新学生信息（排除不可修改字段）
     @Update("UPDATE student SET " +
             "major = #{major}, school = #{school}, status = #{status}, enrollment = #{enrollment}, " +
-            "birth_place = #{birthPlace}, political_stat = #{politicalStat} " +
+            "birth_place = #{birthPlace}, political_stat = #{politicalStat}, student_number = #{studentNumber}" +
             "WHERE card_number = #{cardNumber}")
     int updateStudent(Student student);
 
