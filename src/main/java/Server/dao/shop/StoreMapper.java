@@ -218,39 +218,74 @@ public interface StoreMapper {
 
     // 销售统计相关操作
 
-    /**
-     * 获取商品销售统计（总的）
-     */
-    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
-            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
-            "WHERE st.status = '已支付' " +
+    // 获取商品销售统计（总的）
+    @Select("SELECT si.uuid, si.item_name, SUM(soi.amount) as total_amount, SUM(soi.item_price * soi.amount) as total_revenue " +
+            "FROM store_order_item soi " +
+            "JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "JOIN store_order so ON soi.order_uuid = so.uuid " +
+            "WHERE so.status = '已支付' " +
             "GROUP BY si.uuid, si.item_name " +
             "ORDER BY total_revenue DESC")
     List<SalesStats> getSalesStatistics();
 
-    /**
-     * 获取商品销售统计（总的）
-     */
-    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
-            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
-            "WHERE st.status = '已支付' AND DATE(time) = CURDATE()" +
+    // 获取商品销售统计（今日）
+    @Select("SELECT si.uuid, si.item_name, SUM(soi.amount) as total_amount, SUM(soi.item_price * soi.amount) as total_revenue " +
+            "FROM store_order_item soi " +
+            "JOIN store_item si ON soi.item_uuid = si.uuid " +
+            "JOIN store_order so ON soi.order_uuid = so.uuid " +
+            "WHERE so.status = '已支付' AND DATE(so.time) = CURDATE() " +
             "GROUP BY si.uuid, si.item_name " +
             "ORDER BY total_revenue DESC")
     List<SalesStats> getTodaySalesStatistics();
 
-    /**
-     * 获取销售总额
-     */
-    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
-            "WHERE status = '已支付'")
+    // 获取销售总额
+    @Select("SELECT SUM(soi.item_price * soi.amount) as total_revenue " +
+            "FROM store_order_item soi " +
+            "JOIN store_order so ON soi.order_uuid = so.uuid " +
+            "WHERE so.status = '已支付'")
     Integer getSalesRevenue();
 
-    /**
-     * 获取今日销售总额
-     */
-    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
-            "WHERE status = '已支付' AND DATE(time) = CURDATE()")
+    // 获取今日销售总额
+    @Select("SELECT SUM(soi.item_price * soi.amount) as total_revenue " +
+            "FROM store_order_item soi " +
+            "JOIN store_order so ON soi.order_uuid = so.uuid " +
+            "WHERE so.status = '已支付' AND DATE(so.time) = CURDATE()")
     Integer getTodaySalesRevenue();
+
+//
+//    /**
+//     * 获取商品销售统计（总的）
+//     */
+//    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
+//            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
+//            "WHERE st.status = '已支付' " +
+//            "GROUP BY si.uuid, si.item_name " +
+//            "ORDER BY total_revenue DESC")
+//    List<SalesStats> getSalesStatistics();
+//
+//    /**
+//     * 获取商品销售统计（总的）
+//     */
+//    @Select("SELECT si.uuid, si.item_name, SUM(st.amount) as total_amount, SUM(st.item_price * st.amount) as total_revenue " +
+//            "FROM store_transaction st JOIN store_item si ON st.item_uuid = si.uuid " +
+//            "WHERE st.status = '已支付' AND DATE(time) = CURDATE()" +
+//            "GROUP BY si.uuid, si.item_name " +
+//            "ORDER BY total_revenue DESC")
+//    List<SalesStats> getTodaySalesStatistics();
+//
+//    /**
+//     * 获取销售总额
+//     */
+//    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
+//            "WHERE status = '已支付'")
+//    Integer getSalesRevenue();
+//
+//    /**
+//     * 获取今日销售总额
+//     */
+//    @Select("SELECT SUM(item_price * amount) as total_revenue FROM store_transaction " +
+//            "WHERE status = '已支付' AND DATE(time) = CURDATE()")
+//    Integer getTodaySalesRevenue();
 
     // 销售统计结果映射类
     class SalesStats {

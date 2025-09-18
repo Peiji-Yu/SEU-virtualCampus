@@ -3,6 +3,7 @@ package Client.store;
 import Client.store.admin.AddProductPanel;
 import Client.store.admin.ManageOrderPanel;
 import Client.store.admin.ManageProductPanel;
+import Client.store.admin.SalesStatsPanel;
 import Client.store.student.MyOrderPanel;
 import Client.store.student.ProductSearchPanel;
 import javafx.scene.control.Button;
@@ -17,6 +18,7 @@ public class StoreMainPanel extends BorderPane {
     private AddProductPanel addProductPanel;
     private ManageProductPanel manageProductPanel;
     private ManageOrderPanel manageOrderPanel;
+    private SalesStatsPanel salesStatsPanel;
     private Button currentSelectedButton;
     private final String cardNumber;
     private final boolean isAdmin;
@@ -122,10 +124,36 @@ public class StoreMainPanel extends BorderPane {
             separator3.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
             separator3.setMaxWidth(Double.MAX_VALUE);
 
+            // 添加销售统计按钮
+            Button salesStatsButton = new Button("销售统计");
+            salesStatsButton.setPrefWidth(210);
+            salesStatsButton.setPrefHeight(56);
+            resetButtonStyle(salesStatsButton);
+
+            salesStatsButton.setOnAction(e -> {
+                if (currentSelectedButton != salesStatsButton) {
+                    resetButtonStyle(currentSelectedButton);
+                    setSelectedButtonStyle(salesStatsButton);
+                    currentSelectedButton = salesStatsButton;
+
+                    // 初始化销售统计页面
+                    if (salesStatsPanel == null) {
+                        salesStatsPanel = new SalesStatsPanel();
+                    }
+                    setCenter(salesStatsPanel);
+                }
+            });
+
+            // 添加分割线
+            Region separator4 = new Region();
+            separator4.setStyle("-fx-background-color: #cccccc; -fx-pref-height: 1px;");
+            separator4.setMaxWidth(Double.MAX_VALUE);
+
             leftBar.getChildren().addAll(leftLabel, separator,
                     addProductButton, separator1,
                     manageProductButton, separator2,
-                    manageOrderButton, separator3);
+                    manageOrderButton, separator3,
+                    salesStatsButton,  separator4);
             setLeft(leftBar);
 
             // 初始化默认面板
