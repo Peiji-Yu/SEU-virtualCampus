@@ -28,6 +28,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.Node; // 新增
 import java.util.*;
+import javafx.scene.text.Font;
 
 /**
  * 应用主界面：左侧功能导航 + 右侧内容区（当前只包含学籍管理模块）。
@@ -757,26 +758,32 @@ public class MainFrame {
 
         String roleCN;
         switch (userType) {
-            case "student": roleCN = "学生"; break;
-            case "teacher": roleCN = "教师"; break;
-            case "admin": roleCN = "管理员"; break;
-            default: roleCN = "未知";
+            case "student": roleCN = "Student"; break;
+            case "teacher": roleCN = "Teacher"; break;
+            case "admin": roleCN = "Administrator"; break;
+            default: roleCN = "Unknown";
         }
-        Label userInfo = new Label(roleCN + " " + cardNumber);
+        Label userInfo = new Label(roleCN + "  " + cardNumber);
+        Font customFont = Font.loadFont(
+                getClass().getResourceAsStream("/Font/Pacifico-Regular.ttf"),
+                18 // 字号
+        );
 //      userInfo.setStyle("-fx-text-fill: " + TEXT_COLOR + "; -fx-font-size: 14px; -fx-font-weight: bold;");
-        userInfo.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
-
+        userInfo.setStyle("-fx-text-fill: #ffffff;");
+        userInfo.setFont(customFont);
         // 左侧组合容器，提供水平内边距
         HBox leftGroup = new HBox(20);
         leftGroup.setAlignment(Pos.CENTER_LEFT);
         leftGroup.setPadding(new Insets(0, 0, 0, 11));
 
-
+        ImageView extraIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Image/dlt.png"))));
+        extraIcon.setFitHeight(24);
+        extraIcon.setPreserveRatio(true);
         // 只显示 logo 和用户信息
         if (logoView != null) {
-            leftGroup.getChildren().addAll(logoView, userInfo);
+            leftGroup.getChildren().addAll(logoView, userInfo, extraIcon);
         } else {
-            leftGroup.getChildren().addAll(userInfo);
+            leftGroup.getChildren().addAll(userInfo, extraIcon);
         }
 
         // 中部可拖动区域（占满剩余空间）
