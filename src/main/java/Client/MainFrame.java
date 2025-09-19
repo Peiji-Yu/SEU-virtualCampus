@@ -1,17 +1,17 @@
 package Client;
 
-import Client.login.component.LogoutHandler;
-import Client.login.LoginClientFX;
-import Client.studentmgmt.admin.StudentAdminPanel;
-import Client.studentmgmt.student.StudentSelfPanel;
-import Client.timetable.TimetablePanel;
-import Client.courseselect.CourseSelectMainPanel;
-import Client.teacherclass.MyClassroomPanel;
-import Client.coursemgmt.admin.CourseAdminMainPanel;
-import Client.finance.FinancePanel; // 新增导入
-import Client.DeepSeekChat.AIChatPanel; // 新增 AI 助手面板导入
-import Client.store.StoreMainPanel; // 新增：校园商店面板
-import Client.library.LibraryMainPanel; // 新增：导入图书馆面板
+import Client.panel.login.component.LogoutHandler;
+import Client.panel.login.LoginClientFX;
+import Client.panel.student.admin.StudentAdminPanel;
+import Client.panel.student.student.StudentSelfPanel;
+import Client.panel.course.courseselect.timetable.TimetablePanel;
+import Client.panel.course.courseselect.CourseSelectMainPanel;
+import Client.panel.course.teacherclass.MyClassroomPanel;
+import Client.panel.course.coursemgmt.CourseAdminMainPanel;
+import Client.panel.finance.FinancePanel; // 新增导入
+import Client.panel.chat.AIChatPanel; // 新增 AI 助手面板导入
+import Client.panel.store.StoreMainPanel; // 新增：校园商店面板
+import Client.panel.library.LibraryMainPanel; // 新增：导入图书馆面板
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
@@ -303,7 +303,7 @@ public class MainFrame {
             if (currentSelectedButton != null) resetButtonStyle(currentSelectedButton, normalIcon.get(currentSelectedButton));
             setSelectedButtonStyle(teacherTimetableBtn, selectedIcon.get(teacherTimetableBtn));
             currentSelectedButton = teacherTimetableBtn;
-            setCenterContent(new Client.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
+            setCenterContent(new Client.panel.course.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
         });
 
         // 收集所有需要随折叠切换文字的按钮（不再包含退出登录）
@@ -521,7 +521,7 @@ public class MainFrame {
                 }
                 setSelectedButtonStyle(teacherTimetableBtn, selectedIcon.get(teacherTimetableBtn));
                 currentSelectedButton = teacherTimetableBtn;
-                setCenterContent(new Client.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
+                setCenterContent(new Client.panel.course.teacherclass.timetable.TeacherTimetablePanel(cardNumber));
             });
 
             // ===== 修改：使用透明 Region 占据剩余垂直空间（去除占位文字与背景） =====
@@ -548,7 +548,7 @@ public class MainFrame {
             reportLossBtn.setOnMouseEntered(e -> setButtonHoverShadow(reportLossBtn));
             reportLossBtn.setOnMouseExited(e -> reportLossBtn.setStyle("-fx-background-color: " + SIDEBAR_COLOR + "; -fx-effect: none; -fx-font-size: 15px; -fx-text-fill: " + TEXT_COLOR + ";"));
             reportLossBtn.setOnAction(e -> LogoutHandler.handleLogout(stage));
-            setRightTooltip(reportLossBtn, "退出登录");
+            setRightTooltip(reportLossBtn, "一卡通挂失");
             leftBar.getChildren().add(reportLossBtn);
 
             // 新增：一卡通挂失事件

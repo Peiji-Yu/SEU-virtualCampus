@@ -2,7 +2,7 @@ package Client;
 
 import Client.util.adapter.LocalDateAdapter;
 import Client.util.adapter.UUIDAdapter;
-import Server.model.Request;
+import Client.model.Request;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -61,6 +61,13 @@ public final class ClientNetworkHelper {
             safeClose(dos);
             safeClose(socket);
         }
+    }
+
+    public static String getServerHost() {
+        return SERVER_HOST;
+    }
+    public static int getServerPort() {
+        return SERVER_PORT;
     }
 
     /**
