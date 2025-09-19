@@ -741,7 +741,6 @@ public class ClientHandler implements Runnable {
                                 Response.error("删除教师失败");
                         break;
 
-
                     case "getFinanceCard":
                         Object cardNumberObj = request.getData().get("cardNumber");
                         if (cardNumberObj == null) {
