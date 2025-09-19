@@ -70,8 +70,9 @@ public class StudentAdminPanel extends BorderPane {
         searchTypeCombo.getItems().addAll("姓名", "学号", "一卡通号");
         searchTypeCombo.setValue("姓名");
         searchTypeCombo.setStyle("-fx-font-size: 14px; -fx-pref-width: 100px; -fx-pref-height: 45px; " +
-                "-fx-background-radius: 5; -fx-border-radius: 5; " +
-                "-fx-focus-color: " + PRIMARY_COLOR + "; -fx-faint-focus-color: transparent;");
+                        "-fx-background-radius: 4; -fx-border-radius: 4;"+
+                        " -fx-border-color: #1D8C4F; -fx-border-width: 1; -fx-background-color: #ffffff;"+
+                        " -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);");
 
         searchField = createStyledTextField("输入搜索关键词");
         HBox.setHgrow(searchField, Priority.ALWAYS);
