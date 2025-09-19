@@ -30,7 +30,7 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
+            <version>8.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -56,12 +56,12 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>5.3.30</version>
+            <version>6.2.7</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>5.3.30</version>
+            <version>6.2.10</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -103,7 +103,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>Client.login.LoginClientFX</mainClass> <!-- 指定主类 -->
+                    <mainClass>Client.panel.login.LoginClientFX</mainClass> <!-- 指定主类 -->
                 </configuration>
             </plugin>
         </plugins>
