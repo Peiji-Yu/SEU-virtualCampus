@@ -156,11 +156,11 @@ teaching_classes表: 教学班表
 student_teaching_class表: 选课关系表
 
     CREATE TABLE student_teaching_class (
-    id INT AUTO_INCREMENT PRIMARY KEY,  
-    student_card_number INT(9) NOT NULL,  -- 学生一卡通号
-    teaching_class_uuid VARCHAR(36) NOT NULL,   -- 教学班uuid
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_student_class (student_card_number, teaching_class_uuid),
-    FOREIGN KEY (student_card_number) REFERENCES student(card_number) ON DELETE CASCADE,
-    FOREIGN KEY (teaching_class_uuid) REFERENCES teaching_classes(uuid) ON DELETE CASCADE
+        id INT AUTO_INCREMENT PRIMARY KEY,  
+        student_card_number INT(9) NOT NULL,  -- 学生一卡通号
+        teaching_class_uuid VARCHAR(36) NOT NULL,   -- 教学班uuid
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_student_class (student_card_number, teaching_class_uuid),
+        FOREIGN KEY (student_card_number) REFERENCES student(card_number) ON DELETE CASCADE,
+        FOREIGN KEY (teaching_class_uuid) REFERENCES teaching_classes(uuid) ON DELETE CASCADE
     );
